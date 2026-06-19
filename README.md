@@ -1,6 +1,6 @@
-# Almox - Gestão de materiais
+# Gestão Patrimonial - Daniel Frederighi Advogados Associados
 
-Sistema web local para controle de materiais, equipamentos, solicitações e termos de posse.
+Sistema web local para controle de materiais, equipamentos, solicitações e termos de posse do escritório Daniel Frederighi Advogados Associados.
 
 ## Executar
 
