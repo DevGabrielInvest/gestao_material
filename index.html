@@ -12,7 +12,27 @@
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div class="app-shell">
+    <section class="login-screen" id="loginScreen">
+      <div class="login-brand-panel">
+        <div class="login-monogram">DF</div>
+        <div><p class="eyebrow">DANIEL FREDERIGHI</p><h1>Gestão patrimonial<br />com responsabilidade.</h1><p>Controle materiais, solicitações e termos de posse em um ambiente organizado e auditável.</p></div>
+        <small>ADVOGADOS ASSOCIADOS · GESTÃO INTERNA</small>
+      </div>
+      <div class="login-form-panel">
+        <form class="login-card" id="loginForm">
+          <p class="eyebrow">ACESSO RESTRITO</p>
+          <h2>Entrar no sistema</h2>
+          <p>Use suas credenciais para continuar.</p>
+          <label class="login-field"><span>E-mail</span><input id="loginEmail" name="email" type="email" autocomplete="username" required placeholder="seuemail@dfa.com" /></label>
+          <label class="login-field"><span>Senha</span><input id="loginPassword" name="password" type="password" autocomplete="current-password" required placeholder="Digite sua senha" /></label>
+          <p class="login-error" id="loginError" role="alert"></p>
+          <button class="button primary login-submit" type="submit">Entrar</button>
+          <div class="demo-access"><strong>Acessos para demonstração</strong><button type="button" data-demo="admin">Administrador</button><button type="button" data-demo="manager">Gestor</button><button type="button" data-demo="requester">Solicitante</button><button type="button" data-demo="viewer">Consulta</button></div>
+        </form>
+      </div>
+    </section>
+
+    <div class="app-shell auth-hidden" id="appShell">
       <aside class="sidebar" id="sidebar">
         <div class="brand">
           <div class="brand-mark" aria-hidden="true">DF</div>
@@ -30,7 +50,7 @@
           <span data-icon="shield"></span>
           <div><strong>Patrimônio protegido</strong><p>Mantenha as retiradas de itens de valor sempre documentadas.</p></div>
         </div>
-        <div class="user-card"><div class="avatar">DFA</div><div><strong>Administração</strong><span>Gestão patrimonial</span></div></div>
+        <button class="user-card" id="logoutButton" type="button" title="Sair do sistema"><div class="avatar" id="userAvatar">DFA</div><div><strong id="currentUserName">Administração</strong><span id="currentUserRole">Gestão patrimonial</span></div><span class="logout-icon" data-icon="log-out"></span></button>
       </aside>
 
       <main class="main-content">
@@ -81,7 +101,8 @@
 
         <section class="page" id="requestsPage">
           <div class="page-heading"><div><p class="eyebrow">PEDIDOS INTERNOS</p><h1>Solicitações</h1><p>Peça materiais e acompanhe a aprovação de cada pedido.</p></div><button class="button primary quick-request"><span data-icon="plus"></span>Nova solicitação</button></div>
-          <div class="request-tabs" id="requestTabs"><button class="active" data-filter="all">Todas <b id="allRequestCount">0</b></button><button data-filter="pending">Pendentes <b id="pendingRequestCount">0</b></button><button data-filter="approved">Aprovadas</button><button data-filter="delivered">Entregues</button></div>
+          <div class="permission-note" id="requestPermissionNote"></div>
+          <div class="request-tabs" id="requestTabs"><button class="active" data-filter="all">Todas <b id="allRequestCount">0</b></button><button data-filter="pending">Pendentes <b id="pendingRequestCount">0</b></button><button data-filter="approved">Aprovadas</button><button data-filter="delivered">Entregues</button><button data-filter="rejected">Recusadas</button></div>
           <div class="requests-grid" id="requestsGrid"></div><div class="empty-state panel" id="requestsEmpty"><span data-icon="clipboard"></span><h3>Nenhuma solicitação aqui</h3><p>Os pedidos aparecerão nesta área.</p></div>
         </section>
 

@@ -17,6 +17,7 @@ const icons = {
   check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 4 4L19 6"/></svg>',
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20ZM13.5 7l3.5 3.5"/></svg>',
   laptop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="12" rx="1"/><path d="M2 19h20"/></svg>',
+  'log-out': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></svg>',
 };
 
 document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icons[el.dataset.icon] || icons.box; });
@@ -51,6 +52,15 @@ const initialState = {
 
 const storageKey = 'almox-office-state-v1';
 let state = JSON.parse(localStorage.getItem(storageKey) || 'null') || initialState;
+const sessionKey = 'dfa-office-session-v1';
+const users = [
+  { id: 1, name: 'Administração DFA', email: 'admin@dfa.com', password: 'admin123', role: 'admin', department: 'Administração' },
+  { id: 2, name: 'Marina Gestora', email: 'gestor@dfa.com', password: 'gestor123', role: 'manager', department: 'Administrativo' },
+  { id: 3, name: 'Lucas Colaborador', email: 'colaborador@dfa.com', password: 'solicitar123', role: 'requester', department: 'Jurídico' },
+  { id: 4, name: 'Consulta Interna', email: 'consulta@dfa.com', password: 'consulta123', role: 'viewer', department: 'Diretoria' },
+];
+const roleLabels = { admin: 'Administrador', manager: 'Gestor', requester: 'Solicitante', viewer: 'Somente consulta' };
+let currentUser = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
 let activeRequestFilter = 'all';
 let modalAction = null;
 
@@ -61,6 +71,61 @@ const initials = (name) => name.split(' ').slice(0, 2).map((part) => part[0]).jo
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
 const save = () => localStorage.setItem(storageKey, JSON.stringify(state));
 const isOverdue = (record) => record.status === 'active' && new Date(`${record.expected}T23:59:59`) < new Date();
+
+const permissionMap = {
+  approve: ['admin', 'manager'],
+  manageInventory: ['admin', 'manager'],
+  manageCustody: ['admin', 'manager'],
+  request: ['admin', 'manager', 'requester'],
+  viewAllRequests: ['admin', 'manager', 'viewer'],
+};
+const can = (permission) => Boolean(currentUser && permissionMap[permission]?.includes(currentUser.role));
+const canOpenPage = (page) => currentUser?.role !== 'requester' || page === 'requests';
+
+function normalizeState() {
+  state.requests.forEach((request) => {
+    if (!request.history) {
+      request.history = [{ action: 'created', label: 'Solicitação criada', user: request.requester, date: `${request.date}T12:00:00`, note: request.reason }];
+      if (request.status !== 'pending') request.history.push({ action: request.status, label: statusActionLabel(request.status), user: request.decidedBy || 'Administração', date: `${request.date}T16:00:00`, note: request.decisionNote || 'Registro anterior à implantação do histórico.' });
+    }
+  });
+  save();
+}
+
+function statusActionLabel(status) {
+  return { approved: 'Solicitação aprovada', rejected: 'Solicitação recusada', delivered: 'Material entregue', pending: 'Aguardando análise' }[status] || status;
+}
+
+function applyPermissions() {
+  const requesterOnly = currentUser?.role === 'requester';
+  document.querySelectorAll('.nav-item').forEach((button) => { button.hidden = !canOpenPage(button.dataset.page); });
+  document.querySelectorAll('.quick-request').forEach((button) => { button.hidden = !can('request'); });
+  $('#newItemButton').hidden = !can('manageInventory');
+  $('#newCustodyButton').hidden = !can('manageCustody');
+  $('#currentUserName').textContent = currentUser?.name || '';
+  $('#currentUserRole').textContent = roleLabels[currentUser?.role] || '';
+  $('#userAvatar').textContent = initials(currentUser?.name || 'DFA');
+  if (requesterOnly) navigate('requests');
+}
+
+function startSession(user) {
+  currentUser = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
+  sessionStorage.setItem(sessionKey, JSON.stringify(currentUser));
+  $('#loginScreen').classList.add('hidden');
+  $('#appShell').classList.remove('auth-hidden');
+  $('#loginError').textContent = '';
+  applyPermissions();
+  renderAll();
+}
+
+function endSession() {
+  sessionStorage.removeItem(sessionKey);
+  currentUser = null;
+  $('#appShell').classList.add('auth-hidden');
+  $('#loginScreen').classList.remove('hidden');
+  $('#loginForm').reset();
+  $('#loginEmail').focus();
+}
 
 function showToast(message) {
   $('#toastMessage').textContent = message;
@@ -133,22 +198,33 @@ function renderInventory() {
     const inCustody = custodyIds.has(item.id);
     const low = item.quantity <= item.minimum;
     const badge = inCustody ? statusBadge('active', 'custody') : low ? '<span class="status amber">Estoque baixo</span>' : '<span class="status green">Disponível</span>';
-    return `<tr><td><div class="item-cell"><div class="item-thumb">${escapeHtml(item.name[0])}</div><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.code)} · ${money(item.value)}</small></div></div></td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(item.location)}</td><td><span class="quantity ${low ? 'low' : ''}">${item.quantity}</span> <small>un.</small></td><td>${badge}</td><td><div class="row-actions"><button class="row-action edit-item" data-id="${item.id}" title="Editar item">${icons.edit}</button></div></td></tr>`;
+    const actions = can('manageInventory') ? `<button class="row-action edit-item" data-id="${item.id}" title="Editar item">${icons.edit}</button>` : '';
+    return `<tr><td><div class="item-cell"><div class="item-thumb">${escapeHtml(item.name[0])}</div><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.code)} · ${money(item.value)}</small></div></div></td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(item.location)}</td><td><span class="quantity ${low ? 'low' : ''}">${item.quantity}</span> <small>un.</small></td><td>${badge}</td><td><div class="row-actions">${actions}</div></td></tr>`;
   }).join('');
   $('#inventoryEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.edit-item').forEach((button) => button.addEventListener('click', () => openItemModal(Number(button.dataset.id))));
 }
 
 function renderRequests() {
-  const pending = state.requests.filter((item) => item.status === 'pending').length;
-  $('#allRequestCount').textContent = state.requests.length;
+  const visible = can('viewAllRequests') ? state.requests : state.requests.filter((item) => item.requesterEmail === currentUser?.email || (!item.requesterEmail && item.requester === currentUser?.name));
+  const pending = visible.filter((item) => item.status === 'pending').length;
+  $('#allRequestCount').textContent = visible.length;
   $('#pendingRequestCount').textContent = pending;
-  const filtered = activeRequestFilter === 'all' ? state.requests : state.requests.filter((item) => item.status === activeRequestFilter);
-  $('#requestsGrid').innerHTML = filtered.map((item) => `<article class="request-card"><div class="request-card-top"><span class="code">SOL-${String(item.id).padStart(4, '0')}</span>${statusBadge(item.status)}</div><h3>${escapeHtml(item.item)}</h3><p>${escapeHtml(item.reason)}</p><div class="request-meta"><div><span>Solicitante</span><strong>${escapeHtml(item.requester)}</strong></div><div><span>Quantidade</span><strong>${item.quantity} unidade(s)</strong></div><div><span>Setor</span><strong>${escapeHtml(item.department)}</strong></div><div><span>Prioridade</span><strong>${escapeHtml(item.priority)}</strong></div></div><div class="request-actions">${item.status === 'pending' ? `<button class="button small primary request-approve" data-id="${item.id}">Aprovar</button><button class="button small danger request-reject" data-id="${item.id}">Recusar</button>` : item.status === 'approved' ? `<button class="button small primary request-deliver" data-id="${item.id}">Marcar como entregue</button>` : `<span class="asset-value">Solicitado em ${dateLabel(item.date)}</span>`}</div></article>`).join('');
+  $('#requestNavCount').textContent = pending;
+  $('#requestPermissionNote').textContent = can('approve') ? 'Você pode analisar pedidos. Toda aprovação ou recusa exige justificativa e fica registrada no histórico.' : currentUser?.role === 'requester' ? 'Você está visualizando apenas as solicitações criadas pela sua conta.' : 'Perfil de consulta: pedidos e históricos estão disponíveis somente para leitura.';
+  const filtered = activeRequestFilter === 'all' ? visible : visible.filter((item) => item.status === activeRequestFilter);
+  $('#requestsGrid').innerHTML = filtered.map((item) => {
+    const decision = item.decisionNote ? `<div class="approval-record"><span>${escapeHtml(item.decidedBy || 'Administração')} · ${dateLabel((item.decidedAt || '').slice(0, 10))}</span><p>${escapeHtml(item.decisionNote)}</p></div>` : '';
+    let actions = `<span class="asset-value">Solicitado em ${dateLabel(item.date)}</span>`;
+    if (can('approve') && item.status === 'pending') actions = `<button class="button small primary request-approve" data-id="${item.id}">Aprovar</button><button class="button small danger request-reject" data-id="${item.id}">Recusar</button>`;
+    if (can('approve') && item.status === 'approved') actions = `<button class="button small primary request-deliver" data-id="${item.id}">Marcar como entregue</button>`;
+    return `<article class="request-card"><div class="request-card-top"><span class="code">SOL-${String(item.id).padStart(4, '0')}</span>${statusBadge(item.status)}</div><h3>${escapeHtml(item.item)}</h3><p>${escapeHtml(item.reason)}</p><div class="request-meta"><div><span>Solicitante</span><strong>${escapeHtml(item.requester)}</strong></div><div><span>Quantidade</span><strong>${item.quantity} unidade(s)</strong></div><div><span>Setor</span><strong>${escapeHtml(item.department)}</strong></div><div><span>Prioridade</span><strong>${escapeHtml(item.priority)}</strong></div></div>${decision}<div class="request-actions">${actions}<button class="history-button request-history" data-id="${item.id}">Histórico (${item.history?.length || 0})</button></div></article>`;
+  }).join('');
   $('#requestsEmpty').classList.toggle('show', !filtered.length);
-  document.querySelectorAll('.request-approve').forEach((button) => button.addEventListener('click', () => updateRequest(Number(button.dataset.id), 'approved')));
-  document.querySelectorAll('.request-reject').forEach((button) => button.addEventListener('click', () => updateRequest(Number(button.dataset.id), 'rejected')));
-  document.querySelectorAll('.request-deliver').forEach((button) => button.addEventListener('click', () => updateRequest(Number(button.dataset.id), 'delivered')));
+  document.querySelectorAll('.request-approve').forEach((button) => button.addEventListener('click', () => openDecisionModal(Number(button.dataset.id), 'approved')));
+  document.querySelectorAll('.request-reject').forEach((button) => button.addEventListener('click', () => openDecisionModal(Number(button.dataset.id), 'rejected')));
+  document.querySelectorAll('.request-deliver').forEach((button) => button.addEventListener('click', () => deliverRequest(Number(button.dataset.id))));
+  document.querySelectorAll('.request-history').forEach((button) => button.addEventListener('click', () => openRequestHistory(Number(button.dataset.id))));
 }
 
 function renderCustody() {
@@ -157,7 +233,7 @@ function renderCustody() {
   const filtered = state.custody.filter((item) => [item.item, item.code, item.holder, item.department].join(' ').toLowerCase().includes(search) && (filter === 'all' || item.status === filter));
   const activeValue = state.custody.filter((item) => item.status === 'active').reduce((sum, item) => sum + Number(item.value), 0);
   $('#custodyTotalValue').textContent = money(activeValue);
-  $('#custodyCards').innerHTML = filtered.map((item) => `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div>${statusBadge(item.status === 'active' && isOverdue(item) ? 'overdue' : item.status, 'custody')}</div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>Retirada</span><strong>${dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span>${item.status === 'active' ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></article>`).join('');
+  $('#custodyCards').innerHTML = filtered.map((item) => `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div>${statusBadge(item.status === 'active' && isOverdue(item) ? 'overdue' : item.status, 'custody')}</div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>Retirada</span><strong>${dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span>${item.status === 'active' && can('manageCustody') ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></article>`).join('');
   $('#custodyEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.return-item').forEach((button) => button.addEventListener('click', () => returnCustody(Number(button.dataset.id))));
 }
@@ -165,6 +241,7 @@ function renderCustody() {
 function renderAll() { renderDashboard(); renderInventory(); renderRequests(); renderCustody(); }
 
 function navigate(page) {
+  if (!canOpenPage(page)) { showToast('Seu perfil não possui acesso a esta área.'); return; }
   document.querySelectorAll('.page').forEach((el) => el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach((el) => el.classList.toggle('active', el.dataset.page === page));
   $(`#${page}Page`).classList.add('active');
@@ -174,10 +251,12 @@ function navigate(page) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-function openModal({ eyebrow, title, submitLabel, body, action }) {
+function openModal({ eyebrow, title, submitLabel, body, action, hideSubmit = false }) {
   $('#modalEyebrow').textContent = eyebrow;
   $('#modalTitle').textContent = title;
   $('#submitModal').textContent = submitLabel;
+  $('#submitModal').hidden = hideSubmit;
+  $('#cancelModal').textContent = hideSubmit ? 'Fechar' : 'Cancelar';
   $('#modalBody').innerHTML = body;
   modalAction = action;
   $('#modalBackdrop').classList.add('open');
@@ -189,20 +268,25 @@ function closeModal() {
   $('#modalBackdrop').classList.remove('open');
   $('#modalBackdrop').setAttribute('aria-hidden', 'true');
   modalAction = null;
+  $('#submitModal').hidden = false;
+  $('#cancelModal').textContent = 'Cancelar';
   $('#modalForm').reset();
 }
 
 function openRequestModal() {
+  if (!can('request')) { showToast('Seu perfil não pode criar solicitações.'); return; }
   const options = state.inventory.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
-  openModal({ eyebrow: 'NOVO PEDIDO', title: 'Solicitar material ou equipamento', submitLabel: 'Enviar solicitação', body: `<div class="form-grid"><div class="field full"><label for="requestItem">Item solicitado *</label><input id="requestItem" name="item" list="inventoryOptions" required placeholder="Digite ou selecione um item"/><datalist id="inventoryOptions">${options}</datalist></div><div class="field"><label for="requester">Solicitante *</label><input id="requester" name="requester" required placeholder="Nome completo"/></div><div class="field"><label for="requestDepartment">Setor *</label><input id="requestDepartment" name="department" required placeholder="Ex.: Financeiro"/></div><div class="field"><label for="requestQuantity">Quantidade *</label><input id="requestQuantity" name="quantity" type="number" min="1" value="1" required/></div><div class="field"><label for="requestPriority">Prioridade</label><select id="requestPriority" name="priority"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div><div class="field full"><label for="requestReason">Motivo da solicitação *</label><textarea id="requestReason" name="reason" required placeholder="Explique brevemente a necessidade."></textarea></div></div>`, action: (form) => {
+  openModal({ eyebrow: 'NOVO PEDIDO', title: 'Solicitar material ou equipamento', submitLabel: 'Enviar solicitação', body: `<div class="form-grid"><div class="field full"><label for="requestItem">Item solicitado *</label><input id="requestItem" name="item" list="inventoryOptions" required placeholder="Digite ou selecione um item"/><datalist id="inventoryOptions">${options}</datalist></div><div class="field"><label for="requester">Solicitante *</label><input id="requester" name="requester" required readonly value="${escapeHtml(currentUser.name)}"/></div><div class="field"><label for="requestDepartment">Setor *</label><input id="requestDepartment" name="department" required readonly value="${escapeHtml(currentUser.department)}"/></div><div class="field"><label for="requestQuantity">Quantidade *</label><input id="requestQuantity" name="quantity" type="number" min="1" value="1" required/></div><div class="field"><label for="requestPriority">Prioridade</label><select id="requestPriority" name="priority"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div><div class="field full"><label for="requestReason">Motivo da solicitação *</label><textarea id="requestReason" name="reason" required placeholder="Explique brevemente a necessidade."></textarea></div></div>`, action: (form) => {
     const data = Object.fromEntries(new FormData(form));
-    state.requests.unshift({ id: Date.now(), ...data, quantity: Number(data.quantity), date: new Date().toISOString().slice(0, 10), status: 'pending' });
+    const now = new Date().toISOString();
+    state.requests.unshift({ id: Date.now(), ...data, requesterEmail: currentUser.email, quantity: Number(data.quantity), date: now.slice(0, 10), status: 'pending', history: [{ action: 'created', label: 'Solicitação criada', user: currentUser.name, role: roleLabels[currentUser.role], date: now, note: data.reason }] });
     addActivity('Nova solicitação criada', `${data.requester} pediu ${data.quantity} unidade(s) de ${data.item}`);
     save(); closeModal(); renderAll(); navigate('requests'); showToast('Solicitação enviada para análise.');
   } });
 }
 
 function openItemModal(id = null) {
+  if (!can('manageInventory')) { showToast('Seu perfil não pode alterar o inventário.'); return; }
   const item = state.inventory.find((entry) => entry.id === id) || {};
   openModal({ eyebrow: id ? 'ATUALIZAR CADASTRO' : 'NOVO CADASTRO', title: id ? 'Editar item' : 'Cadastrar material ou equipamento', submitLabel: id ? 'Salvar alterações' : 'Cadastrar item', body: `<div class="form-grid"><div class="field full"><label for="itemName">Nome do item *</label><input id="itemName" name="name" required value="${escapeHtml(item.name || '')}" placeholder="Ex.: Monitor Dell 24 polegadas"/></div><div class="field"><label for="itemCode">Código *</label><input id="itemCode" name="code" required value="${escapeHtml(item.code || '')}" placeholder="MAT-001 ou PAT-001"/></div><div class="field"><label for="itemCategory">Categoria *</label><input id="itemCategory" name="category" required value="${escapeHtml(item.category || '')}" placeholder="Ex.: Informática"/></div><div class="field"><label for="itemLocation">Localização *</label><input id="itemLocation" name="location" required value="${escapeHtml(item.location || '')}" placeholder="Ex.: Armário A"/></div><div class="field"><label for="itemValue">Valor unitário (R$)</label><input id="itemValue" name="value" type="number" min="0" step="0.01" value="${item.value || 0}"/></div><div class="field"><label for="itemQuantity">Quantidade atual *</label><input id="itemQuantity" name="quantity" type="number" min="0" required value="${item.quantity ?? 1}"/></div><div class="field"><label for="itemMinimum">Estoque mínimo *</label><input id="itemMinimum" name="minimum" type="number" min="0" required value="${item.minimum ?? 1}"/></div><div class="field full"><label><input name="valuable" type="checkbox" ${item.valuable ? 'checked' : ''}/> Item de valor que exige termo de posse</label><small>Use para notebooks, celulares, monitores e outros bens patrimoniais.</small></div></div>`, action: (form) => {
     const data = Object.fromEntries(new FormData(form));
@@ -214,6 +298,7 @@ function openItemModal(id = null) {
 }
 
 function openCustodyModal() {
+  if (!can('manageCustody')) { showToast('Seu perfil não pode registrar retiradas.'); return; }
   const available = state.inventory.filter((item) => item.valuable && !state.custody.some((record) => record.inventoryId === item.id && record.status === 'active'));
   const options = available.map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · ${escapeHtml(item.code)}</option>`).join('');
   openModal({ eyebrow: 'RESPONSABILIDADE', title: 'Registrar retirada de equipamento', submitLabel: 'Registrar retirada', body: `<div class="form-grid"><div class="field full"><label for="custodyItem">Equipamento *</label><select id="custodyItem" name="inventoryId" required><option value="">Selecione o bem</option>${options}</select>${available.length ? '' : '<small>Não há itens de valor disponíveis. Cadastre ou devolva um equipamento.</small>'}</div><div class="field"><label for="holder">Responsável *</label><input id="holder" name="holder" required placeholder="Nome completo"/></div><div class="field"><label for="holderDepartment">Setor *</label><input id="holderDepartment" name="department" required placeholder="Ex.: Diretoria"/></div><div class="field"><label for="checkout">Data da retirada *</label><input id="checkout" name="checkout" type="date" value="${new Date().toISOString().slice(0, 10)}" required/></div><div class="field"><label for="expected">Previsão de devolução *</label><input id="expected" name="expected" type="date" required/></div><div class="field full"><label for="custodyNotes">Estado e observações</label><textarea id="custodyNotes" name="notes" placeholder="Acessórios entregues, estado de conservação e finalidade."></textarea></div></div>`, action: (form) => {
@@ -227,16 +312,55 @@ function openCustodyModal() {
   } });
 }
 
-function updateRequest(id, status) {
+function registerRequestAction(request, status, note) {
+  const now = new Date().toISOString();
+  request.status = status;
+  request.history ||= [];
+  request.history.push({ action: status, label: statusActionLabel(status), user: currentUser.name, role: roleLabels[currentUser.role], date: now, note });
+  if (status === 'approved' || status === 'rejected') {
+    request.decidedBy = currentUser.name;
+    request.decidedAt = now;
+    request.decisionNote = note;
+  }
+  addActivity(statusActionLabel(status), `${request.item} · ${request.requester}`);
+  save();
+  renderAll();
+}
+
+function openDecisionModal(id, status) {
+  if (!can('approve')) { showToast('Seu perfil não pode analisar solicitações.'); return; }
+  const request = state.requests.find((item) => item.id === id);
+  if (!request || request.status !== 'pending') return;
+  const approving = status === 'approved';
+  openModal({ eyebrow: 'DECISÃO AUDITÁVEL', title: approving ? 'Aprovar solicitação' : 'Recusar solicitação', submitLabel: approving ? 'Confirmar aprovação' : 'Confirmar recusa', body: `<div class="permission-note"><strong>${escapeHtml(request.item)}</strong><br>${request.quantity} unidade(s) · ${escapeHtml(request.requester)}</div><div class="field"><label for="decisionNote">Justificativa da decisão *</label><textarea id="decisionNote" name="note" required minlength="5" placeholder="Registre o motivo para manter a decisão documentada."></textarea><small>A decisão será vinculada a ${escapeHtml(currentUser.name)}.</small></div>`, action: (form) => {
+    const note = new FormData(form).get('note').trim();
+    if (note.length < 5) return;
+    registerRequestAction(request, status, note);
+    closeModal();
+    showToast(approving ? 'Solicitação aprovada e documentada.' : 'Solicitação recusada e documentada.');
+  } });
+}
+
+function deliverRequest(id) {
+  if (!can('approve')) { showToast('Seu perfil não pode registrar entregas.'); return; }
+  const request = state.requests.find((item) => item.id === id);
+  if (!request || request.status !== 'approved' || !window.confirm(`Confirmar a entrega de ${request.item} para ${request.requester}?`)) return;
+  registerRequestAction(request, 'delivered', `Entrega confirmada por ${currentUser.name}.`);
+  showToast('Entrega registrada no histórico.');
+}
+
+function openRequestHistory(id) {
   const request = state.requests.find((item) => item.id === id);
   if (!request) return;
-  request.status = status;
-  const labels = { approved: 'Solicitação aprovada', rejected: 'Solicitação recusada', delivered: 'Material entregue' };
-  addActivity(labels[status], `${request.item} · ${request.requester}`);
-  save(); renderAll(); showToast(labels[status]);
+  const entries = [...(request.history || [])].reverse().map((entry) => {
+    const date = new Date(entry.date);
+    return `<div class="audit-entry"><strong>${escapeHtml(entry.label)}</strong><span>${escapeHtml(entry.user)}${entry.role ? ` · ${escapeHtml(entry.role)}` : ''} · ${date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ''}</div>`;
+  }).join('');
+  openModal({ eyebrow: `SOL-${String(request.id).padStart(4, '0')}`, title: `Histórico · ${request.item}`, submitLabel: '', hideSubmit: true, body: `<div class="audit-list">${entries || '<p>Nenhum evento registrado.</p>'}</div>`, action: null });
 }
 
 function returnCustody(id) {
+  if (!can('manageCustody')) { showToast('Seu perfil não pode registrar devoluções.'); return; }
   const record = state.custody.find((item) => item.id === id);
   if (!record || !window.confirm(`Confirmar a devolução de ${record.item}?`)) return;
   record.status = 'returned';
@@ -268,5 +392,29 @@ $('#requestTabs').addEventListener('click', (event) => {
   renderRequests();
 });
 
+$('#loginForm').addEventListener('submit', (event) => {
+  event.preventDefault();
+  const data = Object.fromEntries(new FormData(event.currentTarget));
+  const user = users.find((entry) => entry.email.toLowerCase() === data.email.trim().toLowerCase() && entry.password === data.password);
+  if (!user) {
+    $('#loginError').textContent = 'E-mail ou senha inválidos.';
+    return;
+  }
+  startSession(user);
+});
+
+document.querySelectorAll('[data-demo]').forEach((button) => button.addEventListener('click', () => {
+  const user = users.find((entry) => entry.role === button.dataset.demo);
+  if (!user) return;
+  $('#loginEmail').value = user.email;
+  $('#loginPassword').value = user.password;
+  $('#loginError').textContent = '';
+  $('#loginPassword').focus();
+}));
+
+$('#logoutButton').addEventListener('click', endSession);
+
 $('#todayLabel').textContent = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date());
-renderAll();
+normalizeState();
+const validSession = currentUser && users.some((user) => user.email === currentUser.email && user.role === currentUser.role);
+if (validSession) startSession(currentUser); else endSession();
