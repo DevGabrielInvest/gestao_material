@@ -1,0 +1,144 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: A
+        - generic [ref=e6]:
+          - strong [ref=e7]: Almox
+          - generic [ref=e8]: Gestão do escritório
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e359] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "2"
+        - button "Termos de posse" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Termos de posse
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - generic [ref=e39]:
+        - generic [ref=e40]: AM
+        - generic [ref=e41]:
+          - strong [ref=e42]: Administração
+          - generic [ref=e43]: Gestor do sistema
+    - main [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: Gestão interna
+          - generic [ref=e48]: /
+          - strong [ref=e49]: Termos de posse
+        - generic [ref=e50]:
+          - button "Notificações" [ref=e51] [cursor=pointer]:
+            - img [ref=e53]
+          - button "Solicitar item" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - text: Solicitar item
+      - generic [ref=e468]:
+        - generic [ref=e469]:
+          - generic [ref=e470]:
+            - paragraph [ref=e471]: PATRIMÔNIO
+            - heading "Termos de posse" [level=1] [ref=e472]
+            - paragraph [ref=e473]: Documente quem retirou, quando e a previsão de devolução.
+          - button "Registrar retirada" [ref=e474] [cursor=pointer]:
+            - img [ref=e476]
+            - text: Registrar retirada
+        - generic [ref=e478]:
+          - img [ref=e481]
+          - generic [ref=e484]:
+            - strong [ref=e485]: Registro de responsabilidade
+            - paragraph [ref=e486]: Cada retirada preserva o histórico do bem, responsável, datas e observações.
+          - generic [ref=e487]:
+            - generic [ref=e488]: Patrimônio em posse
+            - strong [ref=e489]: R$ 6.624,00
+        - generic [ref=e490]:
+          - generic [ref=e491]:
+            - img [ref=e493]
+            - searchbox [ref=e496]
+          - combobox [ref=e497]:
+            - option "Em posse" [selected]
+            - option "Devolvidos"
+            - option "Todos os registros"
+        - generic [ref=e498]:
+          - article [ref=e567]:
+            - generic [ref=e568]:
+              - img [ref=e570]
+              - generic [ref=e572]:
+                - heading "Webcam Logitech C920" [level=3] [ref=e573]
+                - text: PAT-038 · Administrativo
+              - generic [ref=e574]: Em posse
+            - generic [ref=e575]:
+              - generic [ref=e576]:
+                - generic [ref=e577]: Responsável
+                - strong [ref=e578]: Pessoa Teste
+              - generic [ref=e579]:
+                - generic [ref=e580]: Retirada
+                - strong [ref=e581]: 19/06/2026
+              - generic [ref=e582]:
+                - generic [ref=e583]: Devolver até
+                - strong [ref=e584]: 19/07/2026
+            - paragraph [ref=e585]: Equipamento entregue com cabo USB e sem avarias.
+            - generic [ref=e586]:
+              - generic [ref=e587]:
+                - text: "Valor registrado:"
+                - strong [ref=e588]: R$ 489,00
+              - button "Registrar devolução" [ref=e589] [cursor=pointer]
+          - article [ref=e590]:
+            - generic [ref=e591]:
+              - img [ref=e593]
+              - generic [ref=e595]:
+                - heading "Notebook Dell Latitude 5440" [level=3] [ref=e596]
+                - text: PAT-014 · Diretoria
+              - generic [ref=e597]: Em posse
+            - generic [ref=e598]:
+              - generic [ref=e599]:
+                - generic [ref=e600]: Responsável
+                - strong [ref=e601]: Renata Alves
+              - generic [ref=e602]:
+                - generic [ref=e603]: Retirada
+                - strong [ref=e604]: 03/06/2026
+              - generic [ref=e605]:
+                - generic [ref=e606]: Devolver até
+                - strong [ref=e607]: 03/07/2026
+            - paragraph [ref=e608]: Equipamento, carregador e mochila entregues em perfeito estado.
+            - generic [ref=e609]:
+              - generic [ref=e610]:
+                - text: "Valor registrado:"
+                - strong [ref=e611]: R$ 5.890,00
+              - button "Registrar devolução" [ref=e612] [cursor=pointer]
+          - article [ref=e613]:
+            - generic [ref=e614]:
+              - img [ref=e616]
+              - generic [ref=e618]:
+                - heading "Headset Logitech H390" [level=3] [ref=e619]
+                - text: PAT-032 · Atendimento
+              - generic [ref=e620]: Em posse
+            - generic [ref=e621]:
+              - generic [ref=e622]:
+                - generic [ref=e623]: Responsável
+                - strong [ref=e624]: Bruno Tavares
+              - generic [ref=e625]:
+                - generic [ref=e626]: Retirada
+                - strong [ref=e627]: 10/06/2026
+              - generic [ref=e628]:
+                - generic [ref=e629]: Devolver até
+                - strong [ref=e630]: 24/06/2026
+            - paragraph [ref=e631]: Uso em trabalho remoto.
+            - generic [ref=e632]:
+              - generic [ref=e633]:
+                - text: "Valor registrado:"
+                - strong [ref=e634]: R$ 245,00
+              - button "Registrar devolução" [ref=e635] [cursor=pointer]
+  - generic:
+    - generic:
+      - img
+    - generic: Termo de posse registrado.

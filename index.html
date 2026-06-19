@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#16382f" />
+    <title>Almox | Gestão de materiais</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%23173c32'/%3E%3Cpath d='M17 47 28 16h9l11 31h-9l-2-7H27l-2 7h-8Zm13-15h5l-2-8-3 8Z' fill='%23cce86e'/%3E%3C/svg%3E" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">A</div>
+          <div><strong>Almox</strong><span>Gestão do escritório</span></div>
+        </div>
+
+        <nav class="main-nav" aria-label="Navegação principal">
+          <button class="nav-item active" data-page="dashboard"><span data-icon="grid"></span>Visão geral</button>
+          <button class="nav-item" data-page="inventory"><span data-icon="box"></span>Materiais e equipamentos</button>
+          <button class="nav-item" data-page="requests"><span data-icon="clipboard"></span>Solicitações <b class="nav-count" id="requestNavCount">0</b></button>
+          <button class="nav-item" data-page="custody"><span data-icon="user-check"></span>Termos de posse</button>
+        </nav>
+
+        <div class="sidebar-note">
+          <span data-icon="shield"></span>
+          <div><strong>Patrimônio protegido</strong><p>Mantenha as retiradas de itens de valor sempre documentadas.</p></div>
+        </div>
+        <div class="user-card"><div class="avatar">AM</div><div><strong>Administração</strong><span>Gestor do sistema</span></div></div>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <button class="icon-button menu-toggle" id="menuToggle" aria-label="Abrir menu"><span data-icon="menu"></span></button>
+          <div class="breadcrumb"><span>Gestão interna</span><b>/</b><strong id="breadcrumbTitle">Visão geral</strong></div>
+          <div class="topbar-actions">
+            <button class="icon-button" id="notificationButton" aria-label="Notificações"><span data-icon="bell"></span><i id="notificationDot"></i></button>
+            <button class="button primary quick-request"><span data-icon="plus"></span>Solicitar item</button>
+          </div>
+        </header>
+
+        <section class="page active" id="dashboardPage">
+          <div class="page-heading hero-heading">
+            <div><p class="eyebrow">PAINEL OPERACIONAL</p><h1>Bom dia, Administração.</h1><p>Veja o que precisa da sua atenção hoje.</p></div>
+            <div class="date-chip"><span data-icon="calendar"></span><span id="todayLabel"></span></div>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card"><div class="stat-icon green"><span data-icon="package"></span></div><div><span>Itens cadastrados</span><strong id="statItems">0</strong><small id="statCategories">0 categorias</small></div></article>
+            <article class="stat-card"><div class="stat-icon amber"><span data-icon="alert"></span></div><div><span>Estoque baixo</span><strong id="statLowStock">0</strong><small>Precisam de reposição</small></div></article>
+            <article class="stat-card"><div class="stat-icon blue"><span data-icon="user-check"></span></div><div><span>Itens em posse</span><strong id="statCustody">0</strong><small id="statCustodyValue">R$ 0 sob responsabilidade</small></div></article>
+            <article class="stat-card"><div class="stat-icon coral"><span data-icon="clock"></span></div><div><span>Pedidos pendentes</span><strong id="statRequests">0</strong><small>Aguardando análise</small></div></article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel attention-panel">
+              <div class="panel-header"><div><p class="eyebrow">ATENÇÃO</p><h2>O que precisa ser resolvido</h2></div><button class="text-button" data-go="inventory">Ver inventário <span data-icon="arrow-right"></span></button></div>
+              <div id="attentionList" class="attention-list"></div>
+            </article>
+            <article class="panel activity-panel">
+              <div class="panel-header"><div><p class="eyebrow">MOVIMENTAÇÕES</p><h2>Atividade recente</h2></div></div>
+              <div id="activityList" class="timeline"></div>
+            </article>
+          </div>
+
+          <article class="panel custody-preview">
+            <div class="panel-header"><div><p class="eyebrow">RESPONSABILIDADE</p><h2>Equipamentos atualmente em posse</h2></div><button class="button secondary" data-go="custody">Ver todos</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Equipamento</th><th>Responsável</th><th>Retirada</th><th>Devolução prevista</th><th>Status</th></tr></thead><tbody id="custodyPreviewBody"></tbody></table></div>
+          </article>
+        </section>
+
+        <section class="page" id="inventoryPage">
+          <div class="page-heading"><div><p class="eyebrow">CONTROLE DE ESTOQUE</p><h1>Materiais e equipamentos</h1><p>Cadastre, localize e acompanhe tudo que o escritório possui.</p></div><button class="button primary" id="newItemButton"><span data-icon="plus"></span>Novo item</button></div>
+          <div class="toolbar panel"><label class="search-box"><span data-icon="search"></span><input id="inventorySearch" type="search" placeholder="Buscar por item, código ou local..." /></label><select id="inventoryCategory"><option value="all">Todas as categorias</option></select><select id="inventoryStatus"><option value="all">Todos os status</option><option value="available">Disponível</option><option value="low">Estoque baixo</option><option value="custody">Em posse</option></select></div>
+          <div class="inventory-layout"><div class="inventory-summary" id="inventorySummary"></div><article class="panel inventory-table-panel"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Local</th><th>Quantidade</th><th>Situação</th><th></th></tr></thead><tbody id="inventoryBody"></tbody></table></div><div class="empty-state" id="inventoryEmpty"><span data-icon="search"></span><h3>Nenhum item encontrado</h3><p>Tente ajustar os filtros da busca.</p></div></article></div>
+        </section>
+
+        <section class="page" id="requestsPage">
+          <div class="page-heading"><div><p class="eyebrow">PEDIDOS INTERNOS</p><h1>Solicitações</h1><p>Peça materiais e acompanhe a aprovação de cada pedido.</p></div><button class="button primary quick-request"><span data-icon="plus"></span>Nova solicitação</button></div>
+          <div class="request-tabs" id="requestTabs"><button class="active" data-filter="all">Todas <b id="allRequestCount">0</b></button><button data-filter="pending">Pendentes <b id="pendingRequestCount">0</b></button><button data-filter="approved">Aprovadas</button><button data-filter="delivered">Entregues</button></div>
+          <div class="requests-grid" id="requestsGrid"></div><div class="empty-state panel" id="requestsEmpty"><span data-icon="clipboard"></span><h3>Nenhuma solicitação aqui</h3><p>Os pedidos aparecerão nesta área.</p></div>
+        </section>
+
+        <section class="page" id="custodyPage">
+          <div class="page-heading"><div><p class="eyebrow">PATRIMÔNIO</p><h1>Termos de posse</h1><p>Documente quem retirou, quando e a previsão de devolução.</p></div><button class="button primary" id="newCustodyButton"><span data-icon="plus"></span>Registrar retirada</button></div>
+          <div class="custody-banner"><div class="banner-icon"><span data-icon="shield"></span></div><div><strong>Registro de responsabilidade</strong><p>Cada retirada preserva o histórico do bem, responsável, datas e observações.</p></div><div class="banner-value"><span>Patrimônio em posse</span><strong id="custodyTotalValue">R$ 0</strong></div></div>
+          <div class="toolbar panel"><label class="search-box"><span data-icon="search"></span><input id="custodySearch" type="search" placeholder="Buscar equipamento ou responsável..." /></label><select id="custodyStatus"><option value="active">Em posse</option><option value="returned">Devolvidos</option><option value="all">Todos os registros</option></select></div>
+          <div class="custody-cards" id="custodyCards"></div><div class="empty-state panel" id="custodyEmpty"><span data-icon="user-check"></span><h3>Nenhum termo encontrado</h3><p>Registre uma retirada para documentar a posse.</p></div>
+        </section>
+      </main>
+    </div>
+
+    <div class="modal-backdrop" id="modalBackdrop" aria-hidden="true">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-header"><div><p class="eyebrow" id="modalEyebrow"></p><h2 id="modalTitle"></h2></div><button class="icon-button" id="closeModal" aria-label="Fechar"><span data-icon="x"></span></button></div>
+        <form id="modalForm"><div class="modal-body" id="modalBody"></div><div class="modal-footer"><button type="button" class="button secondary" id="cancelModal">Cancelar</button><button type="submit" class="button primary" id="submitModal">Salvar</button></div></form>
+      </div>
+    </div>
+    <div class="toast" id="toast"><span data-icon="check"></span><span id="toastMessage"></span></div>
+    <script src="app.js"></script>
+  </body>
+</html>

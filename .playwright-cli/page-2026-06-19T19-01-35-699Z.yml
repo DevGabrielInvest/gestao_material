@@ -1,0 +1,178 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: A
+        - generic [ref=e6]:
+          - strong [ref=e7]: Almox
+          - generic [ref=e8]: Gestão do escritório
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e22] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "2"
+        - button "Termos de posse" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Termos de posse
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - generic [ref=e39]:
+        - generic [ref=e40]: AM
+        - generic [ref=e41]:
+          - strong [ref=e42]: Administração
+          - generic [ref=e43]: Gestor do sistema
+    - main [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: Gestão interna
+          - generic [ref=e48]: /
+          - strong [ref=e49]: Visão geral
+        - generic [ref=e50]:
+          - button "Notificações" [ref=e51] [cursor=pointer]:
+            - img [ref=e53]
+          - button "Solicitar item" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - text: Solicitar item
+      - generic [ref=e60]:
+        - generic [ref=e61]:
+          - generic [ref=e62]:
+            - paragraph [ref=e63]: PAINEL OPERACIONAL
+            - heading "Bom dia, Administração." [level=1] [ref=e64]
+            - paragraph [ref=e65]: Veja o que precisa da sua atenção hoje.
+          - generic [ref=e66]:
+            - img [ref=e68]
+            - generic [ref=e71]: sexta-feira, 19 de junho
+        - generic [ref=e72]:
+          - article [ref=e73]:
+            - img [ref=e76]
+            - generic [ref=e79]:
+              - generic [ref=e80]: Itens cadastrados
+              - strong [ref=e81]: "8"
+              - generic [ref=e82]: 4 categorias
+          - article [ref=e83]:
+            - img [ref=e86]
+            - generic [ref=e88]:
+              - generic [ref=e89]: Estoque baixo
+              - strong [ref=e90]: "4"
+              - generic [ref=e91]: Precisam de reposição
+          - article [ref=e92]:
+            - img [ref=e95]
+            - generic [ref=e98]:
+              - generic [ref=e99]: Itens em posse
+              - strong [ref=e100]: "2"
+              - generic [ref=e101]: R$ 6.135,00 sob responsabilidade
+          - article [ref=e102]:
+            - img [ref=e105]
+            - generic [ref=e108]:
+              - generic [ref=e109]: Pedidos pendentes
+              - strong [ref=e110]: "2"
+              - generic [ref=e111]: Aguardando análise
+        - generic [ref=e112]:
+          - article [ref=e113]:
+            - generic [ref=e114]:
+              - generic [ref=e115]:
+                - paragraph [ref=e116]: ATENÇÃO
+                - heading "O que precisa ser resolvido" [level=2] [ref=e117]
+              - button "Ver inventário" [ref=e118] [cursor=pointer]:
+                - text: Ver inventário
+                - img [ref=e120]
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - generic [ref=e124]: "!"
+                - generic [ref=e125]:
+                  - strong [ref=e126]: Papel A4
+                  - generic [ref=e127]: "Restam 3 un. · Mínimo recomendado: 5"
+                - generic [ref=e128]: Estoque baixo
+              - generic [ref=e129]:
+                - generic [ref=e130]: "!"
+                - generic [ref=e131]:
+                  - strong [ref=e132]: Notebook Dell Latitude 5440
+                  - generic [ref=e133]: "Restam 1 un. · Mínimo recomendado: 1"
+                - generic [ref=e134]: Estoque baixo
+              - generic [ref=e135]:
+                - generic [ref=e136]: "!"
+                - generic [ref=e137]:
+                  - strong [ref=e138]: Toner HP 58A
+                  - generic [ref=e139]: "Restam 1 un. · Mínimo recomendado: 2"
+                - generic [ref=e140]: Estoque baixo
+              - generic [ref=e141]:
+                - generic [ref=e142]: "!"
+                - generic [ref=e143]:
+                  - strong [ref=e144]: Headset Logitech H390
+                  - generic [ref=e145]: "Restam 1 un. · Mínimo recomendado: 1"
+                - generic [ref=e146]: Estoque baixo
+          - article [ref=e147]:
+            - generic [ref=e149]:
+              - paragraph [ref=e150]: MOVIMENTAÇÕES
+              - heading "Atividade recente" [level=2] [ref=e151]
+            - generic [ref=e152]:
+              - generic [ref=e153]:
+                - strong [ref=e155]: Nova solicitação criada
+                - paragraph [ref=e156]: Carlos pediu 2 unidades de Toner HP 58A
+                - time [ref=e157]: 19/06/2026 às 09:20
+              - generic [ref=e158]:
+                - strong [ref=e160]: Material entregue
+                - paragraph [ref=e161]: Mouse sem fio entregue para Ana Ribeiro
+                - time [ref=e162]: 18/06/2026 às 16:15
+              - generic [ref=e163]:
+                - strong [ref=e165]: Retirada registrada
+                - paragraph [ref=e166]: Headset entregue para Bruno Tavares
+                - time [ref=e167]: 10/06/2026 às 10:30
+        - article [ref=e168]:
+          - generic [ref=e169]:
+            - generic [ref=e170]:
+              - paragraph [ref=e171]: RESPONSABILIDADE
+              - heading "Equipamentos atualmente em posse" [level=2] [ref=e172]
+            - button "Ver todos" [ref=e173] [cursor=pointer]
+          - table [ref=e175]:
+            - rowgroup [ref=e176]:
+              - row "Equipamento Responsável Retirada Devolução prevista Status" [ref=e177]:
+                - columnheader "Equipamento" [ref=e178]
+                - columnheader "Responsável" [ref=e179]
+                - columnheader "Retirada" [ref=e180]
+                - columnheader "Devolução prevista" [ref=e181]
+                - columnheader "Status" [ref=e182]
+            - rowgroup [ref=e183]:
+              - row "N Notebook Dell Latitude 5440 PAT-014 RA Renata Alves 03/06/2026 03/07/2026 Em posse" [ref=e184]:
+                - cell "N Notebook Dell Latitude 5440 PAT-014" [ref=e185]:
+                  - generic [ref=e186]:
+                    - generic [ref=e187]: "N"
+                    - generic [ref=e188]:
+                      - strong [ref=e189]: Notebook Dell Latitude 5440
+                      - generic [ref=e190]: PAT-014
+                - cell "RA Renata Alves" [ref=e191]:
+                  - generic [ref=e192]:
+                    - generic [ref=e193]: RA
+                    - text: Renata Alves
+                - cell "03/06/2026" [ref=e194]
+                - cell "03/07/2026" [ref=e195]
+                - cell "Em posse" [ref=e196]:
+                  - generic [ref=e197]: Em posse
+              - row "H Headset Logitech H390 PAT-032 BT Bruno Tavares 10/06/2026 24/06/2026 Em posse" [ref=e198]:
+                - cell "H Headset Logitech H390 PAT-032" [ref=e199]:
+                  - generic [ref=e200]:
+                    - generic [ref=e201]: H
+                    - generic [ref=e202]:
+                      - strong [ref=e203]: Headset Logitech H390
+                      - generic [ref=e204]: PAT-032
+                - cell "BT Bruno Tavares" [ref=e205]:
+                  - generic [ref=e206]:
+                    - generic [ref=e207]: BT
+                    - text: Bruno Tavares
+                - cell "10/06/2026" [ref=e208]
+                - cell "24/06/2026" [ref=e209]
+                - cell "Em posse" [ref=e210]:
+                  - generic [ref=e211]: Em posse
+  - generic:
+    - generic:
+      - img

@@ -1,0 +1,160 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: A
+        - generic [ref=e6]:
+          - strong [ref=e7]: Almox
+          - generic [ref=e8]: Gestão do escritório
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e359] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "2"
+        - button "Termos de posse" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Termos de posse
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - generic [ref=e39]:
+        - generic [ref=e40]: AM
+        - generic [ref=e41]:
+          - strong [ref=e42]: Administração
+          - generic [ref=e43]: Gestor do sistema
+    - main [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: Gestão interna
+          - generic [ref=e48]: /
+          - strong [ref=e49]: Termos de posse
+        - generic [ref=e50]:
+          - button "Notificações" [ref=e51] [cursor=pointer]:
+            - img [ref=e53]
+          - button "Solicitar item" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - text: Solicitar item
+      - generic [ref=e468]:
+        - generic [ref=e469]:
+          - generic [ref=e470]:
+            - paragraph [ref=e471]: PATRIMÔNIO
+            - heading "Termos de posse" [level=1] [ref=e472]
+            - paragraph [ref=e473]: Documente quem retirou, quando e a previsão de devolução.
+          - button "Registrar retirada" [ref=e474] [cursor=pointer]:
+            - img [ref=e476]
+            - text: Registrar retirada
+        - generic [ref=e478]:
+          - img [ref=e481]
+          - generic [ref=e484]:
+            - strong [ref=e485]: Registro de responsabilidade
+            - paragraph [ref=e486]: Cada retirada preserva o histórico do bem, responsável, datas e observações.
+          - generic [ref=e487]:
+            - generic [ref=e488]: Patrimônio em posse
+            - strong [ref=e489]: R$ 6.135,00
+        - generic [ref=e490]:
+          - generic [ref=e491]:
+            - img [ref=e493]
+            - searchbox [ref=e496]
+          - combobox [ref=e497]:
+            - option "Em posse" [selected]
+            - option "Devolvidos"
+            - option "Todos os registros"
+        - generic [ref=e498]:
+          - article [ref=e499]:
+            - generic [ref=e500]:
+              - img [ref=e502]
+              - generic [ref=e504]:
+                - heading "Notebook Dell Latitude 5440" [level=3] [ref=e505]
+                - text: PAT-014 · Diretoria
+              - generic [ref=e506]: Em posse
+            - generic [ref=e507]:
+              - generic [ref=e508]:
+                - generic [ref=e509]: Responsável
+                - strong [ref=e510]: Renata Alves
+              - generic [ref=e511]:
+                - generic [ref=e512]: Retirada
+                - strong [ref=e513]: 03/06/2026
+              - generic [ref=e514]:
+                - generic [ref=e515]: Devolver até
+                - strong [ref=e516]: 03/07/2026
+            - paragraph [ref=e517]: Equipamento, carregador e mochila entregues em perfeito estado.
+            - generic [ref=e518]:
+              - generic [ref=e519]:
+                - text: "Valor registrado:"
+                - strong [ref=e520]: R$ 5.890,00
+              - button "Registrar devolução" [ref=e521] [cursor=pointer]
+          - article [ref=e522]:
+            - generic [ref=e523]:
+              - img [ref=e525]
+              - generic [ref=e527]:
+                - heading "Headset Logitech H390" [level=3] [ref=e528]
+                - text: PAT-032 · Atendimento
+              - generic [ref=e529]: Em posse
+            - generic [ref=e530]:
+              - generic [ref=e531]:
+                - generic [ref=e532]: Responsável
+                - strong [ref=e533]: Bruno Tavares
+              - generic [ref=e534]:
+                - generic [ref=e535]: Retirada
+                - strong [ref=e536]: 10/06/2026
+              - generic [ref=e537]:
+                - generic [ref=e538]: Devolver até
+                - strong [ref=e539]: 24/06/2026
+            - paragraph [ref=e540]: Uso em trabalho remoto.
+            - generic [ref=e541]:
+              - generic [ref=e542]:
+                - text: "Valor registrado:"
+                - strong [ref=e543]: R$ 245,00
+              - button "Registrar devolução" [ref=e544] [cursor=pointer]
+  - dialog "Registrar retirada de equipamento" [ref=e545]:
+    - generic [ref=e202]:
+      - generic [ref=e203]:
+        - paragraph [ref=e204]: RESPONSABILIDADE
+        - heading "Registrar retirada de equipamento" [level=2] [ref=e546]
+      - button "Fechar" [ref=e206] [cursor=pointer]:
+        - img [ref=e208]
+    - generic [ref=e210]:
+      - generic [ref=e547]:
+        - generic [ref=e548]:
+          - generic [ref=e549]: Equipamento *
+          - combobox "Equipamento *" [active] [ref=e550]:
+            - option "Selecione o bem"
+            - option "Monitor LG 24 polegadas · PAT-021"
+            - option "Webcam Logitech C920 · PAT-038" [selected]
+        - generic [ref=e551]:
+          - generic [ref=e552]: Responsável *
+          - textbox "Responsável *" [ref=e553]:
+            - /placeholder: Nome completo
+            - text: Pessoa Teste
+        - generic [ref=e554]:
+          - generic [ref=e555]: Setor *
+          - textbox "Setor *" [ref=e556]:
+            - /placeholder: "Ex.: Diretoria"
+            - text: Administrativo
+        - generic [ref=e557]:
+          - generic [ref=e558]: Data da retirada *
+          - textbox "Data da retirada *" [ref=e559]: 2026-06-19
+        - generic [ref=e560]:
+          - generic [ref=e561]: Previsão de devolução *
+          - textbox "Previsão de devolução *" [ref=e562]: 2026-07-19
+        - generic [ref=e563]:
+          - generic [ref=e564]: Estado e observações
+          - textbox "Estado e observações" [ref=e565]:
+            - /placeholder: Acessórios entregues, estado de conservação e finalidade.
+            - text: Equipamento entregue com cabo USB e sem avarias.
+      - generic [ref=e231]:
+        - button "Cancelar" [ref=e232] [cursor=pointer]
+        - button "Registrar retirada" [ref=e566] [cursor=pointer]
+  - generic:
+    - generic:
+      - img
+    - generic: Solicitação aprovada

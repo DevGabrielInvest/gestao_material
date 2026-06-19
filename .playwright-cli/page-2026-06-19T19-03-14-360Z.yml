@@ -1,0 +1,117 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: A
+        - generic [ref=e6]:
+          - strong [ref=e7]: Almox
+          - generic [ref=e8]: Gestão do escritório
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e359] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "2"
+        - button "Termos de posse" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Termos de posse
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - generic [ref=e39]:
+        - generic [ref=e40]: AM
+        - generic [ref=e41]:
+          - strong [ref=e42]: Administração
+          - generic [ref=e43]: Gestor do sistema
+    - main [ref=e44]:
+      - generic [ref=e45]:
+        - button "Abrir menu" [active] [ref=e682] [cursor=pointer]:
+          - img [ref=e684]
+        - strong [ref=e49]: Termos de posse
+        - generic [ref=e50]:
+          - button "Notificações" [ref=e51] [cursor=pointer]:
+            - img [ref=e53]
+          - button "Solicitar item" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - text: Solicitar item
+      - generic [ref=e468]:
+        - generic [ref=e469]:
+          - generic [ref=e470]:
+            - paragraph [ref=e471]: PATRIMÔNIO
+            - heading "Termos de posse" [level=1] [ref=e472]
+            - paragraph [ref=e473]: Documente quem retirou, quando e a previsão de devolução.
+          - button "Registrar retirada" [ref=e474] [cursor=pointer]:
+            - img [ref=e476]
+            - text: Registrar retirada
+        - generic [ref=e478]:
+          - img [ref=e481]
+          - generic [ref=e484]:
+            - strong [ref=e485]: Registro de responsabilidade
+            - paragraph [ref=e486]: Cada retirada preserva o histórico do bem, responsável, datas e observações.
+        - generic [ref=e490]:
+          - generic [ref=e491]:
+            - img [ref=e493]
+            - searchbox [ref=e496]
+          - combobox [ref=e497]:
+            - option "Em posse" [selected]
+            - option "Devolvidos"
+            - option "Todos os registros"
+        - generic [ref=e498]:
+          - article [ref=e636]:
+            - generic [ref=e637]:
+              - img [ref=e639]
+              - generic [ref=e641]:
+                - heading "Notebook Dell Latitude 5440" [level=3] [ref=e642]
+                - text: PAT-014 · Diretoria
+              - generic [ref=e643]: Em posse
+            - generic [ref=e644]:
+              - generic [ref=e645]:
+                - generic [ref=e646]: Responsável
+                - strong [ref=e647]: Renata Alves
+              - generic [ref=e648]:
+                - generic [ref=e649]: Retirada
+                - strong [ref=e650]: 03/06/2026
+              - generic [ref=e651]:
+                - generic [ref=e652]: Devolver até
+                - strong [ref=e653]: 03/07/2026
+            - paragraph [ref=e654]: Equipamento, carregador e mochila entregues em perfeito estado.
+            - generic [ref=e655]:
+              - generic [ref=e656]:
+                - text: "Valor registrado:"
+                - strong [ref=e657]: R$ 5.890,00
+              - button "Registrar devolução" [ref=e658] [cursor=pointer]
+          - article [ref=e659]:
+            - generic [ref=e660]:
+              - img [ref=e662]
+              - generic [ref=e664]:
+                - heading "Headset Logitech H390" [level=3] [ref=e665]
+                - text: PAT-032 · Atendimento
+              - generic [ref=e666]: Em posse
+            - generic [ref=e667]:
+              - generic [ref=e668]:
+                - generic [ref=e669]: Responsável
+                - strong [ref=e670]: Bruno Tavares
+              - generic [ref=e671]:
+                - generic [ref=e672]: Retirada
+                - strong [ref=e673]: 10/06/2026
+              - generic [ref=e674]:
+                - generic [ref=e675]: Devolver até
+                - strong [ref=e676]: 24/06/2026
+            - paragraph [ref=e677]: Uso em trabalho remoto.
+            - generic [ref=e678]:
+              - generic [ref=e679]:
+                - text: "Valor registrado:"
+                - strong [ref=e680]: R$ 245,00
+              - button "Registrar devolução" [ref=e681] [cursor=pointer]
+  - generic:
+    - generic:
+      - img
+    - generic: Devolução registrada no histórico.

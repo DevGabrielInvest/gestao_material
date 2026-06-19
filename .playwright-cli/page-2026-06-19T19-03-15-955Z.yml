@@ -1,0 +1,162 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: A
+        - generic [ref=e6]:
+          - strong [ref=e7]: Almox
+          - generic [ref=e8]: Gestão do escritório
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [active] [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e359] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "2"
+        - button "Termos de posse" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Termos de posse
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - generic [ref=e39]:
+        - generic [ref=e40]: AM
+        - generic [ref=e41]:
+          - strong [ref=e42]: Administração
+          - generic [ref=e43]: Gestor do sistema
+    - main [ref=e44]:
+      - generic [ref=e45]:
+        - button "Abrir menu" [ref=e682] [cursor=pointer]:
+          - img [ref=e684]
+        - strong [ref=e49]: Visão geral
+        - generic [ref=e50]:
+          - button "Notificações" [ref=e51] [cursor=pointer]:
+            - img [ref=e53]
+          - button "Solicitar item" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - text: Solicitar item
+      - generic [ref=e60]:
+        - generic [ref=e62]:
+          - paragraph [ref=e63]: PAINEL OPERACIONAL
+          - heading "Bom dia, Administração." [level=1] [ref=e64]
+          - paragraph [ref=e65]: Veja o que precisa da sua atenção hoje.
+        - generic [ref=e72]:
+          - article [ref=e73]:
+            - img [ref=e76]
+            - generic [ref=e79]:
+              - generic [ref=e80]: Itens cadastrados
+              - strong [ref=e81]: "8"
+          - article [ref=e83]:
+            - img [ref=e86]
+            - generic [ref=e88]:
+              - generic [ref=e89]: Estoque baixo
+              - strong [ref=e90]: "2"
+          - article [ref=e92]:
+            - img [ref=e95]
+            - generic [ref=e98]:
+              - generic [ref=e99]: Itens em posse
+              - strong [ref=e100]: "2"
+          - article [ref=e102]:
+            - img [ref=e105]
+            - generic [ref=e108]:
+              - generic [ref=e109]: Pedidos pendentes
+              - strong [ref=e110]: "2"
+        - generic [ref=e112]:
+          - article [ref=e113]:
+            - generic [ref=e114]:
+              - generic [ref=e115]:
+                - paragraph [ref=e116]: ATENÇÃO
+                - heading "O que precisa ser resolvido" [level=2] [ref=e117]
+              - button "Ver inventário" [ref=e118] [cursor=pointer]:
+                - text: Ver inventário
+                - img [ref=e120]
+            - generic [ref=e122]:
+              - generic [ref=e686]:
+                - generic [ref=e687]: "!"
+                - generic [ref=e688]:
+                  - strong [ref=e689]: Papel A4
+                  - generic [ref=e690]: "Restam 3 un. · Mínimo recomendado: 5"
+                - generic [ref=e691]: Estoque baixo
+              - generic [ref=e692]:
+                - generic [ref=e693]: "!"
+                - generic [ref=e694]:
+                  - strong [ref=e695]: Toner HP 58A
+                  - generic [ref=e696]: "Restam 1 un. · Mínimo recomendado: 2"
+                - generic [ref=e697]: Estoque baixo
+          - article [ref=e135]:
+            - generic [ref=e137]:
+              - paragraph [ref=e138]: MOVIMENTAÇÕES
+              - heading "Atividade recente" [level=2] [ref=e139]
+            - generic [ref=e140]:
+              - generic [ref=e698]:
+                - strong [ref=e700]: Equipamento devolvido
+                - paragraph [ref=e701]: Webcam Logitech C920 devolvido por Pessoa Teste
+                - time [ref=e702]: 19/06/2026 às 16:02
+              - generic [ref=e703]:
+                - strong [ref=e705]: Retirada registrada
+                - paragraph [ref=e706]: Webcam Logitech C920 entregue para Pessoa Teste
+                - time [ref=e707]: 19/06/2026 às 16:02
+              - generic [ref=e708]:
+                - strong [ref=e710]: Solicitação aprovada
+                - paragraph [ref=e711]: Webcam Logitech C920 · Teste Operacional
+                - time [ref=e712]: 19/06/2026 às 16:02
+              - generic [ref=e713]:
+                - strong [ref=e715]: Nova solicitação criada
+                - paragraph [ref=e716]: Teste Operacional pediu 2 unidade(s) de Webcam Logitech C920
+                - time [ref=e717]: 19/06/2026 às 16:02
+        - article [ref=e156]:
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - paragraph [ref=e159]: RESPONSABILIDADE
+              - heading "Equipamentos atualmente em posse" [level=2] [ref=e160]
+            - button "Ver todos" [ref=e161] [cursor=pointer]
+          - table [ref=e163]:
+            - rowgroup [ref=e164]:
+              - row "Equipamento Responsável Retirada Devolução prevista Status" [ref=e165]:
+                - columnheader "Equipamento" [ref=e166]
+                - columnheader "Responsável" [ref=e167]
+                - columnheader "Retirada" [ref=e168]
+                - columnheader "Devolução prevista" [ref=e169]
+                - columnheader "Status" [ref=e170]
+            - rowgroup [ref=e171]:
+              - row "N Notebook Dell Latitude 5440 PAT-014 RA Renata Alves 03/06/2026 03/07/2026 Em posse" [ref=e718]:
+                - cell "N Notebook Dell Latitude 5440 PAT-014" [ref=e719]:
+                  - generic [ref=e720]:
+                    - generic [ref=e721]: "N"
+                    - generic [ref=e722]:
+                      - strong [ref=e723]: Notebook Dell Latitude 5440
+                      - generic [ref=e724]: PAT-014
+                - cell "RA Renata Alves" [ref=e725]:
+                  - generic [ref=e726]:
+                    - generic [ref=e727]: RA
+                    - text: Renata Alves
+                - cell "03/06/2026" [ref=e728]
+                - cell "03/07/2026" [ref=e729]
+                - cell "Em posse" [ref=e730]:
+                  - generic [ref=e731]: Em posse
+              - row "H Headset Logitech H390 PAT-032 BT Bruno Tavares 10/06/2026 24/06/2026 Em posse" [ref=e732]:
+                - cell "H Headset Logitech H390 PAT-032" [ref=e733]:
+                  - generic [ref=e734]:
+                    - generic [ref=e735]: H
+                    - generic [ref=e736]:
+                      - strong [ref=e737]: Headset Logitech H390
+                      - generic [ref=e738]: PAT-032
+                - cell "BT Bruno Tavares" [ref=e739]:
+                  - generic [ref=e740]:
+                    - generic [ref=e741]: BT
+                    - text: Bruno Tavares
+                - cell "10/06/2026" [ref=e742]
+                - cell "24/06/2026" [ref=e743]
+                - cell "Em posse" [ref=e744]:
+                  - generic [ref=e745]: Em posse
+  - generic:
+    - generic:
+      - img
+    - generic: Devolução registrada no histórico.

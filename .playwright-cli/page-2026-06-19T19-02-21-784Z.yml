@@ -1,0 +1,168 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: A
+        - generic [ref=e6]:
+          - strong [ref=e7]: Almox
+          - generic [ref=e8]: Gestão do escritório
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e359] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "2"
+        - button "Termos de posse" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Termos de posse
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - generic [ref=e39]:
+        - generic [ref=e40]: AM
+        - generic [ref=e41]:
+          - strong [ref=e42]: Administração
+          - generic [ref=e43]: Gestor do sistema
+    - main [ref=e44]:
+      - generic [ref=e45]:
+        - generic [ref=e46]:
+          - generic [ref=e47]: Gestão interna
+          - generic [ref=e48]: /
+          - strong [ref=e49]: Solicitações
+        - generic [ref=e50]:
+          - button "Notificações" [ref=e51] [cursor=pointer]:
+            - img [ref=e53]
+          - button "Solicitar item" [ref=e56] [cursor=pointer]:
+            - img [ref=e58]
+            - text: Solicitar item
+      - generic [ref=e235]:
+        - generic [ref=e236]:
+          - generic [ref=e237]:
+            - paragraph [ref=e238]: PEDIDOS INTERNOS
+            - heading "Solicitações" [level=1] [ref=e239]
+            - paragraph [ref=e240]: Peça materiais e acompanhe a aprovação de cada pedido.
+          - button "Nova solicitação" [ref=e241] [cursor=pointer]:
+            - img [ref=e243]
+            - text: Nova solicitação
+        - generic [ref=e245]:
+          - button "Todas 5" [ref=e246] [cursor=pointer]
+          - button "Pendentes 2" [ref=e360] [cursor=pointer]
+          - button "Aprovadas" [ref=e248] [cursor=pointer]
+          - button "Entregues" [ref=e249] [cursor=pointer]
+        - generic [ref=e250]:
+          - article [ref=e361]:
+            - generic [ref=e362]:
+              - generic [ref=e363]: SOL-1781895735350
+              - generic [ref=e364]: Aprovada
+            - heading "Webcam Logitech C920" [level=3] [ref=e365]
+            - paragraph [ref=e366]: Teste completo do fluxo de solicitação.
+            - generic [ref=e367]:
+              - generic [ref=e368]:
+                - generic [ref=e369]: Solicitante
+                - strong [ref=e370]: Teste Operacional
+              - generic [ref=e371]:
+                - generic [ref=e372]: Quantidade
+                - strong [ref=e373]: 2 unidade(s)
+              - generic [ref=e374]:
+                - generic [ref=e375]: Setor
+                - strong [ref=e376]: Administrativo
+              - generic [ref=e377]:
+                - generic [ref=e378]: Prioridade
+                - strong [ref=e379]: Normal
+            - button "Marcar como entregue" [ref=e381] [cursor=pointer]
+          - article [ref=e382]:
+            - generic [ref=e383]:
+              - generic [ref=e384]: SOL-0101
+              - generic [ref=e385]: Pendente
+            - heading "Cadeira ergonômica" [level=3] [ref=e386]
+            - paragraph [ref=e387]: Substituição de cadeira com encosto danificado.
+            - generic [ref=e388]:
+              - generic [ref=e389]:
+                - generic [ref=e390]: Solicitante
+                - strong [ref=e391]: Marina Costa
+              - generic [ref=e392]:
+                - generic [ref=e393]: Quantidade
+                - strong [ref=e394]: 1 unidade(s)
+              - generic [ref=e395]:
+                - generic [ref=e396]: Setor
+                - strong [ref=e397]: Financeiro
+              - generic [ref=e398]:
+                - generic [ref=e399]: Prioridade
+                - strong [ref=e400]: Alta
+            - generic [ref=e401]:
+              - button "Aprovar" [ref=e402] [cursor=pointer]
+              - button "Recusar" [ref=e403] [cursor=pointer]
+          - article [ref=e404]:
+            - generic [ref=e405]:
+              - generic [ref=e406]: SOL-0102
+              - generic [ref=e407]: Aprovada
+            - heading "Papel A4" [level=3] [ref=e408]
+            - paragraph [ref=e409]: Reposição para impressões da equipe.
+            - generic [ref=e410]:
+              - generic [ref=e411]:
+                - generic [ref=e412]: Solicitante
+                - strong [ref=e413]: Lucas Mendes
+              - generic [ref=e414]:
+                - generic [ref=e415]: Quantidade
+                - strong [ref=e416]: 5 unidade(s)
+              - generic [ref=e417]:
+                - generic [ref=e418]: Setor
+                - strong [ref=e419]: Jurídico
+              - generic [ref=e420]:
+                - generic [ref=e421]: Prioridade
+                - strong [ref=e422]: Normal
+            - button "Marcar como entregue" [ref=e424] [cursor=pointer]
+          - article [ref=e425]:
+            - generic [ref=e426]:
+              - generic [ref=e427]: SOL-0103
+              - generic [ref=e428]: Entregue
+            - heading "Mouse sem fio" [level=3] [ref=e429]
+            - paragraph [ref=e430]: Novo posto de trabalho.
+            - generic [ref=e431]:
+              - generic [ref=e432]:
+                - generic [ref=e433]: Solicitante
+                - strong [ref=e434]: Ana Ribeiro
+              - generic [ref=e435]:
+                - generic [ref=e436]: Quantidade
+                - strong [ref=e437]: 1 unidade(s)
+              - generic [ref=e438]:
+                - generic [ref=e439]: Setor
+                - strong [ref=e440]: Comercial
+              - generic [ref=e441]:
+                - generic [ref=e442]: Prioridade
+                - strong [ref=e443]: Normal
+            - generic [ref=e445]: Solicitado em 16/06/2026
+          - article [ref=e446]:
+            - generic [ref=e447]:
+              - generic [ref=e448]: SOL-0104
+              - generic [ref=e449]: Pendente
+            - heading "Toner HP 58A" [level=3] [ref=e450]
+            - paragraph [ref=e451]: Estoque de segurança para a impressora central.
+            - generic [ref=e452]:
+              - generic [ref=e453]:
+                - generic [ref=e454]: Solicitante
+                - strong [ref=e455]: Carlos Lima
+              - generic [ref=e456]:
+                - generic [ref=e457]: Quantidade
+                - strong [ref=e458]: 2 unidade(s)
+              - generic [ref=e459]:
+                - generic [ref=e460]: Setor
+                - strong [ref=e461]: Administrativo
+              - generic [ref=e462]:
+                - generic [ref=e463]: Prioridade
+                - strong [ref=e464]: Alta
+            - generic [ref=e465]:
+              - button "Aprovar" [ref=e466] [cursor=pointer]
+              - button "Recusar" [ref=e467] [cursor=pointer]
+  - generic:
+    - generic:
+      - img
+    - generic: Solicitação aprovada
