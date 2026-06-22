@@ -1,3 +1,11 @@
+@font-face { font-family: "Mulish"; src: url("Fontes-20260622T162940Z-3-001/Fontes/Mulish-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Mulish"; src: url("Fontes-20260622T162940Z-3-001/Fontes/Mulish-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Mulish"; src: url("Fontes-20260622T162940Z-3-001/Fontes/Mulish-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Sora"; src: url("Fontes-20260622T162940Z-3-001/Fontes/Sora-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Sora"; src: url("Fontes-20260622T162940Z-3-001/Fontes/Sora-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+@font-face { font-family: "Sora"; src: url("Fontes-20260622T162940Z-3-001/Fontes/Sora-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+@font-face { font-family: "Playfair Display"; src: url("Fontes-20260622T162940Z-3-001/Fontes/PlayfairDisplay-Regular.ttf") format("truetype"); font-weight: 400 800; font-display: swap; }
+
 :root {
   --ink: #ffffff;
   --muted: rgba(255, 255, 255, 0.6);
@@ -20,7 +28,7 @@
 
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
-body { margin: 0; color: var(--ink); background: var(--canvas); font-family: "Poppins", sans-serif; }
+body { margin: 0; color: var(--ink); background: var(--canvas); font-family: "Mulish", sans-serif; }
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 .app-shell { min-height: 100vh; }
@@ -242,3 +250,34 @@ td { border-color: rgba(219,164,81,.1); }
 
 @media (max-width: 850px) { .login-screen { grid-template-columns: 1fr; }.login-brand-panel { min-height: 300px; padding: 38px 30px; }.login-brand-panel h1 { font-size: 39px; }.login-brand-panel p:not(.eyebrow) { display: none; }.login-form-panel { padding: 28px 18px; }.login-card { padding: 28px; } }
 @media (max-width: 520px) { .login-brand-panel { min-height: 250px; }.login-brand-panel h1 { font-size: 32px; }.login-monogram { width: 48px; height: 48px; }.demo-access { grid-template-columns: 1fr 1fr; } }
+
+.movement-stats, .report-kpis { margin-bottom: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.movement-stats article, .report-kpis article { position: relative; overflow: hidden; padding: 18px 20px; border: 1px solid rgba(219,164,81,.2); border-radius: 7px; background: linear-gradient(145deg, rgba(255,255,255,.045), rgba(255,255,255,.018)); }
+.movement-stats span, .report-kpis span { display: block; color: var(--muted); font-size: 10px; }.movement-stats strong, .report-kpis strong { display: block; margin: 5px 0 2px; color: #F5B458; font: 700 22px "Sora", sans-serif; }.movement-stats small { color: rgba(255,255,255,.35); font-size: 9px; }
+.movement-table-panel { padding: 4px 14px; }.movement-type { display: inline-flex; padding: 5px 8px; border-radius: 2px; font-size: 9px; font-weight: 700; text-transform: uppercase; }.movement-type.entry { color: #F5B458; background: rgba(219,164,81,.12); }.movement-type.exit { color: #e68b79; background: rgba(216,98,78,.12); }.movement-quantity.entry { color: #F5B458; }.movement-quantity.exit { color: #e68b79; }
+.custody-actions { display: flex; align-items: center; gap: 7px; }.custody-actions svg { width: 14px; }
+.notification-list { display: grid; gap: 8px; }.notification-item { width: 100%; padding: 13px; border: 1px solid rgba(219,164,81,.15); border-radius: 4px; color: white; background: rgba(255,255,255,.025); display: flex; align-items: center; gap: 12px; text-align: left; }.notification-item:hover { border-color: rgba(219,164,81,.48); background: rgba(219,164,81,.06); }.notification-symbol { width: 34px; height: 34px; flex: 0 0 auto; border-radius: 3px; color: #DBA451; background: rgba(219,164,81,.12); display: grid; place-items: center; font-weight: 700; }.notification-symbol.overdue { color: #e68b79; background: rgba(216,98,78,.12); }.notification-item > div { min-width: 0; flex: 1; }.notification-item strong { display: block; font-size: 11px; }.notification-item p { margin: 3px 0 0; color: var(--muted); font-size: 9px; }.notification-item b { color: #DBA451; font-size: 8px; text-transform: uppercase; }
+.attention-item .item-symbol.pending { color: #DBA451; background: rgba(219,164,81,.12); }
+.report-kpis { grid-template-columns: repeat(4, 1fr); }.reports-grid { margin-bottom: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }.report-panel, .report-table-panel { padding: 22px; }.report-list { margin-top: 20px; display: grid; gap: 15px; }.report-row > div { display: flex; justify-content: space-between; gap: 12px; }.report-row strong { font-size: 10px; }.report-row span { color: var(--muted); font-size: 9px; }.report-row i { height: 4px; margin-top: 7px; overflow: hidden; border-radius: 99px; background: rgba(255,255,255,.06); display: block; }.report-row i b { height: 100%; border-radius: 99px; background: linear-gradient(90deg, #8f642b, #F5B458); display: block; }.report-table-panel td:first-child strong, .report-table-panel td:first-child small { display: block; }.report-table-panel td:first-child small { margin-top: 2px; color: var(--muted); font-size: 9px; }
+
+@media (max-width: 1100px) { .report-kpis { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 780px) { .movement-stats { grid-template-columns: 1fr 1fr 1fr; }.reports-grid { grid-template-columns: 1fr; }.custody-card-footer { align-items: flex-start; flex-direction: column; }.custody-actions { width: 100%; flex-wrap: wrap; } }
+@media (max-width: 520px) { .movement-stats { grid-template-columns: 1fr; }.report-kpis { grid-template-columns: 1fr 1fr; }.movement-stats article, .report-kpis article { padding: 14px; }.report-kpis strong { font-size: 16px; }.notification-item b { display: none; }.custody-actions .button { flex: 1; } }
+
+/* Identidade visual oficial - Daniel Frederighi Advogados Associados */
+.brand { min-height: 74px; padding: 0 6px 30px; align-items: center; }
+.brand img { display: block; width: 100%; height: auto; object-fit: contain; }
+.login-logo { position: relative; z-index: 1; display: block; width: min(520px, 82%); height: auto; object-fit: contain; }
+.nav-item, .page-heading > div > p:last-child, .eyebrow, th { font-family: "Mulish", sans-serif; }
+.page-heading h1, .panel-header h2, .empty-state h3, .request-card h3, .custody-card h3,
+.login-brand-panel h1, .login-card h2, .modal-header h2 { font-family: "Playfair Display", serif; font-weight: 400; }
+.button, .stat-card strong, .summary-card strong, .banner-value strong,
+.movement-stats strong, .report-kpis strong, .request-tabs button { font-family: "Sora", sans-serif; }
+.login-brand-panel::before { content: ""; right: -8%; bottom: -10%; width: 58%; height: 58%; opacity: .1; background: url("logo DF nova.png") right bottom / contain no-repeat; }
+.login-brand-panel { background: linear-gradient(135deg, #0b0b0b 0%, #17130d 62%, #7e5d20 150%); }
+.sidebar { background: linear-gradient(180deg, #090909 0%, #111 66%, #1a140b 100%); }
+.topbar { background: rgba(12, 12, 12, .9); }
+
+@media (max-width: 850px) {
+  .login-logo { width: min(380px, 75%); }
+}

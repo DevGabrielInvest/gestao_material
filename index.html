@@ -6,15 +6,12 @@
     <meta name="theme-color" content="#141414" />
     <title>Gestão Patrimonial | Daniel Frederighi Advogados</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='8' fill='%23141414'/%3E%3Cpath d='M12 14h17c14 0 23 6 23 18s-9 18-23 18H12V14Zm10 8v20h7c8 0 13-3 13-10s-5-10-13-10h-7Z' fill='%23DBA451'/%3E%3C/svg%3E" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Mulish:wght@400;600;700;800&family=Sora:wght@400;600;700;800&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <section class="login-screen" id="loginScreen">
       <div class="login-brand-panel">
-        <div class="login-monogram">DF</div>
+        <img class="login-logo" src="logo DF nova.png" alt="Daniel Frederighi Advogados Associados" />
         <div><p class="eyebrow">DANIEL FREDERIGHI</p><h1>Gestão patrimonial<br />com responsabilidade.</h1><p>Controle materiais, solicitações e termos de posse em um ambiente organizado e auditável.</p></div>
         <small>ADVOGADOS ASSOCIADOS · GESTÃO INTERNA</small>
       </div>
@@ -34,16 +31,15 @@
 
     <div class="app-shell auth-hidden" id="appShell">
       <aside class="sidebar" id="sidebar">
-        <div class="brand">
-          <div class="brand-mark" aria-hidden="true">DF</div>
-          <div><strong>Daniel Frederighi</strong><span>Advogados Associados</span></div>
-        </div>
+        <div class="brand"><img src="logo DF nova.png" alt="Daniel Frederighi Advogados Associados" /></div>
 
         <nav class="main-nav" aria-label="Navegação principal">
           <button class="nav-item active" data-page="dashboard"><span data-icon="grid"></span>Visão geral</button>
           <button class="nav-item" data-page="inventory"><span data-icon="box"></span>Materiais e equipamentos</button>
+          <button class="nav-item" data-page="movements"><span data-icon="swap"></span>Movimentações</button>
           <button class="nav-item" data-page="requests"><span data-icon="clipboard"></span>Solicitações <b class="nav-count" id="requestNavCount">0</b></button>
           <button class="nav-item" data-page="custody"><span data-icon="user-check"></span>Termos de posse</button>
+          <button class="nav-item" data-page="reports"><span data-icon="chart"></span>Relatórios</button>
         </nav>
 
         <div class="sidebar-note">
@@ -99,6 +95,13 @@
           <div class="inventory-layout"><div class="inventory-summary" id="inventorySummary"></div><article class="panel inventory-table-panel"><div class="table-wrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Local</th><th>Quantidade</th><th>Situação</th><th></th></tr></thead><tbody id="inventoryBody"></tbody></table></div><div class="empty-state" id="inventoryEmpty"><span data-icon="search"></span><h3>Nenhum item encontrado</h3><p>Tente ajustar os filtros da busca.</p></div></article></div>
         </section>
 
+        <section class="page" id="movementsPage">
+          <div class="page-heading"><div><p class="eyebrow">ENTRADAS E SAÍDAS</p><h1>Movimentações de estoque</h1><p>Documente cada alteração de saldo, fornecedor, nota fiscal e responsável.</p></div><button class="button primary" id="newMovementButton"><span data-icon="plus"></span>Nova movimentação</button></div>
+          <div class="movement-stats" id="movementStats"></div>
+          <div class="toolbar panel"><label class="search-box"><span data-icon="search"></span><input id="movementSearch" type="search" placeholder="Buscar item, fornecedor, nota ou responsável..." /></label><select id="movementType"><option value="all">Todos os tipos</option><option value="entry">Entradas</option><option value="exit">Saídas</option></select></div>
+          <article class="panel movement-table-panel"><div class="table-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Quantidade</th><th>Fornecedor / destino</th><th>Documento</th><th>Responsável</th></tr></thead><tbody id="movementBody"></tbody></table></div><div class="empty-state" id="movementEmpty"><span data-icon="swap"></span><h3>Nenhuma movimentação encontrada</h3><p>As entradas e saídas aparecerão aqui.</p></div></article>
+        </section>
+
         <section class="page" id="requestsPage">
           <div class="page-heading"><div><p class="eyebrow">PEDIDOS INTERNOS</p><h1>Solicitações</h1><p>Peça materiais e acompanhe a aprovação de cada pedido.</p></div><button class="button primary quick-request"><span data-icon="plus"></span>Nova solicitação</button></div>
           <div class="permission-note" id="requestPermissionNote"></div>
@@ -111,6 +114,16 @@
           <div class="custody-banner"><div class="banner-icon"><span data-icon="shield"></span></div><div><strong>Registro de responsabilidade</strong><p>Cada retirada preserva o histórico do bem, responsável, datas e observações.</p></div><div class="banner-value"><span>Patrimônio em posse</span><strong id="custodyTotalValue">R$ 0</strong></div></div>
           <div class="toolbar panel"><label class="search-box"><span data-icon="search"></span><input id="custodySearch" type="search" placeholder="Buscar equipamento ou responsável..." /></label><select id="custodyStatus"><option value="active">Em posse</option><option value="returned">Devolvidos</option><option value="all">Todos os registros</option></select></div>
           <div class="custody-cards" id="custodyCards"></div><div class="empty-state panel" id="custodyEmpty"><span data-icon="user-check"></span><h3>Nenhum termo encontrado</h3><p>Registre uma retirada para documentar a posse.</p></div>
+        </section>
+
+        <section class="page" id="reportsPage">
+          <div class="page-heading"><div><p class="eyebrow">INTELIGÊNCIA OPERACIONAL</p><h1>Relatórios gerenciais</h1><p>Acompanhe estoque, consumo e patrimônio sob responsabilidade.</p></div><button class="button primary" id="exportReportButton"><span data-icon="download"></span>Exportar PDF</button></div>
+          <div class="report-kpis" id="reportKpis"></div>
+          <div class="reports-grid">
+            <article class="panel report-panel"><div class="panel-header"><div><p class="eyebrow">CONSUMO</p><h2>Saídas por item</h2></div></div><div id="consumptionReport" class="report-list"></div></article>
+            <article class="panel report-panel"><div class="panel-header"><div><p class="eyebrow">RESPONSABILIDADE</p><h2>Patrimônio por pessoa</h2></div></div><div id="holderReport" class="report-list"></div></article>
+          </div>
+          <article class="panel report-table-panel"><div class="panel-header"><div><p class="eyebrow">POSIÇÃO ATUAL</p><h2>Resumo do inventário</h2></div></div><div class="table-wrap"><table><thead><tr><th>Item</th><th>Categoria</th><th>Quantidade</th><th>Estoque mínimo</th><th>Valor total</th><th>Situação</th></tr></thead><tbody id="reportInventoryBody"></tbody></table></div></article>
         </section>
       </main>
     </div>

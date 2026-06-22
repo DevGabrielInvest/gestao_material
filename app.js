@@ -18,6 +18,9 @@ const icons = {
   edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="m4 20 4.5-1 10-10-3.5-3.5-10 10L4 20ZM13.5 7l3.5 3.5"/></svg>',
   laptop: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="16" height="12" rx="1"/><path d="M2 19h20"/></svg>',
   'log-out': '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M10 5H5v14h5M14 8l4 4-4 4M8 12h10"/></svg>',
+  swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h14l-3-3M20 17H6l3 3M18 7l-3 3M6 17l3-3"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
 };
 
 document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icons[el.dataset.icon] || icons.box; });
@@ -42,6 +45,11 @@ const initialState = {
   custody: [
     { id: 201, inventoryId: 3, item: 'Notebook Dell Latitude 5440', code: 'PAT-014', holder: 'Renata Alves', department: 'Diretoria', checkout: '2026-06-03', expected: '2026-07-03', returned: '', value: 5890, notes: 'Equipamento, carregador e mochila entregues em perfeito estado.', status: 'active' },
     { id: 202, inventoryId: 6, item: 'Headset Logitech H390', code: 'PAT-032', holder: 'Bruno Tavares', department: 'Atendimento', checkout: '2026-06-10', expected: '2026-06-24', returned: '', value: 245, notes: 'Uso em trabalho remoto.', status: 'active' },
+  ],
+  movements: [
+    { id: 301, inventoryId: 1, item: 'Papel A4', code: 'MAT-001', type: 'entry', quantity: 10, date: '2026-06-05', supplier: 'Papelaria Central', document: 'NF-2031', responsible: 'Administração', notes: 'Compra mensal de materiais.' },
+    { id: 302, inventoryId: 1, item: 'Papel A4', code: 'MAT-001', type: 'exit', quantity: 4, date: '2026-06-12', supplier: 'Setor Jurídico', document: 'REQ-0102', responsible: 'Lucas Mendes', notes: 'Material para impressões.' },
+    { id: 303, inventoryId: 2, item: 'Caneta esferográfica azul', code: 'MAT-002', type: 'exit', quantity: 6, date: '2026-06-16', supplier: 'Setor Comercial', document: 'REQ-0103', responsible: 'Ana Ribeiro', notes: 'Distribuição interna.' },
   ],
   activity: [
     { text: 'Nova solicitação criada', detail: 'Carlos pediu 2 unidades de Toner HP 58A', date: '2026-06-19T09:20:00' },
@@ -76,6 +84,7 @@ const permissionMap = {
   approve: ['admin', 'manager'],
   manageInventory: ['admin', 'manager'],
   manageCustody: ['admin', 'manager'],
+  viewReports: ['admin', 'manager', 'viewer'],
   request: ['admin', 'manager', 'requester'],
   viewAllRequests: ['admin', 'manager', 'viewer'],
 };
@@ -83,6 +92,7 @@ const can = (permission) => Boolean(currentUser && permissionMap[permission]?.in
 const canOpenPage = (page) => currentUser?.role !== 'requester' || page === 'requests';
 
 function normalizeState() {
+  if (!Array.isArray(state.movements)) state.movements = [];
   state.requests.forEach((request) => {
     if (!request.history) {
       request.history = [{ action: 'created', label: 'Solicitação criada', user: request.requester, date: `${request.date}T12:00:00`, note: request.reason }];
@@ -96,12 +106,31 @@ function statusActionLabel(status) {
   return { approved: 'Solicitação aprovada', rejected: 'Solicitação recusada', delivered: 'Material entregue', pending: 'Aguardando análise' }[status] || status;
 }
 
+function visibleRequests() {
+  return can('viewAllRequests') ? state.requests : state.requests.filter((item) => item.requesterEmail === currentUser?.email || (!item.requesterEmail && item.requester === currentUser?.name));
+}
+
+function getAlerts() {
+  const ownPending = visibleRequests().filter((item) => item.status === 'pending');
+  if (currentUser?.role === 'requester') return ownPending.map((item) => ({ type: 'pending', title: item.item, detail: `Solicitado em ${dateLabel(item.date)} · Aguardando análise`, badge: 'Pendente', page: 'requests' }));
+  const activeCustody = state.custody.filter((item) => item.status === 'active');
+  const custodyIds = new Set(activeCustody.map((item) => item.inventoryId));
+  const lowStock = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id));
+  return [
+    ...activeCustody.filter(isOverdue).map((item) => ({ type: 'overdue', title: item.item, detail: `${item.holder} · Devolução prevista para ${dateLabel(item.expected)}`, badge: 'Atrasado', page: 'custody' })),
+    ...lowStock.map((item) => ({ type: 'low', title: item.name, detail: `Restam ${item.quantity} un. · Mínimo recomendado: ${item.minimum}`, badge: 'Estoque baixo', page: 'inventory' })),
+    ...ownPending.map((item) => ({ type: 'pending', title: item.item, detail: `${item.requester} · Solicitado em ${dateLabel(item.date)}`, badge: 'Pendente', page: 'requests' })),
+  ];
+}
+
 function applyPermissions() {
   const requesterOnly = currentUser?.role === 'requester';
   document.querySelectorAll('.nav-item').forEach((button) => { button.hidden = !canOpenPage(button.dataset.page); });
   document.querySelectorAll('.quick-request').forEach((button) => { button.hidden = !can('request'); });
   $('#newItemButton').hidden = !can('manageInventory');
+  $('#newMovementButton').hidden = !can('manageInventory');
   $('#newCustodyButton').hidden = !can('manageCustody');
+  $('#exportReportButton').hidden = !can('viewReports');
   $('#currentUserName').textContent = currentUser?.name || '';
   $('#currentUserRole').textContent = roleLabels[currentUser?.role] || '';
   $('#userAvatar').textContent = initials(currentUser?.name || 'DFA');
@@ -159,12 +188,11 @@ function renderDashboard() {
   $('#statCustodyValue').textContent = `${money(totalValue)} sob responsabilidade`;
   $('#statRequests').textContent = pending.length;
   $('#requestNavCount').textContent = pending.length;
-  $('#notificationDot').style.display = low.length || pending.length ? 'block' : 'none';
+  const allAlerts = getAlerts();
+  $('#notificationDot').style.display = allAlerts.length ? 'block' : 'none';
+  $('#notificationButton').setAttribute('aria-label', `Notificações: ${allAlerts.length} alerta(s)`);
 
-  const alerts = [
-    ...low.map((item) => ({ type: 'low', title: item.name, detail: `Restam ${item.quantity} un. · Mínimo recomendado: ${item.minimum}`, badge: 'Estoque baixo' })),
-    ...activeCustody.filter(isOverdue).map((item) => ({ type: 'overdue', title: item.item, detail: `${item.holder} · Previsto para ${dateLabel(item.expected)}`, badge: 'Atrasado' })),
-  ].slice(0, 4);
+  const alerts = allAlerts.slice(0, 4);
   $('#attentionList').innerHTML = alerts.length ? alerts.map((item) => `<div class="attention-item"><div class="item-symbol ${item.type}">${item.type === 'low' ? '!' : '•'}</div><div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.detail)}</span></div><b>${item.badge}</b></div>`).join('') : '<div class="empty-state show"><h3>Tudo em ordem</h3><p>Não há alertas no momento.</p></div>';
 
   $('#activityList').innerHTML = state.activity.slice(0, 4).map((item) => {
@@ -206,7 +234,7 @@ function renderInventory() {
 }
 
 function renderRequests() {
-  const visible = can('viewAllRequests') ? state.requests : state.requests.filter((item) => item.requesterEmail === currentUser?.email || (!item.requesterEmail && item.requester === currentUser?.name));
+  const visible = visibleRequests();
   const pending = visible.filter((item) => item.status === 'pending').length;
   $('#allRequestCount').textContent = visible.length;
   $('#pendingRequestCount').textContent = pending;
@@ -233,19 +261,66 @@ function renderCustody() {
   const filtered = state.custody.filter((item) => [item.item, item.code, item.holder, item.department].join(' ').toLowerCase().includes(search) && (filter === 'all' || item.status === filter));
   const activeValue = state.custody.filter((item) => item.status === 'active').reduce((sum, item) => sum + Number(item.value), 0);
   $('#custodyTotalValue').textContent = money(activeValue);
-  $('#custodyCards').innerHTML = filtered.map((item) => `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div>${statusBadge(item.status === 'active' && isOverdue(item) ? 'overdue' : item.status, 'custody')}</div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>Retirada</span><strong>${dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span>${item.status === 'active' && can('manageCustody') ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></article>`).join('');
+  $('#custodyCards').innerHTML = filtered.map((item) => `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div>${statusBadge(item.status === 'active' && isOverdue(item) ? 'overdue' : item.status, 'custody')}</div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>Retirada</span><strong>${dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span><div class="custody-actions"><button class="button small secondary custody-pdf" data-id="${item.id}">${icons.download} Gerar termo PDF</button>${item.status === 'active' && can('manageCustody') ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></div></article>`).join('');
   $('#custodyEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.return-item').forEach((button) => button.addEventListener('click', () => returnCustody(Number(button.dataset.id))));
+  document.querySelectorAll('.custody-pdf').forEach((button) => button.addEventListener('click', () => generateCustodyPdf(Number(button.dataset.id))));
 }
 
-function renderAll() { renderDashboard(); renderInventory(); renderRequests(); renderCustody(); }
+function renderMovements() {
+  const search = $('#movementSearch').value.toLowerCase();
+  const type = $('#movementType').value;
+  const filtered = state.movements.filter((movement) => [movement.item, movement.code, movement.supplier, movement.document, movement.responsible].join(' ').toLowerCase().includes(search) && (type === 'all' || movement.type === type));
+  const entries = state.movements.filter((item) => item.type === 'entry').reduce((sum, item) => sum + Number(item.quantity), 0);
+  const exits = state.movements.filter((item) => item.type === 'exit').reduce((sum, item) => sum + Number(item.quantity), 0);
+  const suppliers = new Set(state.movements.filter((item) => item.type === 'entry' && item.supplier).map((item) => item.supplier)).size;
+  $('#movementStats').innerHTML = `<article><span>Unidades recebidas</span><strong>+${entries}</strong><small>Entradas documentadas</small></article><article><span>Unidades distribuídas</span><strong>-${exits}</strong><small>Saídas documentadas</small></article><article><span>Fornecedores registrados</span><strong>${suppliers}</strong><small>Com histórico de compra</small></article>`;
+  $('#movementBody').innerHTML = filtered.map((movement) => `<tr><td>${dateLabel(movement.date)}</td><td><span class="movement-type ${movement.type}">${movement.type === 'entry' ? 'Entrada' : 'Saída'}</span></td><td><div class="item-cell"><div class="item-thumb">${escapeHtml(movement.item[0])}</div><div><strong>${escapeHtml(movement.item)}</strong><small>${escapeHtml(movement.code)}</small></div></div></td><td><strong class="movement-quantity ${movement.type}">${movement.type === 'entry' ? '+' : '-'}${movement.quantity}</strong> un.</td><td>${escapeHtml(movement.supplier || '—')}</td><td>${escapeHtml(movement.document || '—')}</td><td>${escapeHtml(movement.responsible)}</td></tr>`).join('');
+  $('#movementEmpty').classList.toggle('show', !filtered.length);
+}
+
+function consumptionSummary() {
+  const grouped = new Map();
+  state.movements.filter((item) => item.type === 'exit').forEach((item) => grouped.set(item.item, (grouped.get(item.item) || 0) + Number(item.quantity)));
+  return [...grouped.entries()].map(([item, quantity]) => ({ item, quantity })).sort((a, b) => b.quantity - a.quantity);
+}
+
+function renderReports() {
+  const inventoryValue = state.inventory.reduce((sum, item) => sum + Number(item.quantity) * Number(item.value), 0);
+  const activeCustody = state.custody.filter((item) => item.status === 'active');
+  const custodyIds = new Set(activeCustody.map((item) => item.inventoryId));
+  const custodyValue = activeCustody.reduce((sum, item) => sum + Number(item.value), 0);
+  const consumed = state.movements.filter((item) => item.type === 'exit').reduce((sum, item) => sum + Number(item.quantity), 0);
+  const low = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id)).length;
+  $('#reportKpis').innerHTML = `<article><span>Valor em inventário</span><strong>${money(inventoryValue)}</strong></article><article><span>Patrimônio em posse</span><strong>${money(custodyValue)}</strong></article><article><span>Unidades consumidas</span><strong>${consumed}</strong></article><article><span>Itens para reposição</span><strong>${low}</strong></article>`;
+
+  const consumption = consumptionSummary();
+  const maxConsumption = Math.max(...consumption.map((item) => item.quantity), 1);
+  $('#consumptionReport').innerHTML = consumption.length ? consumption.map((item) => `<div class="report-row"><div><strong>${escapeHtml(item.item)}</strong><span>${item.quantity} unidade(s)</span></div><i><b style="width:${(item.quantity / maxConsumption) * 100}%"></b></i></div>`).join('') : '<div class="empty-state show"><p>Nenhuma saída registrada.</p></div>';
+
+  const holderGroups = new Map();
+  activeCustody.forEach((item) => {
+    const current = holderGroups.get(item.holder) || { quantity: 0, value: 0 };
+    current.quantity += 1; current.value += Number(item.value); holderGroups.set(item.holder, current);
+  });
+  const holders = [...holderGroups.entries()].sort((a, b) => b[1].value - a[1].value);
+  const maxHolderValue = Math.max(...holders.map(([, item]) => item.value), 1);
+  $('#holderReport').innerHTML = holders.length ? holders.map(([holder, data]) => `<div class="report-row"><div><strong>${escapeHtml(holder)}</strong><span>${data.quantity} bem(ns) · ${money(data.value)}</span></div><i><b style="width:${(data.value / maxHolderValue) * 100}%"></b></i></div>`).join('') : '<div class="empty-state show"><p>Nenhum patrimônio em posse.</p></div>';
+
+  $('#reportInventoryBody').innerHTML = state.inventory.map((item) => {
+    const situation = custodyIds.has(item.id) ? '<span class="status blue">Em posse</span>' : item.quantity <= item.minimum ? '<span class="status amber">Repor</span>' : '<span class="status green">Regular</span>';
+    return `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.code)}</small></td><td>${escapeHtml(item.category)}</td><td>${item.quantity} un.</td><td>${item.minimum} un.</td><td>${money(item.quantity * item.value)}</td><td>${situation}</td></tr>`;
+  }).join('');
+}
+
+function renderAll() { renderDashboard(); renderInventory(); renderMovements(); renderRequests(); renderCustody(); renderReports(); }
 
 function navigate(page) {
   if (!canOpenPage(page)) { showToast('Seu perfil não possui acesso a esta área.'); return; }
   document.querySelectorAll('.page').forEach((el) => el.classList.remove('active'));
   document.querySelectorAll('.nav-item').forEach((el) => el.classList.toggle('active', el.dataset.page === page));
   $(`#${page}Page`).classList.add('active');
-  const names = { dashboard: 'Visão geral', inventory: 'Materiais e equipamentos', requests: 'Solicitações', custody: 'Termos de posse' };
+  const names = { dashboard: 'Visão geral', inventory: 'Materiais e equipamentos', movements: 'Movimentações', requests: 'Solicitações', custody: 'Termos de posse', reports: 'Relatórios' };
   $('#breadcrumbTitle').textContent = names[page];
   $('#sidebar').classList.remove('open');
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -271,6 +346,198 @@ function closeModal() {
   $('#submitModal').hidden = false;
   $('#cancelModal').textContent = 'Cancelar';
   $('#modalForm').reset();
+}
+
+function openAlerts() {
+  const alerts = getAlerts();
+  const body = alerts.length ? `<div class="notification-list">${alerts.map((alert) => `<button type="button" class="notification-item" data-alert-page="${alert.page}"><span class="notification-symbol ${alert.type}">!</span><div><strong>${escapeHtml(alert.title)}</strong><p>${escapeHtml(alert.detail)}</p></div><b>${escapeHtml(alert.badge)}</b></button>`).join('')}</div>` : '<div class="empty-state show"><span data-icon="check"></span><h3>Nenhuma pendência</h3><p>Não há alertas ativos no momento.</p></div>';
+  openModal({ eyebrow: 'CENTRAL DE ALERTAS', title: `${alerts.length} pendência(s) ativa(s)`, submitLabel: '', hideSubmit: true, body, action: null });
+  document.querySelectorAll('.notification-item').forEach((button) => button.addEventListener('click', () => { closeModal(); navigate(button.dataset.alertPage); }));
+}
+
+function openMovementModal() {
+  if (!can('manageInventory')) { showToast('Seu perfil não pode registrar movimentações.'); return; }
+  const options = state.inventory.map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · Saldo: ${item.quantity}</option>`).join('');
+  openModal({ eyebrow: 'CONTROLE DE ESTOQUE', title: 'Registrar movimentação', submitLabel: 'Confirmar movimentação', body: `<div class="form-grid"><div class="field full"><label for="movementItem">Item *</label><select id="movementItem" name="inventoryId" required><option value="">Selecione o item</option>${options}</select></div><div class="field"><label for="movementKind">Tipo *</label><select id="movementKind" name="type" required><option value="entry">Entrada</option><option value="exit">Saída</option></select></div><div class="field"><label for="movementQuantity">Quantidade *</label><input id="movementQuantity" name="quantity" type="number" min="1" value="1" required /></div><div class="field"><label for="movementDate">Data *</label><input id="movementDate" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required /></div><div class="field"><label for="movementSupplier">Fornecedor ou destino *</label><input id="movementSupplier" name="supplier" required placeholder="Empresa, setor ou pessoa" /></div><div class="field"><label for="movementDocument">Nota fiscal / documento</label><input id="movementDocument" name="document" placeholder="Ex.: NF-2031 ou REQ-0102" /></div><div class="field"><label for="movementResponsible">Responsável</label><input id="movementResponsible" name="responsible" readonly value="${escapeHtml(currentUser.name)}" /></div><div class="field full"><label for="movementNotes">Observações</label><textarea id="movementNotes" name="notes" placeholder="Motivo, condição recebida ou informações adicionais."></textarea></div></div>`, action: (form) => {
+    const data = Object.fromEntries(new FormData(form));
+    const item = state.inventory.find((entry) => entry.id === Number(data.inventoryId));
+    const quantity = Number(data.quantity);
+    if (!item || quantity < 1) return;
+    if (data.type === 'exit' && quantity > item.quantity) { showToast(`Saldo insuficiente. Disponível: ${item.quantity} unidade(s).`); return; }
+    item.quantity += data.type === 'entry' ? quantity : -quantity;
+    state.movements.unshift({ id: Date.now(), inventoryId: item.id, item: item.name, code: item.code, type: data.type, quantity, date: data.date, supplier: data.supplier, document: data.document, responsible: currentUser.name, notes: data.notes });
+    addActivity(data.type === 'entry' ? 'Entrada de estoque registrada' : 'Saída de estoque registrada', `${item.name} · ${quantity} unidade(s) · ${currentUser.name}`);
+    save(); closeModal(); renderAll(); navigate('movements'); showToast('Movimentação registrada e saldo atualizado.');
+  } });
+}
+
+function pdfSafe(value) {
+  return String(value ?? '').replace(/[–—•·]/g, '-').replace(/[^ -ÿ]/g, '');
+}
+
+function pdfEscape(value) {
+  return pdfSafe(value).replace(/([\\()])/g, '\\$1');
+}
+
+function wrapPdfText(value, max = 88) {
+  const words = pdfSafe(value).split(/\s+/);
+  const lines = [];
+  let line = '';
+  words.forEach((word) => {
+    if (`${line} ${word}`.trim().length > max && line) { lines.push(line); line = word; } else line = `${line} ${word}`.trim();
+  });
+  if (line) lines.push(line);
+  return lines;
+}
+
+function byteString(value) {
+  const bytes = new Uint8Array(value.length);
+  for (let index = 0; index < value.length; index += 1) bytes[index] = value.charCodeAt(index) & 0xff;
+  return bytes;
+}
+
+function joinBytes(parts) {
+  const result = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+  let offset = 0;
+  parts.forEach((part) => { result.set(part, offset); offset += part.length; });
+  return result;
+}
+
+function loadLetterheadLogo() {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 1189; canvas.height = 305;
+      const context = canvas.getContext('2d');
+      context.fillStyle = '#111111'; context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      const binary = atob(canvas.toDataURL('image/jpeg', 0.92).split(',')[1]);
+      resolve(byteString(binary));
+    };
+    image.onerror = reject;
+    image.src = 'logo DF nova.png';
+  });
+}
+
+async function downloadPdf(filename, title, subtitle, rows) {
+  const normalized = [];
+  rows.forEach((row) => {
+    if (row.spacer) { normalized.push({ spacer: true, height: row.height || 8 }); return; }
+    wrapPdfText(row.text, row.heading ? 72 : 92).forEach((text) => normalized.push({ ...row, text }));
+  });
+  const pages = [[]];
+  let used = 0;
+  normalized.forEach((row) => {
+    const height = row.spacer ? row.height : row.heading ? 23 : 14;
+    if (used + height > 560) { pages.push([]); used = 0; }
+    pages.at(-1).push(row); used += height;
+  });
+
+  const logoBytes = await loadLetterheadLogo();
+  const objects = [];
+  const pageRefs = pages.map((_, index) => `${6 + index * 2} 0 R`).join(' ');
+  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
+  objects[2] = `<< /Type /Pages /Kids [${pageRefs}] /Count ${pages.length} >>`;
+  objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
+  objects[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>';
+  objects[5] = { dictionary: `<< /Type /XObject /Subtype /Image /Width 1189 /Height 305 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logoBytes.length} >>`, stream: logoBytes };
+
+  pages.forEach((page, index) => {
+    const pageObject = 6 + index * 2;
+    const contentObject = pageObject + 1;
+    let y = 696;
+    const commands = [
+      'q 0.067 0.067 0.067 rg 0 754 595 88 re f Q',
+      'q 0.78 0.59 0.25 rg 0 749 595 5 re f Q',
+      'q 280 0 0 72 38 762 cm /Logo Do Q',
+      `BT /F2 16 Tf 0.10 0.10 0.10 rg 48 724 Td (${pdfEscape(title)}) Tj ET`,
+      `BT /F1 8 Tf 0.42 0.42 0.42 rg 48 709 Td (${pdfEscape(subtitle)}) Tj ET`,
+    ];
+    page.forEach((row) => {
+      if (row.spacer) { y -= row.height; return; }
+      const font = row.heading || row.bold ? 'F2' : 'F1';
+      const size = row.heading ? 12 : row.bold ? 9.5 : 9;
+      const color = row.heading ? '0.72 0.46 0.15' : '0.15 0.15 0.15';
+      commands.push(`BT /${font} ${size} Tf ${color} rg 48 ${y} Td (${pdfEscape(row.text)}) Tj ET`);
+      y -= row.heading ? 23 : 14;
+    });
+    commands.push('q 0.78 0.59 0.25 rg 0 90 595 2 re f Q');
+    commands.push('BT /F2 7 Tf 0.12 0.12 0.12 rg 48 71 Td (BELO HORIZONTE - MG) Tj ET');
+    commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 48 59 Td (+55 31 3201-2151 | R. Felipe dos Santos, 521 - Lourdes) Tj ET');
+    commands.push('BT /F2 7 Tf 0.12 0.12 0.12 rg 225 71 Td (SÃO PAULO - SP) Tj ET');
+    commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 225 59 Td (+55 11 2770-1304 | Av. Cidade Jardim, 377 - Itaim Bibi) Tj ET');
+    commands.push('BT /F2 7 Tf 0.12 0.12 0.12 rg 432 71 Td (BRASÍLIA - DF) Tj ET');
+    commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 432 59 Td (+55 61 3550-7517 | SHN, Quadra 02) Tj ET');
+    commands.push(`BT /F1 6 Tf 0.5 0.5 0.5 rg 48 38 Td (Documento gerado pelo sistema de gestão patrimonial) Tj ET`);
+    commands.push(`BT /F1 6 Tf 0.5 0.5 0.5 rg 500 38 Td (Página ${index + 1} de ${pages.length}) Tj ET`);
+    const stream = commands.join('\n');
+    objects[pageObject] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Logo 5 0 R >> >> /Contents ${contentObject} 0 R >>`;
+    objects[contentObject] = { dictionary: `<< /Length ${stream.length} >>`, stream: byteString(stream) };
+  });
+
+  const parts = [byteString('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')];
+  const offsets = [0];
+  let pdfLength = parts[0].length;
+  for (let index = 1; index < objects.length; index += 1) {
+    offsets[index] = pdfLength;
+    const object = objects[index];
+    const bytes = typeof object === 'string'
+      ? byteString(`${index} 0 obj\n${object}\nendobj\n`)
+      : joinBytes([byteString(`${index} 0 obj\n${object.dictionary}\nstream\n`), object.stream, byteString('\nendstream\nendobj\n')]);
+    parts.push(bytes); pdfLength += bytes.length;
+  }
+  let trailer = `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
+  for (let index = 1; index < objects.length; index += 1) trailer += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
+  trailer += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${pdfLength}\n%%EOF`;
+  parts.push(byteString(trailer));
+  const bytes = joinBytes(parts);
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  const link = document.createElement('a');
+  link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+async function generateCustodyPdf(id) {
+  const record = state.custody.find((item) => item.id === id);
+  if (!record) return;
+  const rows = [
+    { heading: true, text: 'TERMO DE RESPONSABILIDADE E GUARDA DE EQUIPAMENTO' },
+    { text: `Termo: TER-${record.code}-${record.id}`, bold: true },
+    { text: `Emitido em: ${new Date().toLocaleString('pt-BR')} por ${currentUser.name}` }, { spacer: true },
+    { heading: true, text: 'IDENTIFICAÇÃO DO BEM' },
+    { text: `Equipamento: ${record.item}` }, { text: `Código patrimonial: ${record.code}` }, { text: `Valor registrado: ${money(record.value)}` }, { spacer: true },
+    { heading: true, text: 'RESPONSÁVEL PELA POSSE' },
+    { text: `Nome: ${record.holder}` }, { text: `Setor: ${record.department}` }, { text: `Data da retirada: ${dateLabel(record.checkout)}` }, { text: `Devolução prevista: ${dateLabel(record.expected)}` }, { text: `Situação: ${record.status === 'active' ? 'Em posse' : `Devolvido em ${dateLabel(record.returned)}`}` }, { spacer: true },
+    { heading: true, text: 'DECLARAÇÃO DE RESPONSABILIDADE' },
+    { text: 'Declaro que recebi o bem acima identificado nas condições registradas neste termo, comprometendo-me a utilizá-lo exclusivamente para atividades profissionais, zelar por sua conservação e comunicar imediatamente qualquer dano, perda ou incidente.' },
+    { text: 'Comprometo-me ainda a devolver o equipamento e seus acessórios na data acordada ou quando solicitado pelo escritório, no mesmo estado de conservação em que foram entregues, ressalvado o desgaste natural de uso.' },
+    { text: `Observações de entrega: ${record.notes || 'Nenhuma observação registrada.'}` },
+    { spacer: true, height: 24 }, { text: '________________________________________        ________________________________________' },
+    { text: `Responsável pela posse: ${record.holder}    |    Administração DFA` },
+  ];
+  await downloadPdf(`termo-${record.code.toLowerCase()}-${record.id}.pdf`, 'TERMO DE RESPONSABILIDADE', 'GESTÃO PATRIMONIAL - DANIEL FREDERIGHI ADVOGADOS ASSOCIADOS', rows);
+  showToast('Termo de responsabilidade gerado em PDF.');
+}
+
+async function exportReportsPdf() {
+  const inventoryValue = state.inventory.reduce((sum, item) => sum + item.quantity * item.value, 0);
+  const activeCustody = state.custody.filter((item) => item.status === 'active');
+  const custodyIds = new Set(activeCustody.map((item) => item.inventoryId));
+  const rows = [
+    { heading: true, text: 'RELATÓRIO GERENCIAL DE MATERIAIS E PATRIMÔNIO' },
+    { text: `Emitido em: ${new Date().toLocaleString('pt-BR')} por ${currentUser.name}` }, { spacer: true },
+    { heading: true, text: 'RESUMO EXECUTIVO' },
+    { text: `Itens cadastrados: ${state.inventory.length}` }, { text: `Valor estimado do inventário: ${money(inventoryValue)}` }, { text: `Bens atualmente em posse: ${activeCustody.length}` }, { text: `Solicitações pendentes: ${state.requests.filter((item) => item.status === 'pending').length}` }, { spacer: true },
+    { heading: true, text: 'CONSUMO POR ITEM' },
+    ...consumptionSummary().map((item) => ({ text: `${item.item}: ${item.quantity} unidade(s)` })), { spacer: true },
+    { heading: true, text: 'PATRIMÔNIO SOB RESPONSABILIDADE' },
+    ...activeCustody.map((item) => ({ text: `${item.holder} - ${item.item} (${item.code}) - ${money(item.value)} - devolver até ${dateLabel(item.expected)}` })), { spacer: true },
+    { heading: true, text: 'POSIÇÃO DO INVENTÁRIO' },
+    ...state.inventory.map((item) => ({ text: `${item.code} - ${item.name} - ${item.quantity} un. - mínimo ${item.minimum} - total ${money(item.quantity * item.value)}${custodyIds.has(item.id) ? ' - EM POSSE' : item.quantity <= item.minimum ? ' - REPOSIÇÃO NECESSÁRIA' : ''}` })),
+  ];
+  await downloadPdf(`relatorio-patrimonial-${new Date().toISOString().slice(0, 10)}.pdf`, 'RELATÓRIO GERENCIAL', 'MATERIAIS E PATRIMÔNIO - DANIEL FREDERIGHI ADVOGADOS ASSOCIADOS', rows);
+  showToast('Relatório gerencial exportado em PDF.');
 }
 
 function openRequestModal() {
@@ -345,6 +612,12 @@ function deliverRequest(id) {
   if (!can('approve')) { showToast('Seu perfil não pode registrar entregas.'); return; }
   const request = state.requests.find((item) => item.id === id);
   if (!request || request.status !== 'approved' || !window.confirm(`Confirmar a entrega de ${request.item} para ${request.requester}?`)) return;
+  const inventoryItem = state.inventory.find((item) => item.name.toLowerCase() === request.item.toLowerCase());
+  if (inventoryItem) {
+    if (inventoryItem.quantity < request.quantity) { showToast(`Saldo insuficiente. Disponível: ${inventoryItem.quantity} unidade(s).`); return; }
+    inventoryItem.quantity -= request.quantity;
+    state.movements.unshift({ id: Date.now(), inventoryId: inventoryItem.id, item: inventoryItem.name, code: inventoryItem.code, type: 'exit', quantity: request.quantity, date: new Date().toISOString().slice(0, 10), supplier: `${request.department} · ${request.requester}`, document: `SOL-${String(request.id).padStart(4, '0')}`, responsible: currentUser.name, notes: 'Saída gerada automaticamente na entrega da solicitação.' });
+  }
   registerRequestAction(request, 'delivered', `Entrega confirmada por ${currentUser.name}.`);
   showToast('Entrega registrada no histórico.');
 }
@@ -375,7 +648,10 @@ document.querySelectorAll('.nav-item').forEach((button) => button.addEventListen
 document.querySelectorAll('[data-go]').forEach((button) => button.addEventListener('click', () => navigate(button.dataset.go)));
 document.querySelectorAll('.quick-request').forEach((button) => button.addEventListener('click', openRequestModal));
 $('#newItemButton').addEventListener('click', () => openItemModal());
+$('#newMovementButton').addEventListener('click', openMovementModal);
 $('#newCustodyButton').addEventListener('click', openCustodyModal);
+$('#notificationButton').addEventListener('click', openAlerts);
+$('#exportReportButton').addEventListener('click', exportReportsPdf);
 $('#menuToggle').addEventListener('click', () => $('#sidebar').classList.toggle('open'));
 $('#closeModal').addEventListener('click', closeModal);
 $('#cancelModal').addEventListener('click', closeModal);
@@ -383,6 +659,7 @@ $('#modalBackdrop').addEventListener('click', (event) => { if (event.target === 
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
 $('#modalForm').addEventListener('submit', (event) => { event.preventDefault(); if (modalAction) modalAction(event.currentTarget); });
 ['inventorySearch', 'inventoryCategory', 'inventoryStatus'].forEach((id) => $(`#${id}`).addEventListener(id === 'inventorySearch' ? 'input' : 'change', renderInventory));
+['movementSearch', 'movementType'].forEach((id) => $(`#${id}`).addEventListener(id === 'movementSearch' ? 'input' : 'change', renderMovements));
 ['custodySearch', 'custodyStatus'].forEach((id) => $(`#${id}`).addEventListener(id === 'custodySearch' ? 'input' : 'change', renderCustody));
 $('#requestTabs').addEventListener('click', (event) => {
   const button = event.target.closest('button');
