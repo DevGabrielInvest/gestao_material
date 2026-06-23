@@ -25,50 +25,8 @@ const icons = {
 
 document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icons[el.dataset.icon] || icons.box; });
 
-const initialState = {
-  inventory: [
-    { id: 1, name: 'Papel A4', code: 'MAT-001', category: 'Papelaria', location: 'Armário A', quantity: 3, minimum: 5, value: 32.9, valuable: false },
-    { id: 2, name: 'Caneta esferográfica azul', code: 'MAT-002', category: 'Papelaria', location: 'Gaveta 02', quantity: 24, minimum: 10, value: 2.5, valuable: false },
-    { id: 3, name: 'Notebook Dell Latitude 5440', code: 'PAT-014', category: 'Informática', location: 'Em posse', quantity: 1, minimum: 1, value: 5890, valuable: true },
-    { id: 4, name: 'Monitor LG 24 polegadas', code: 'PAT-021', category: 'Informática', location: 'Sala de reunião', quantity: 2, minimum: 1, value: 920, valuable: true },
-    { id: 5, name: 'Toner HP 58A', code: 'MAT-018', category: 'Impressão', location: 'Armário B', quantity: 1, minimum: 2, value: 465, valuable: false },
-    { id: 6, name: 'Headset Logitech H390', code: 'PAT-032', category: 'Periféricos', location: 'Em posse', quantity: 1, minimum: 1, value: 245, valuable: true },
-    { id: 7, name: 'Bloco adesivo 76x76', code: 'MAT-027', category: 'Papelaria', location: 'Gaveta 03', quantity: 18, minimum: 6, value: 8.9, valuable: false },
-    { id: 8, name: 'Webcam Logitech C920', code: 'PAT-038', category: 'Periféricos', location: 'Armário TI', quantity: 3, minimum: 1, value: 489, valuable: true },
-  ],
-  requests: [
-    { id: 101, item: 'Cadeira ergonômica', requester: 'Marina Costa', department: 'Financeiro', quantity: 1, reason: 'Substituição de cadeira com encosto danificado.', priority: 'Alta', date: '2026-06-18', status: 'pending' },
-    { id: 102, item: 'Papel A4', requester: 'Lucas Mendes', department: 'Jurídico', quantity: 5, reason: 'Reposição para impressões da equipe.', priority: 'Normal', date: '2026-06-17', status: 'approved' },
-    { id: 103, item: 'Mouse sem fio', requester: 'Ana Ribeiro', department: 'Comercial', quantity: 1, reason: 'Novo posto de trabalho.', priority: 'Normal', date: '2026-06-16', status: 'delivered' },
-    { id: 104, item: 'Toner HP 58A', requester: 'Carlos Lima', department: 'Administrativo', quantity: 2, reason: 'Estoque de segurança para a impressora central.', priority: 'Alta', date: '2026-06-19', status: 'pending' },
-  ],
-  custody: [
-    { id: 201, inventoryId: 3, item: 'Notebook Dell Latitude 5440', code: 'PAT-014', holder: 'Renata Alves', department: 'Diretoria', checkout: '2026-06-03', expected: '2026-07-03', returned: '', value: 5890, notes: 'Equipamento, carregador e mochila entregues em perfeito estado.', status: 'active' },
-    { id: 202, inventoryId: 6, item: 'Headset Logitech H390', code: 'PAT-032', holder: 'Bruno Tavares', department: 'Atendimento', checkout: '2026-06-10', expected: '2026-06-24', returned: '', value: 245, notes: 'Uso em trabalho remoto.', status: 'active' },
-  ],
-  movements: [
-    { id: 301, inventoryId: 1, item: 'Papel A4', code: 'MAT-001', type: 'entry', quantity: 10, date: '2026-06-05', supplier: 'Papelaria Central', document: 'NF-2031', responsible: 'Administração', notes: 'Compra mensal de materiais.' },
-    { id: 302, inventoryId: 1, item: 'Papel A4', code: 'MAT-001', type: 'exit', quantity: 4, date: '2026-06-12', supplier: 'Setor Jurídico', document: 'REQ-0102', responsible: 'Lucas Mendes', notes: 'Material para impressões.' },
-    { id: 303, inventoryId: 2, item: 'Caneta esferográfica azul', code: 'MAT-002', type: 'exit', quantity: 6, date: '2026-06-16', supplier: 'Setor Comercial', document: 'REQ-0103', responsible: 'Ana Ribeiro', notes: 'Distribuição interna.' },
-  ],
-  activity: [
-    { text: 'Nova solicitação criada', detail: 'Carlos pediu 2 unidades de Toner HP 58A', date: '2026-06-19T09:20:00' },
-    { text: 'Material entregue', detail: 'Mouse sem fio entregue para Ana Ribeiro', date: '2026-06-18T16:15:00' },
-    { text: 'Retirada registrada', detail: 'Headset entregue para Bruno Tavares', date: '2026-06-10T10:30:00' },
-  ],
-};
-
-const storageKey = 'almox-office-state-v1';
-let state = JSON.parse(localStorage.getItem(storageKey) || 'null') || initialState;
-const sessionKey = 'dfa-office-session-v1';
-const users = [
-  { id: 1, name: 'Administração DFA', email: 'admin@dfa.com', password: 'admin123', role: 'admin', department: 'Administração' },
-  { id: 2, name: 'Marina Gestora', email: 'gestor@dfa.com', password: 'gestor123', role: 'manager', department: 'Administrativo' },
-  { id: 3, name: 'Lucas Colaborador', email: 'colaborador@dfa.com', password: 'solicitar123', role: 'requester', department: 'Jurídico' },
-  { id: 4, name: 'Consulta Interna', email: 'consulta@dfa.com', password: 'consulta123', role: 'viewer', department: 'Diretoria' },
-];
 const roleLabels = { admin: 'Administrador', manager: 'Gestor', requester: 'Solicitante', viewer: 'Somente consulta' };
-let currentUser = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
+let currentUser = null;
 let activeRequestFilter = 'all';
 let modalAction = null;
 
@@ -77,7 +35,6 @@ const money = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'cu
 const dateLabel = (value) => value ? new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR') : '—';
 const initials = (name) => name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
-const save = () => localStorage.setItem(storageKey, JSON.stringify(state));
 const isOverdue = (record) => record.status === 'active' && new Date(`${record.expected}T23:59:59`) < new Date();
 
 const permissionMap = {
@@ -91,75 +48,45 @@ const permissionMap = {
 const can = (permission) => Boolean(currentUser && permissionMap[permission]?.includes(currentUser.role));
 const canOpenPage = (page) => currentUser?.role !== 'requester' || page === 'requests';
 
-function normalizeState() {
-  if (!Array.isArray(state.movements)) state.movements = [];
-  state.requests.forEach((request) => {
-    if (!request.history) {
-      request.history = [{ action: 'created', label: 'Solicitação criada', user: request.requester, date: `${request.date}T12:00:00`, note: request.reason }];
-      if (request.status !== 'pending') request.history.push({ action: request.status, label: statusActionLabel(request.status), user: request.decidedBy || 'Administração', date: `${request.date}T16:00:00`, note: request.decisionNote || 'Registro anterior à implantação do histórico.' });
-    }
-  });
-  save();
+let state = { inventory: [], requests: [], custody: [], movements: [], activity: [] };
+
+const sessionKey = 'dfa-session-v2';
+const tokenKey = 'dfa-token-v2';
+
+function getToken() { return sessionStorage.getItem(tokenKey); }
+function setToken(token) { sessionStorage.setItem(tokenKey, token); }
+function clearToken() { sessionStorage.removeItem(tokenKey); sessionStorage.removeItem(sessionKey); }
+
+async function api(path, options = {}) {
+  const token = getToken();
+  const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers };
+  const res = await fetch(`/api${path}`, { ...options, headers });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erro na requisição');
+  return data;
 }
 
-function statusActionLabel(status) {
-  return { approved: 'Solicitação aprovada', rejected: 'Solicitação recusada', delivered: 'Material entregue', pending: 'Aguardando análise' }[status] || status;
-}
+const apiGet = (path) => api(path);
+const apiPost = (path, body) => api(path, { method: 'POST', body: JSON.stringify(body) });
+const apiPut = (path, body) => api(path, { method: 'PUT', body: JSON.stringify(body) });
 
-function visibleRequests() {
-  return can('viewAllRequests') ? state.requests : state.requests.filter((item) => item.requesterEmail === currentUser?.email || (!item.requesterEmail && item.requester === currentUser?.name));
-}
-
-function getAlerts() {
-  const ownPending = visibleRequests().filter((item) => item.status === 'pending');
-  if (currentUser?.role === 'requester') return ownPending.map((item) => ({ type: 'pending', title: item.item, detail: `Solicitado em ${dateLabel(item.date)} · Aguardando análise`, badge: 'Pendente', page: 'requests' }));
-  const activeCustody = state.custody.filter((item) => item.status === 'active');
-  const custodyIds = new Set(activeCustody.map((item) => item.inventoryId));
-  const lowStock = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id));
-  return [
-    ...activeCustody.filter(isOverdue).map((item) => ({ type: 'overdue', title: item.item, detail: `${item.holder} · Devolução prevista para ${dateLabel(item.expected)}`, badge: 'Atrasado', page: 'custody' })),
-    ...lowStock.map((item) => ({ type: 'low', title: item.name, detail: `Restam ${item.quantity} un. · Mínimo recomendado: ${item.minimum}`, badge: 'Estoque baixo', page: 'inventory' })),
-    ...ownPending.map((item) => ({ type: 'pending', title: item.item, detail: `${item.requester} · Solicitado em ${dateLabel(item.date)}`, badge: 'Pendente', page: 'requests' })),
-  ];
-}
-
-function applyPermissions() {
-  const requesterOnly = currentUser?.role === 'requester';
-  document.querySelectorAll('.nav-item').forEach((button) => { button.hidden = !canOpenPage(button.dataset.page); });
-  document.querySelectorAll('.quick-request').forEach((button) => { button.hidden = !can('request'); });
-  $('#newItemButton').hidden = !can('manageInventory');
-  $('#newMovementButton').hidden = !can('manageInventory');
-  $('#newCustodyButton').hidden = !can('manageCustody');
-  $('#exportReportButton').hidden = !can('viewReports');
-  $('#currentUserName').textContent = currentUser?.name || '';
-  $('#currentUserRole').textContent = roleLabels[currentUser?.role] || '';
-  $('#userAvatar').textContent = initials(currentUser?.name || 'DFA');
-  if (requesterOnly) navigate('requests');
-}
-
-function startSession(user) {
-  currentUser = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
-  sessionStorage.setItem(sessionKey, JSON.stringify(currentUser));
-  $('#loginScreen').classList.add('hidden');
-  $('#appShell').classList.remove('auth-hidden');
-  $('#loginError').textContent = '';
-  applyPermissions();
-  renderAll();
-}
-
-function endSession() {
-  sessionStorage.removeItem(sessionKey);
-  currentUser = null;
-  $('#appShell').classList.add('auth-hidden');
-  $('#loginScreen').classList.remove('hidden');
-  $('#loginForm').reset();
-  $('#loginEmail').focus();
-}
-
-function showToast(message) {
-  $('#toastMessage').textContent = message;
-  $('#toast').classList.add('show');
-  window.setTimeout(() => $('#toast').classList.remove('show'), 2600);
+async function loadState() {
+  try {
+    const results = await Promise.all([
+      apiGet('/inventory'),
+      apiGet('/requests'),
+      apiGet('/custody'),
+      apiGet('/movements'),
+      apiGet('/activity'),
+    ]);
+    state.inventory = results[0];
+    state.requests = results[1];
+    state.custody = results[2];
+    state.movements = results[3];
+    state.activity = results[4];
+  } catch (err) {
+    console.error('Erro ao carregar dados:', err);
+  }
 }
 
 function statusBadge(status, context = 'request') {
@@ -175,9 +102,26 @@ function addActivity(text, detail) {
   state.activity = state.activity.slice(0, 10);
 }
 
+function visibleRequests() {
+  return can('viewAllRequests') ? state.requests : state.requests.filter((item) => item.requester_email === currentUser?.email || (!item.requester_email && item.requester === currentUser?.name));
+}
+
+function getAlerts() {
+  const ownPending = visibleRequests().filter((item) => item.status === 'pending');
+  if (currentUser?.role === 'requester') return ownPending.map((item) => ({ type: 'pending', title: item.item, detail: `Solicitado em ${dateLabel(item.date)} · Aguardando análise`, badge: 'Pendente', page: 'requests' }));
+  const activeCustody = state.custody.filter((item) => item.status === 'active');
+  const custodyIds = new Set(activeCustody.map((item) => item.inventory_id));
+  const lowStock = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id));
+  return [
+    ...activeCustody.filter(isOverdue).map((item) => ({ type: 'overdue', title: item.item, detail: `${item.holder} · Devolução prevista para ${dateLabel(item.expected)}`, badge: 'Atrasado', page: 'custody' })),
+    ...lowStock.map((item) => ({ type: 'low', title: item.name, detail: `Restam ${item.quantity} un. · Mínimo recomendado: ${item.minimum}`, badge: 'Estoque baixo', page: 'inventory' })),
+    ...ownPending.map((item) => ({ type: 'pending', title: item.item, detail: `${item.requester} · Solicitado em ${dateLabel(item.date)}`, badge: 'Pendente', page: 'requests' })),
+  ];
+}
+
 function renderDashboard() {
   const activeCustody = state.custody.filter((item) => item.status === 'active');
-  const custodyIds = new Set(activeCustody.map((item) => item.inventoryId));
+  const custodyIds = new Set(activeCustody.map((item) => item.inventory_id));
   const low = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id));
   const pending = state.requests.filter((item) => item.status === 'pending');
   const totalValue = activeCustody.reduce((sum, item) => sum + Number(item.value), 0);
@@ -211,7 +155,7 @@ function renderInventory() {
   const term = $('#inventorySearch').value.toLowerCase();
   const category = $('#inventoryCategory').value;
   const status = $('#inventoryStatus').value;
-  const custodyIds = new Set(state.custody.filter((item) => item.status === 'active').map((item) => item.inventoryId));
+  const custodyIds = new Set(state.custody.filter((item) => item.status === 'active').map((item) => item.inventory_id));
   const filtered = state.inventory.filter((item) => {
     const matchesTerm = [item.name, item.code, item.location].join(' ').toLowerCase().includes(term);
     const matchesCategory = category === 'all' || item.category === category;
@@ -242,11 +186,13 @@ function renderRequests() {
   $('#requestPermissionNote').textContent = can('approve') ? 'Você pode analisar pedidos. Toda aprovação ou recusa exige justificativa e fica registrada no histórico.' : currentUser?.role === 'requester' ? 'Você está visualizando apenas as solicitações criadas pela sua conta.' : 'Perfil de consulta: pedidos e históricos estão disponíveis somente para leitura.';
   const filtered = activeRequestFilter === 'all' ? visible : visible.filter((item) => item.status === activeRequestFilter);
   $('#requestsGrid').innerHTML = filtered.map((item) => {
-    const decision = item.decisionNote ? `<div class="approval-record"><span>${escapeHtml(item.decidedBy || 'Administração')} · ${dateLabel((item.decidedAt || '').slice(0, 10))}</span><p>${escapeHtml(item.decisionNote)}</p></div>` : '';
+    const decisionNote = item.decision_note;
+    const decision = decisionNote ? `<div class="approval-record"><span>${escapeHtml(item.decided_by || 'Administração')} · ${dateLabel((item.decided_at || '').slice(0, 10))}</span><p>${escapeHtml(decisionNote)}</p></div>` : '';
     let actions = `<span class="asset-value">Solicitado em ${dateLabel(item.date)}</span>`;
     if (can('approve') && item.status === 'pending') actions = `<button class="button small primary request-approve" data-id="${item.id}">Aprovar</button><button class="button small danger request-reject" data-id="${item.id}">Recusar</button>`;
     if (can('approve') && item.status === 'approved') actions = `<button class="button small primary request-deliver" data-id="${item.id}">Marcar como entregue</button>`;
-    return `<article class="request-card"><div class="request-card-top"><span class="code">SOL-${String(item.id).padStart(4, '0')}</span>${statusBadge(item.status)}</div><h3>${escapeHtml(item.item)}</h3><p>${escapeHtml(item.reason)}</p><div class="request-meta"><div><span>Solicitante</span><strong>${escapeHtml(item.requester)}</strong></div><div><span>Quantidade</span><strong>${item.quantity} unidade(s)</strong></div><div><span>Setor</span><strong>${escapeHtml(item.department)}</strong></div><div><span>Prioridade</span><strong>${escapeHtml(item.priority)}</strong></div></div>${decision}<div class="request-actions">${actions}<button class="history-button request-history" data-id="${item.id}">Histórico (${item.history?.length || 0})</button></div></article>`;
+    const historyCount = Array.isArray(item.history) ? item.history.length : 0;
+    return `<article class="request-card"><div class="request-card-top"><span class="code">SOL-${String(item.id).padStart(4, '0')}</span>${statusBadge(item.status)}</div><h3>${escapeHtml(item.item)}</h3><p>${escapeHtml(item.reason)}</p><div class="request-meta"><div><span>Solicitante</span><strong>${escapeHtml(item.requester)}</strong></div><div><span>Quantidade</span><strong>${item.quantity} unidade(s)</strong></div><div><span>Setor</span><strong>${escapeHtml(item.department)}</strong></div><div><span>Prioridade</span><strong>${escapeHtml(item.priority)}</strong></div></div>${decision}<div class="request-actions">${actions}<button class="history-button request-history" data-id="${item.id}">Histórico (${historyCount})</button></div></article>`;
   }).join('');
   $('#requestsEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.request-approve').forEach((button) => button.addEventListener('click', () => openDecisionModal(Number(button.dataset.id), 'approved')));
@@ -288,7 +234,7 @@ function consumptionSummary() {
 function renderReports() {
   const inventoryValue = state.inventory.reduce((sum, item) => sum + Number(item.quantity) * Number(item.value), 0);
   const activeCustody = state.custody.filter((item) => item.status === 'active');
-  const custodyIds = new Set(activeCustody.map((item) => item.inventoryId));
+  const custodyIds = new Set(activeCustody.map((item) => item.inventory_id));
   const custodyValue = activeCustody.reduce((sum, item) => sum + Number(item.value), 0);
   const consumed = state.movements.filter((item) => item.type === 'exit').reduce((sum, item) => sum + Number(item.quantity), 0);
   const low = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id)).length;
@@ -326,6 +272,12 @@ function navigate(page) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+function showToast(message) {
+  $('#toastMessage').textContent = message;
+  $('#toast').classList.add('show');
+  window.setTimeout(() => $('#toast').classList.remove('show'), 2600);
+}
+
 function openModal({ eyebrow, title, submitLabel, body, action, hideSubmit = false }) {
   $('#modalEyebrow').textContent = eyebrow;
   $('#modalTitle').textContent = title;
@@ -355,19 +307,22 @@ function openAlerts() {
   document.querySelectorAll('.notification-item').forEach((button) => button.addEventListener('click', () => { closeModal(); navigate(button.dataset.alertPage); }));
 }
 
-function openMovementModal() {
+async function openMovementModal() {
   if (!can('manageInventory')) { showToast('Seu perfil não pode registrar movimentações.'); return; }
   const options = state.inventory.map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · Saldo: ${item.quantity}</option>`).join('');
-  openModal({ eyebrow: 'CONTROLE DE ESTOQUE', title: 'Registrar movimentação', submitLabel: 'Confirmar movimentação', body: `<div class="form-grid"><div class="field full"><label for="movementItem">Item *</label><select id="movementItem" name="inventoryId" required><option value="">Selecione o item</option>${options}</select></div><div class="field"><label for="movementKind">Tipo *</label><select id="movementKind" name="type" required><option value="entry">Entrada</option><option value="exit">Saída</option></select></div><div class="field"><label for="movementQuantity">Quantidade *</label><input id="movementQuantity" name="quantity" type="number" min="1" value="1" required /></div><div class="field"><label for="movementDate">Data *</label><input id="movementDate" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required /></div><div class="field"><label for="movementSupplier">Fornecedor ou destino *</label><input id="movementSupplier" name="supplier" required placeholder="Empresa, setor ou pessoa" /></div><div class="field"><label for="movementDocument">Nota fiscal / documento</label><input id="movementDocument" name="document" placeholder="Ex.: NF-2031 ou REQ-0102" /></div><div class="field"><label for="movementResponsible">Responsável</label><input id="movementResponsible" name="responsible" readonly value="${escapeHtml(currentUser.name)}" /></div><div class="field full"><label for="movementNotes">Observações</label><textarea id="movementNotes" name="notes" placeholder="Motivo, condição recebida ou informações adicionais."></textarea></div></div>`, action: (form) => {
+  openModal({ eyebrow: 'CONTROLE DE ESTOQUE', title: 'Registrar movimentação', submitLabel: 'Confirmar movimentação', body: `<div class="form-grid"><div class="field full"><label for="movementItem">Item *</label><select id="movementItem" name="inventoryId" required><option value="">Selecione o item</option>${options}</select></div><div class="field"><label for="movementKind">Tipo *</label><select id="movementKind" name="type" required><option value="entry">Entrada</option><option value="exit">Saída</option></select></div><div class="field"><label for="movementQuantity">Quantidade *</label><input id="movementQuantity" name="quantity" type="number" min="1" value="1" required /></div><div class="field"><label for="movementDate">Data *</label><input id="movementDate" name="date" type="date" value="${new Date().toISOString().slice(0, 10)}" required /></div><div class="field"><label for="movementSupplier">Fornecedor ou destino *</label><input id="movementSupplier" name="supplier" required placeholder="Empresa, setor ou pessoa" /></div><div class="field"><label for="movementDocument">Nota fiscal / documento</label><input id="movementDocument" name="document" placeholder="Ex.: NF-2031 ou REQ-0102" /></div><div class="field"><label for="movementResponsible">Responsável</label><input id="movementResponsible" name="responsible" readonly value="${escapeHtml(currentUser.name)}" /></div><div class="field full"><label for="movementNotes">Observações</label><textarea id="movementNotes" name="notes" placeholder="Motivo, condição recebida ou informações adicionais."></textarea></div></div>`, action: async (form) => {
     const data = Object.fromEntries(new FormData(form));
     const item = state.inventory.find((entry) => entry.id === Number(data.inventoryId));
     const quantity = Number(data.quantity);
     if (!item || quantity < 1) return;
     if (data.type === 'exit' && quantity > item.quantity) { showToast(`Saldo insuficiente. Disponível: ${item.quantity} unidade(s).`); return; }
-    item.quantity += data.type === 'entry' ? quantity : -quantity;
-    state.movements.unshift({ id: Date.now(), inventoryId: item.id, item: item.name, code: item.code, type: data.type, quantity, date: data.date, supplier: data.supplier, document: data.document, responsible: currentUser.name, notes: data.notes });
-    addActivity(data.type === 'entry' ? 'Entrada de estoque registrada' : 'Saída de estoque registrada', `${item.name} · ${quantity} unidade(s) · ${currentUser.name}`);
-    save(); closeModal(); renderAll(); navigate('movements'); showToast('Movimentação registrada e saldo atualizado.');
+    try {
+      const movement = await apiPost('/movements', { inventoryId: item.id, type: data.type, quantity, date: data.date, supplier: data.supplier, document: data.document, notes: data.notes });
+      item.quantity += data.type === 'entry' ? quantity : -quantity;
+      state.movements.unshift(movement);
+      addActivity(data.type === 'entry' ? 'Entrada de estoque registrada' : 'Saída de estoque registrada', `${item.name} · ${quantity} unidade(s) · ${currentUser.name}`);
+      closeModal(); renderAll(); navigate('movements'); showToast('Movimentação registrada e saldo atualizado.');
+    } catch (err) { showToast(err.message); }
   } });
 }
 
@@ -469,7 +424,7 @@ async function downloadPdf(filename, title, subtitle, rows) {
     commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 225 59 Td (+55 11 2770-1304 | Av. Cidade Jardim, 377 - Itaim Bibi) Tj ET');
     commands.push('BT /F2 7 Tf 0.12 0.12 0.12 rg 432 71 Td (BRASÍLIA - DF) Tj ET');
     commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 432 59 Td (+55 61 3550-7517 | SHN, Quadra 02) Tj ET');
-    commands.push(`BT /F1 6 Tf 0.5 0.5 0.5 rg 48 38 Td (Documento gerado pelo sistema de gestão patrimonial) Tj ET`);
+    commands.push('BT /F1 6 Tf 0.5 0.5 0.5 rg 48 38 Td (Documento gerado pelo sistema de gestão patrimonial) Tj ET');
     commands.push(`BT /F1 6 Tf 0.5 0.5 0.5 rg 500 38 Td (Página ${index + 1} de ${pages.length}) Tj ET`);
     const stream = commands.join('\n');
     objects[pageObject] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Logo 5 0 R >> >> /Contents ${contentObject} 0 R >>`;
@@ -523,7 +478,7 @@ async function generateCustodyPdf(id) {
 async function exportReportsPdf() {
   const inventoryValue = state.inventory.reduce((sum, item) => sum + item.quantity * item.value, 0);
   const activeCustody = state.custody.filter((item) => item.status === 'active');
-  const custodyIds = new Set(activeCustody.map((item) => item.inventoryId));
+  const custodyIds = new Set(activeCustody.map((item) => item.inventory_id));
   const rows = [
     { heading: true, text: 'RELATÓRIO GERENCIAL DE MATERIAIS E PATRIMÔNIO' },
     { text: `Emitido em: ${new Date().toLocaleString('pt-BR')} por ${currentUser.name}` }, { spacer: true },
@@ -540,58 +495,70 @@ async function exportReportsPdf() {
   showToast('Relatório gerencial exportado em PDF.');
 }
 
-function openRequestModal() {
+async function openRequestModal() {
   if (!can('request')) { showToast('Seu perfil não pode criar solicitações.'); return; }
   const options = state.inventory.map((item) => `<option value="${escapeHtml(item.name)}">${escapeHtml(item.name)}</option>`).join('');
-  openModal({ eyebrow: 'NOVO PEDIDO', title: 'Solicitar material ou equipamento', submitLabel: 'Enviar solicitação', body: `<div class="form-grid"><div class="field full"><label for="requestItem">Item solicitado *</label><input id="requestItem" name="item" list="inventoryOptions" required placeholder="Digite ou selecione um item"/><datalist id="inventoryOptions">${options}</datalist></div><div class="field"><label for="requester">Solicitante *</label><input id="requester" name="requester" required readonly value="${escapeHtml(currentUser.name)}"/></div><div class="field"><label for="requestDepartment">Setor *</label><input id="requestDepartment" name="department" required readonly value="${escapeHtml(currentUser.department)}"/></div><div class="field"><label for="requestQuantity">Quantidade *</label><input id="requestQuantity" name="quantity" type="number" min="1" value="1" required/></div><div class="field"><label for="requestPriority">Prioridade</label><select id="requestPriority" name="priority"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div><div class="field full"><label for="requestReason">Motivo da solicitação *</label><textarea id="requestReason" name="reason" required placeholder="Explique brevemente a necessidade."></textarea></div></div>`, action: (form) => {
+  openModal({ eyebrow: 'NOVO PEDIDO', title: 'Solicitar material ou equipamento', submitLabel: 'Enviar solicitação', body: `<div class="form-grid"><div class="field full"><label for="requestItem">Item solicitado *</label><input id="requestItem" name="item" list="inventoryOptions" required placeholder="Digite ou selecione um item"/><datalist id="inventoryOptions">${options}</datalist></div><div class="field"><label for="requester">Solicitante *</label><input id="requester" name="requester" required readonly value="${escapeHtml(currentUser.name)}"/></div><div class="field"><label for="requestDepartment">Setor *</label><input id="requestDepartment" name="department" required readonly value="${escapeHtml(currentUser.department)}"/></div><div class="field"><label for="requestQuantity">Quantidade *</label><input id="requestQuantity" name="quantity" type="number" min="1" value="1" required/></div><div class="field"><label for="requestPriority">Prioridade</label><select id="requestPriority" name="priority"><option>Normal</option><option>Alta</option><option>Urgente</option></select></div><div class="field full"><label for="requestReason">Motivo da solicitação *</label><textarea id="requestReason" name="reason" required placeholder="Explique brevemente a necessidade."></textarea></div></div>`, action: async (form) => {
     const data = Object.fromEntries(new FormData(form));
-    const now = new Date().toISOString();
-    state.requests.unshift({ id: Date.now(), ...data, requesterEmail: currentUser.email, quantity: Number(data.quantity), date: now.slice(0, 10), status: 'pending', history: [{ action: 'created', label: 'Solicitação criada', user: currentUser.name, role: roleLabels[currentUser.role], date: now, note: data.reason }] });
-    addActivity('Nova solicitação criada', `${data.requester} pediu ${data.quantity} unidade(s) de ${data.item}`);
-    save(); closeModal(); renderAll(); navigate('requests'); showToast('Solicitação enviada para análise.');
+    try {
+      const created = await apiPost('/requests', { ...data, quantity: Number(data.quantity), priority: data.priority || 'Normal' });
+      state.requests.unshift(created);
+      addActivity('Nova solicitação criada', `${data.requester} pediu ${data.quantity} unidade(s) de ${data.item}`);
+      closeModal(); renderAll(); navigate('requests'); showToast('Solicitação enviada para análise.');
+    } catch (err) { showToast(err.message); }
   } });
 }
 
 function openItemModal(id = null) {
   if (!can('manageInventory')) { showToast('Seu perfil não pode alterar o inventário.'); return; }
   const item = state.inventory.find((entry) => entry.id === id) || {};
-  openModal({ eyebrow: id ? 'ATUALIZAR CADASTRO' : 'NOVO CADASTRO', title: id ? 'Editar item' : 'Cadastrar material ou equipamento', submitLabel: id ? 'Salvar alterações' : 'Cadastrar item', body: `<div class="form-grid"><div class="field full"><label for="itemName">Nome do item *</label><input id="itemName" name="name" required value="${escapeHtml(item.name || '')}" placeholder="Ex.: Monitor Dell 24 polegadas"/></div><div class="field"><label for="itemCode">Código *</label><input id="itemCode" name="code" required value="${escapeHtml(item.code || '')}" placeholder="MAT-001 ou PAT-001"/></div><div class="field"><label for="itemCategory">Categoria *</label><input id="itemCategory" name="category" required value="${escapeHtml(item.category || '')}" placeholder="Ex.: Informática"/></div><div class="field"><label for="itemLocation">Localização *</label><input id="itemLocation" name="location" required value="${escapeHtml(item.location || '')}" placeholder="Ex.: Armário A"/></div><div class="field"><label for="itemValue">Valor unitário (R$)</label><input id="itemValue" name="value" type="number" min="0" step="0.01" value="${item.value || 0}"/></div><div class="field"><label for="itemQuantity">Quantidade atual *</label><input id="itemQuantity" name="quantity" type="number" min="0" required value="${item.quantity ?? 1}"/></div><div class="field"><label for="itemMinimum">Estoque mínimo *</label><input id="itemMinimum" name="minimum" type="number" min="0" required value="${item.minimum ?? 1}"/></div><div class="field full"><label><input name="valuable" type="checkbox" ${item.valuable ? 'checked' : ''}/> Item de valor que exige termo de posse</label><small>Use para notebooks, celulares, monitores e outros bens patrimoniais.</small></div></div>`, action: (form) => {
+  openModal({ eyebrow: id ? 'ATUALIZAR CADASTRO' : 'NOVO CADASTRO', title: id ? 'Editar item' : 'Cadastrar material ou equipamento', submitLabel: id ? 'Salvar alterações' : 'Cadastrar item', body: `<div class="form-grid"><div class="field full"><label for="itemName">Nome do item *</label><input id="itemName" name="name" required value="${escapeHtml(item.name || '')}" placeholder="Ex.: Monitor Dell 24 polegadas"/></div><div class="field"><label for="itemCode">Código *</label><input id="itemCode" name="code" required value="${escapeHtml(item.code || '')}" placeholder="MAT-001 ou PAT-001"/></div><div class="field"><label for="itemCategory">Categoria *</label><input id="itemCategory" name="category" required value="${escapeHtml(item.category || '')}" placeholder="Ex.: Informática"/></div><div class="field"><label for="itemLocation">Localização *</label><input id="itemLocation" name="location" required value="${escapeHtml(item.location || '')}" placeholder="Ex.: Armário A"/></div><div class="field"><label for="itemValue">Valor unitário (R$)</label><input id="itemValue" name="value" type="number" min="0" step="0.01" value="${item.value || 0}"/></div><div class="field"><label for="itemQuantity">Quantidade atual *</label><input id="itemQuantity" name="quantity" type="number" min="0" required value="${item.quantity ?? 1}"/></div><div class="field"><label for="itemMinimum">Estoque mínimo *</label><input id="itemMinimum" name="minimum" type="number" min="0" required value="${item.minimum ?? 1}"/></div><div class="field full"><label><input name="valuable" type="checkbox" ${item.valuable ? 'checked' : ''}/> Item de valor que exige termo de posse</label><small>Use para notebooks, celulares, monitores e outros bens patrimoniais.</small></div></div>`, action: async (form) => {
     const data = Object.fromEntries(new FormData(form));
-    const updated = { ...item, ...data, id: id || Date.now(), quantity: Number(data.quantity), minimum: Number(data.minimum), value: Number(data.value), valuable: Boolean(data.valuable) };
-    if (id) state.inventory = state.inventory.map((entry) => entry.id === id ? updated : entry); else state.inventory.unshift(updated);
-    addActivity(id ? 'Cadastro atualizado' : 'Novo item cadastrado', `${updated.name} · ${updated.quantity} unidade(s)`);
-    save(); closeModal(); renderAll(); showToast(id ? 'Item atualizado.' : 'Item cadastrado no inventário.');
+    try {
+      const payload = { ...data, id: id || undefined, quantity: Number(data.quantity), minimum: Number(data.minimum), value: Number(data.value), valuable: Boolean(data.valuable) };
+      let saved;
+      if (id) {
+        saved = await apiPut(`/inventory/${id}`, payload);
+        state.inventory = state.inventory.map((entry) => entry.id === id ? saved : entry);
+        addActivity('Cadastro atualizado', `${saved.name} · ${saved.quantity} unidade(s)`);
+      } else {
+        saved = await apiPost('/inventory', payload);
+        state.inventory.unshift(saved);
+        addActivity('Novo item cadastrado', `${saved.name} · ${saved.quantity} unidade(s)`);
+      }
+      closeModal(); renderAll(); showToast(id ? 'Item atualizado.' : 'Item cadastrado no inventário.');
+    } catch (err) { showToast(err.message); }
   } });
 }
 
-function openCustodyModal() {
+async function openCustodyModal() {
   if (!can('manageCustody')) { showToast('Seu perfil não pode registrar retiradas.'); return; }
-  const available = state.inventory.filter((item) => item.valuable && !state.custody.some((record) => record.inventoryId === item.id && record.status === 'active'));
+  const available = state.inventory.filter((item) => item.valuable && !state.custody.some((record) => record.inventory_id === item.id && record.status === 'active'));
   const options = available.map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · ${escapeHtml(item.code)}</option>`).join('');
-  openModal({ eyebrow: 'RESPONSABILIDADE', title: 'Registrar retirada de equipamento', submitLabel: 'Registrar retirada', body: `<div class="form-grid"><div class="field full"><label for="custodyItem">Equipamento *</label><select id="custodyItem" name="inventoryId" required><option value="">Selecione o bem</option>${options}</select>${available.length ? '' : '<small>Não há itens de valor disponíveis. Cadastre ou devolva um equipamento.</small>'}</div><div class="field"><label for="holder">Responsável *</label><input id="holder" name="holder" required placeholder="Nome completo"/></div><div class="field"><label for="holderDepartment">Setor *</label><input id="holderDepartment" name="department" required placeholder="Ex.: Diretoria"/></div><div class="field"><label for="checkout">Data da retirada *</label><input id="checkout" name="checkout" type="date" value="${new Date().toISOString().slice(0, 10)}" required/></div><div class="field"><label for="expected">Previsão de devolução *</label><input id="expected" name="expected" type="date" required/></div><div class="field full"><label for="custodyNotes">Estado e observações</label><textarea id="custodyNotes" name="notes" placeholder="Acessórios entregues, estado de conservação e finalidade."></textarea></div></div>`, action: (form) => {
+  openModal({ eyebrow: 'RESPONSABILIDADE', title: 'Registrar retirada de equipamento', submitLabel: 'Registrar retirada', body: `<div class="form-grid"><div class="field full"><label for="custodyItem">Equipamento *</label><select id="custodyItem" name="inventoryId" required><option value="">Selecione o bem</option>${options}</select>${available.length ? '' : '<small>Não há itens de valor disponíveis. Cadastre ou devolva um equipamento.</small>'}</div><div class="field"><label for="holder">Responsável *</label><input id="holder" name="holder" required placeholder="Nome completo"/></div><div class="field"><label for="holderDepartment">Setor *</label><input id="holderDepartment" name="department" required placeholder="Ex.: Diretoria"/></div><div class="field"><label for="checkout">Data da retirada *</label><input id="checkout" name="checkout" type="date" value="${new Date().toISOString().slice(0, 10)}" required/></div><div class="field"><label for="expected">Previsão de devolução *</label><input id="expected" name="expected" type="date" required/></div><div class="field full"><label for="custodyNotes">Estado e observações</label><textarea id="custodyNotes" name="notes" placeholder="Acessórios entregues, estado de conservação e finalidade."></textarea></div></div>`, action: async (form) => {
     const data = Object.fromEntries(new FormData(form));
     const item = state.inventory.find((entry) => entry.id === Number(data.inventoryId));
     if (!item) { showToast('Selecione um equipamento disponível.'); return; }
-    state.custody.unshift({ id: Date.now(), inventoryId: item.id, item: item.name, code: item.code, holder: data.holder, department: data.department, checkout: data.checkout, expected: data.expected, returned: '', value: item.value, notes: data.notes, status: 'active' });
-    item.location = 'Em posse';
-    addActivity('Retirada registrada', `${item.name} entregue para ${data.holder}`);
-    save(); closeModal(); renderAll(); showToast('Termo de posse registrado.');
+    try {
+      const record = await apiPost('/custody', { inventoryId: item.id, holder: data.holder, department: data.department, checkout: data.checkout, expected: data.expected, notes: data.notes });
+      state.custody.unshift(record);
+      item.location = 'Em posse';
+      addActivity('Retirada registrada', `${item.name} entregue para ${data.holder}`);
+      closeModal(); renderAll(); showToast('Termo de posse registrado.');
+    } catch (err) { showToast(err.message); }
   } });
 }
 
-function registerRequestAction(request, status, note) {
-  const now = new Date().toISOString();
-  request.status = status;
-  request.history ||= [];
-  request.history.push({ action: status, label: statusActionLabel(status), user: currentUser.name, role: roleLabels[currentUser.role], date: now, note });
-  if (status === 'approved' || status === 'rejected') {
-    request.decidedBy = currentUser.name;
-    request.decidedAt = now;
-    request.decisionNote = note;
-  }
-  addActivity(statusActionLabel(status), `${request.item} · ${request.requester}`);
-  save();
-  renderAll();
+async function registerRequestAction(request, status, note) {
+  try {
+    let updated;
+    if (status === 'approved') updated = await apiPut(`/requests/${request.id}/approve`, { note });
+    else if (status === 'rejected') updated = await apiPut(`/requests/${request.id}/reject`, { note });
+    else if (status === 'delivered') updated = await apiPut(`/requests/${request.id}/deliver`);
+    else return;
+    Object.assign(request, updated);
+    renderAll();
+  } catch (err) { showToast(err.message); }
 }
 
 function openDecisionModal(id, status) {
@@ -599,49 +566,96 @@ function openDecisionModal(id, status) {
   const request = state.requests.find((item) => item.id === id);
   if (!request || request.status !== 'pending') return;
   const approving = status === 'approved';
-  openModal({ eyebrow: 'DECISÃO AUDITÁVEL', title: approving ? 'Aprovar solicitação' : 'Recusar solicitação', submitLabel: approving ? 'Confirmar aprovação' : 'Confirmar recusa', body: `<div class="permission-note"><strong>${escapeHtml(request.item)}</strong><br>${request.quantity} unidade(s) · ${escapeHtml(request.requester)}</div><div class="field"><label for="decisionNote">Justificativa da decisão *</label><textarea id="decisionNote" name="note" required minlength="5" placeholder="Registre o motivo para manter a decisão documentada."></textarea><small>A decisão será vinculada a ${escapeHtml(currentUser.name)}.</small></div>`, action: (form) => {
+  openModal({ eyebrow: 'DECISÃO AUDITÁVEL', title: approving ? 'Aprovar solicitação' : 'Recusar solicitação', submitLabel: approving ? 'Confirmar aprovação' : 'Confirmar recusa', body: `<div class="permission-note"><strong>${escapeHtml(request.item)}</strong><br>${request.quantity} unidade(s) · ${escapeHtml(request.requester)}</div><div class="field"><label for="decisionNote">Justificativa da decisão *</label><textarea id="decisionNote" name="note" required minlength="5" placeholder="Registre o motivo para manter a decisão documentada."></textarea><small>A decisão será vinculada a ${escapeHtml(currentUser.name)}.</small></div>`, action: async (form) => {
     const note = new FormData(form).get('note').trim();
     if (note.length < 5) return;
-    registerRequestAction(request, status, note);
+    await registerRequestAction(request, status, note);
     closeModal();
     showToast(approving ? 'Solicitação aprovada e documentada.' : 'Solicitação recusada e documentada.');
   } });
 }
 
-function deliverRequest(id) {
+async function deliverRequest(id) {
   if (!can('approve')) { showToast('Seu perfil não pode registrar entregas.'); return; }
   const request = state.requests.find((item) => item.id === id);
   if (!request || request.status !== 'approved' || !window.confirm(`Confirmar a entrega de ${request.item} para ${request.requester}?`)) return;
   const inventoryItem = state.inventory.find((item) => item.name.toLowerCase() === request.item.toLowerCase());
-  if (inventoryItem) {
-    if (inventoryItem.quantity < request.quantity) { showToast(`Saldo insuficiente. Disponível: ${inventoryItem.quantity} unidade(s).`); return; }
-    inventoryItem.quantity -= request.quantity;
-    state.movements.unshift({ id: Date.now(), inventoryId: inventoryItem.id, item: inventoryItem.name, code: inventoryItem.code, type: 'exit', quantity: request.quantity, date: new Date().toISOString().slice(0, 10), supplier: `${request.department} · ${request.requester}`, document: `SOL-${String(request.id).padStart(4, '0')}`, responsible: currentUser.name, notes: 'Saída gerada automaticamente na entrega da solicitação.' });
-  }
-  registerRequestAction(request, 'delivered', `Entrega confirmada por ${currentUser.name}.`);
-  showToast('Entrega registrada no histórico.');
+  if (inventoryItem && inventoryItem.quantity < request.quantity) { showToast(`Saldo insuficiente. Disponível: ${inventoryItem.quantity} unidade(s).`); return; }
+  try {
+    const updated = await apiPut(`/requests/${id}/deliver`);
+    Object.assign(request, updated);
+    if (inventoryItem) {
+      inventoryItem.quantity -= request.quantity;
+      const mov = await apiGet('/movements');
+      state.movements = mov;
+    }
+    addActivity('Material entregue', `${request.item} entregue para ${request.requester}`);
+    renderAll();
+    showToast('Entrega registrada no histórico.');
+  } catch (err) { showToast(err.message); }
 }
 
-function openRequestHistory(id) {
+async function openRequestHistory(id) {
   const request = state.requests.find((item) => item.id === id);
   if (!request) return;
-  const entries = [...(request.history || [])].reverse().map((entry) => {
+  let history = request.history;
+  if (!history || !history.length) {
+    try { history = await apiGet(`/requests/${id}/history`); } catch {}
+  }
+  const entries = [...(history || [])].reverse().map((entry) => {
     const date = new Date(entry.date);
-    return `<div class="audit-entry"><strong>${escapeHtml(entry.label)}</strong><span>${escapeHtml(entry.user)}${entry.role ? ` · ${escapeHtml(entry.role)}` : ''} · ${date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ''}</div>`;
+    return `<div class="audit-entry"><strong>${escapeHtml(entry.label)}</strong><span>${escapeHtml(entry.user_name || entry.user)}${entry.user_role ? ` · ${escapeHtml(entry.user_role)}` : ''} · ${date.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span>${entry.note ? `<p>${escapeHtml(entry.note)}</p>` : ''}</div>`;
   }).join('');
   openModal({ eyebrow: `SOL-${String(request.id).padStart(4, '0')}`, title: `Histórico · ${request.item}`, submitLabel: '', hideSubmit: true, body: `<div class="audit-list">${entries || '<p>Nenhum evento registrado.</p>'}</div>`, action: null });
 }
 
-function returnCustody(id) {
+async function returnCustody(id) {
   if (!can('manageCustody')) { showToast('Seu perfil não pode registrar devoluções.'); return; }
   const record = state.custody.find((item) => item.id === id);
   if (!record || !window.confirm(`Confirmar a devolução de ${record.item}?`)) return;
-  record.status = 'returned';
-  record.returned = new Date().toISOString().slice(0, 10);
-  const item = state.inventory.find((entry) => entry.id === record.inventoryId);
-  if (item) item.location = 'Armário de equipamentos';
-  addActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`);
-  save(); renderAll(); showToast('Devolução registrada no histórico.');
+  try {
+    const updated = await apiPut(`/custody/${id}/return`);
+    Object.assign(record, updated);
+    const item = state.inventory.find((entry) => entry.id === record.inventory_id);
+    if (item) item.location = 'Armário de equipamentos';
+    addActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`);
+    renderAll(); showToast('Devolução registrada no histórico.');
+  } catch (err) { showToast(err.message); }
+}
+
+async function startSession(user) {
+  currentUser = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
+  sessionStorage.setItem(sessionKey, JSON.stringify(currentUser));
+  $('#loginScreen').classList.add('hidden');
+  $('#appShell').classList.remove('auth-hidden');
+  $('#loginError').textContent = '';
+  await loadState();
+  applyPermissions();
+  renderAll();
+}
+
+function endSession() {
+  clearToken();
+  currentUser = null;
+  state = { inventory: [], requests: [], custody: [], movements: [], activity: [] };
+  $('#appShell').classList.add('auth-hidden');
+  $('#loginScreen').classList.remove('hidden');
+  $('#loginForm').reset();
+  $('#loginEmail').focus();
+}
+
+function applyPermissions() {
+  const requesterOnly = currentUser?.role === 'requester';
+  document.querySelectorAll('.nav-item').forEach((button) => { button.hidden = !canOpenPage(button.dataset.page); });
+  document.querySelectorAll('.quick-request').forEach((button) => { button.hidden = !can('request'); });
+  $('#newItemButton').hidden = !can('manageInventory');
+  $('#newMovementButton').hidden = !can('manageInventory');
+  $('#newCustodyButton').hidden = !can('manageCustody');
+  $('#exportReportButton').hidden = !can('viewReports');
+  $('#currentUserName').textContent = currentUser?.name || '';
+  $('#currentUserRole').textContent = roleLabels[currentUser?.role] || '';
+  $('#userAvatar').textContent = initials(currentUser?.name || 'DFA');
+  if (requesterOnly) navigate('requests');
 }
 
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => navigate(button.dataset.page)));
@@ -669,22 +683,28 @@ $('#requestTabs').addEventListener('click', (event) => {
   renderRequests();
 });
 
-$('#loginForm').addEventListener('submit', (event) => {
+$('#loginForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(event.currentTarget));
-  const user = users.find((entry) => entry.email.toLowerCase() === data.email.trim().toLowerCase() && entry.password === data.password);
-  if (!user) {
+  try {
+    const result = await apiPost('/auth/login', { email: data.email, password: data.password });
+    setToken(result.token);
+    await startSession(result.user);
+  } catch {
     $('#loginError').textContent = 'E-mail ou senha inválidos.';
-    return;
   }
-  startSession(user);
 });
 
-document.querySelectorAll('[data-demo]').forEach((button) => button.addEventListener('click', () => {
-  const user = users.find((entry) => entry.role === button.dataset.demo);
-  if (!user) return;
-  $('#loginEmail').value = user.email;
-  $('#loginPassword').value = user.password;
+document.querySelectorAll('[data-demo]').forEach((button) => button.addEventListener('click', async () => {
+  const email = button.dataset.demo === 'admin' ? 'admin@dfa.com'
+    : button.dataset.demo === 'manager' ? 'gestor@dfa.com'
+    : button.dataset.demo === 'requester' ? 'colaborador@dfa.com'
+    : 'consulta@dfa.com';
+  $('#loginEmail').value = email;
+  $('#loginPassword').value = email === 'admin@dfa.com' ? 'admin123'
+    : email === 'gestor@dfa.com' ? 'gestor123'
+    : email === 'colaborador@dfa.com' ? 'solicitar123'
+    : 'consulta123';
   $('#loginError').textContent = '';
   $('#loginPassword').focus();
 }));
@@ -692,6 +712,15 @@ document.querySelectorAll('[data-demo]').forEach((button) => button.addEventList
 $('#logoutButton').addEventListener('click', endSession);
 
 $('#todayLabel').textContent = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date());
-normalizeState();
-const validSession = currentUser && users.some((user) => user.email === currentUser.email && user.role === currentUser.role);
-if (validSession) startSession(currentUser); else endSession();
+
+const savedUser = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
+const savedToken = getToken();
+if (savedUser && savedToken) {
+  currentUser = savedUser;
+  $('#loginScreen').classList.add('hidden');
+  $('#appShell').classList.remove('auth-hidden');
+  applyPermissions();
+  loadState().then(renderAll);
+} else {
+  endSession();
+}

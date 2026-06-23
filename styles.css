@@ -265,16 +265,34 @@ td { border-color: rgba(219,164,81,.1); }
 @media (max-width: 520px) { .movement-stats { grid-template-columns: 1fr; }.report-kpis { grid-template-columns: 1fr 1fr; }.movement-stats article, .report-kpis article { padding: 14px; }.report-kpis strong { font-size: 16px; }.notification-item b { display: none; }.custody-actions .button { flex: 1; } }
 
 /* Identidade visual oficial - Daniel Frederighi Advogados Associados */
-.brand { min-height: 74px; padding: 0 6px 30px; align-items: center; }
-.brand img { display: block; width: 100%; height: auto; object-fit: contain; }
-.login-logo { position: relative; z-index: 1; display: block; width: min(520px, 82%); height: auto; object-fit: contain; }
+.brand {
+  width: calc(100% + 36px);
+  min-height: 108px;
+  margin: -28px -18px 24px;
+  padding: 24px 18px 20px;
+  border-bottom: 1px solid rgba(219, 164, 81, .24);
+  background: rgba(255, 255, 255, .025);
+  align-items: center;
+  justify-content: center;
+}
+.brand img {
+  display: block;
+  width: 224px;
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1189 / 305;
+  object-fit: contain;
+  object-position: center;
+  flex: none;
+}
+.login-logo { position: relative; z-index: 1; display: block; width: clamp(360px, 78%, 500px); max-width: 100%; height: auto; aspect-ratio: 1189 / 305; object-fit: contain; object-position: left center; flex: none; }
 .nav-item, .page-heading > div > p:last-child, .eyebrow, th { font-family: "Mulish", sans-serif; }
 .page-heading h1, .panel-header h2, .empty-state h3, .request-card h3, .custody-card h3,
 .login-card h2, .modal-header h2 { font-family: "Sora", sans-serif; font-weight: 600; }
 .login-brand-panel h1 { font-family: "Playfair Display", serif; font-weight: 400; }
 .button, .stat-card strong, .summary-card strong, .banner-value strong,
 .movement-stats strong, .report-kpis strong, .request-tabs button { font-family: "Sora", sans-serif; }
-.login-brand-panel::before { content: ""; right: -8%; bottom: -10%; width: 58%; height: 58%; opacity: .1; background: url("logo DF nova.png") right bottom / contain no-repeat; }
+.login-brand-panel::before { content: ""; right: -14%; bottom: -30%; width: 58%; height: 58%; opacity: .22; border: 1px solid rgba(219, 164, 81, .18); transform: rotate(45deg); background: linear-gradient(135deg, transparent, rgba(219, 164, 81, .08)); }
 .login-brand-panel { background: linear-gradient(135deg, #0b0b0b 0%, #17130d 62%, #7e5d20 150%); }
 .sidebar { background: linear-gradient(180deg, #090909 0%, #111 66%, #1a140b 100%); }
 .topbar { background: rgba(12, 12, 12, .9); }
@@ -296,5 +314,9 @@ body { font-size: 14px; line-height: 1.5; }
 .login-field input, .field input, .field select, .field textarea, .search-box input, .toolbar select { font-family: "Mulish", sans-serif; }
 
 @media (max-width: 850px) {
-  .login-logo { width: min(380px, 75%); }
+  .login-logo { width: min(360px, 78%); }
+}
+
+@media (max-width: 520px) {
+  .login-logo { width: min(300px, 88%); }
 }

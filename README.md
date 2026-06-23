@@ -1,29 +1,58 @@
 # Gestão Patrimonial - Daniel Frederighi Advogados Associados
 
-Sistema web local para controle de materiais, equipamentos, solicitações e termos de posse do escritório Daniel Frederighi Advogados Associados.
+Sistema web para controle de materiais, equipamentos, solicitações e termos de posse.
 
 ## Funcionalidades
 
-- Inventário com estoque mínimo e valor patrimonial.
-- Entradas e saídas com fornecedor, destino, documento e responsável.
-- Solicitações com aprovação, justificativa e histórico auditável.
-- Termos de responsabilidade exportáveis em PDF.
-- Alertas de reposição, devolução atrasada e pedidos pendentes.
-- Relatórios de consumo, inventário e bens por responsável, com exportação em PDF.
+- Inventário com estoque mínimo e valor patrimonial
+- Entradas e saídas com fornecedor, destino, documento e responsável
+- Solicitações com aprovação, justificativa e histórico auditável
+- Termos de responsabilidade exportáveis em PDF
+- Alertas de reposição, devolução atrasada e pedidos pendentes
+- Relatórios de consumo, inventário e bens por responsável, com exportação em PDF
 
-## Executar
+## Requisitos
 
-Abra `index.html` no navegador ou, nesta pasta, execute:
+- Node.js 18+
+- Uma database no [Neon](https://neon.tech) (PostgreSQL serverless)
+
+## Configuração
+
+1. Clone o repositório e instale as dependências:
 
 ```bash
-python3 -m http.server 8080
+npm install
 ```
 
-Depois acesse `http://localhost:8080`.
+2. Crie um arquivo `.env` na raiz do projeto com sua connection string do Neon:
 
-Os dados ficam salvos no `localStorage` do navegador. Esta versão é adequada para uso local e demonstração. Para uso simultâneo por várias pessoas, o próximo passo é integrar autenticação e banco de dados.
+```
+DATABASE_URL=postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
+JWT_SECRET=uma-chave-segura-aqui
+PORT=3000
+```
 
-## Acessos locais de demonstração
+3. Execute as migrações para criar as tabelas:
+
+```bash
+npm run schema
+```
+
+4. Popule o banco com dados iniciais:
+
+```bash
+npm run seed
+```
+
+5. Inicie o servidor:
+
+```bash
+npm start
+```
+
+6. Acesse `http://localhost:3000`
+
+## Acessos de demonstração
 
 | Perfil | E-mail | Senha |
 | --- | --- | --- |
@@ -32,4 +61,16 @@ Os dados ficam salvos no `localStorage` do navegador. Esta versão é adequada p
 | Solicitante | `colaborador@dfa.com` | `solicitar123` |
 | Consulta | `consulta@dfa.com` | `consulta123` |
 
-Essas credenciais e permissões são locais e servem para validar os fluxos antes da integração com o Supabase. Elas não substituem autenticação segura no servidor.
+## Scripts disponíveis
+
+- `npm start` — Inicia o servidor de produção
+- `npm run dev` — Inicia com watch mode (reinicia automaticamente)
+- `npm run schema` — Cria as tabelas no banco de dados
+- `npm run seed` — Popula o banco com dados iniciais
+
+## Arquitetura
+
+- **Frontend:** HTML/CSS/JS puro (SPA) servido como arquivo estático
+- **Backend:** Node.js + Express com API REST
+- **Banco de dados:** PostgreSQL via Neon (serverless)
+- **Autenticação:** JWT com bcryptjs
