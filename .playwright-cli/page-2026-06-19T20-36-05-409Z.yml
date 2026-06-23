@@ -1,0 +1,197 @@
+- generic [ref=e1]:
+  - text: DF
+  - generic [ref=e29]:
+    - complementary [ref=e30]:
+      - generic [ref=e31]:
+        - generic [ref=e32]: DF
+        - generic [ref=e33]:
+          - strong [ref=e34]: Daniel Frederighi
+          - generic [ref=e35]: Advogados Associados
+      - navigation "Navegação principal" [ref=e36]:
+        - button "Visão geral" [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - text: Materiais e equipamentos
+        - button "Movimentações" [ref=e49] [cursor=pointer]:
+          - img [ref=e51]
+          - text: Movimentações
+        - button "Solicitações 2" [ref=e53] [cursor=pointer]:
+          - img [ref=e55]
+          - text: Solicitações
+          - generic [ref=e58]: "2"
+        - button "Termos de posse" [ref=e59] [cursor=pointer]:
+          - img [ref=e61]
+          - text: Termos de posse
+        - button "Relatórios" [ref=e64] [cursor=pointer]:
+          - img [ref=e66]
+          - text: Relatórios
+      - generic [ref=e68]:
+        - generic:
+          - img
+        - generic [ref=e71]:
+          - strong [ref=e72]: Patrimônio protegido
+          - paragraph [ref=e73]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "AD Administração DFA Administrador" [ref=e74] [cursor=pointer]:
+        - generic [ref=e75]: AD
+        - generic [ref=e76]:
+          - strong [ref=e77]: Administração DFA
+          - generic [ref=e78]: Administrador
+        - img [ref=e80]
+    - main [ref=e82]:
+      - generic [ref=e83]:
+        - generic [ref=e84]:
+          - generic [ref=e85]: Gestão interna
+          - generic [ref=e86]: /
+          - strong [ref=e87]: Movimentações
+        - generic [ref=e88]:
+          - 'button "Notificações: 4 alerta(s)" [ref=e89] [cursor=pointer]':
+            - img [ref=e91]
+          - button "Solicitar item" [ref=e94] [cursor=pointer]:
+            - img [ref=e96]
+            - text: Solicitar item
+      - text: 01 02 03 04
+      - generic [ref=e289]:
+        - generic [ref=e290]:
+          - generic [ref=e291]:
+            - paragraph [ref=e292]: ENTRADAS E SAÍDAS
+            - heading "Movimentações de estoque" [level=1] [ref=e293]
+            - paragraph [ref=e294]: Documente cada alteração de saldo, fornecedor, nota fiscal e responsável.
+          - button "Nova movimentação" [ref=e295] [cursor=pointer]:
+            - img [ref=e297]
+            - text: Nova movimentação
+        - generic [ref=e299]:
+          - article [ref=e300]:
+            - generic [ref=e301]: Unidades recebidas
+            - strong [ref=e302]: "+10"
+            - text: Entradas documentadas
+          - article [ref=e303]:
+            - generic [ref=e304]: Unidades distribuídas
+            - strong [ref=e305]: "-10"
+            - text: Saídas documentadas
+          - article [ref=e306]:
+            - generic [ref=e307]: Fornecedores registrados
+            - strong [ref=e308]: "1"
+            - text: Com histórico de compra
+        - generic [ref=e309]:
+          - generic [ref=e310]:
+            - img [ref=e312]
+            - searchbox [ref=e315]
+          - combobox [ref=e316]:
+            - option "Todos os tipos" [selected]
+            - option "Entradas"
+            - option "Saídas"
+        - article [ref=e317]:
+          - table [ref=e319]:
+            - rowgroup [ref=e320]:
+              - row "Data Tipo Item Quantidade Fornecedor / destino Documento Responsável" [ref=e321]:
+                - columnheader "Data" [ref=e322]
+                - columnheader "Tipo" [ref=e323]
+                - columnheader "Item" [ref=e324]
+                - columnheader "Quantidade" [ref=e325]
+                - columnheader "Fornecedor / destino" [ref=e326]
+                - columnheader "Documento" [ref=e327]
+                - columnheader "Responsável" [ref=e328]
+            - rowgroup [ref=e329]:
+              - row "05/06/2026 Entrada P Papel A4 MAT-001 +10 un. Papelaria Central NF-2031 Administração" [ref=e330]:
+                - cell "05/06/2026" [ref=e331]
+                - cell "Entrada" [ref=e332]:
+                  - generic [ref=e333]: Entrada
+                - cell "P Papel A4 MAT-001" [ref=e334]:
+                  - generic [ref=e335]:
+                    - generic [ref=e336]: P
+                    - generic [ref=e337]:
+                      - strong [ref=e338]: Papel A4
+                      - generic [ref=e339]: MAT-001
+                - cell "+10 un." [ref=e340]:
+                  - strong [ref=e341]: "+10"
+                  - text: un.
+                - cell "Papelaria Central" [ref=e342]
+                - cell "NF-2031" [ref=e343]
+                - cell "Administração" [ref=e344]
+              - row "12/06/2026 Saída P Papel A4 MAT-001 -4 un. Setor Jurídico REQ-0102 Lucas Mendes" [ref=e345]:
+                - cell "12/06/2026" [ref=e346]
+                - cell "Saída" [ref=e347]:
+                  - generic [ref=e348]: Saída
+                - cell "P Papel A4 MAT-001" [ref=e349]:
+                  - generic [ref=e350]:
+                    - generic [ref=e351]: P
+                    - generic [ref=e352]:
+                      - strong [ref=e353]: Papel A4
+                      - generic [ref=e354]: MAT-001
+                - cell "-4 un." [ref=e355]:
+                  - strong [ref=e356]: "-4"
+                  - text: un.
+                - cell "Setor Jurídico" [ref=e357]
+                - cell "REQ-0102" [ref=e358]
+                - cell "Lucas Mendes" [ref=e359]
+              - row "16/06/2026 Saída C Caneta esferográfica azul MAT-002 -6 un. Setor Comercial REQ-0103 Ana Ribeiro" [ref=e360]:
+                - cell "16/06/2026" [ref=e361]
+                - cell "Saída" [ref=e362]:
+                  - generic [ref=e363]: Saída
+                - cell "C Caneta esferográfica azul MAT-002" [ref=e364]:
+                  - generic [ref=e365]:
+                    - generic [ref=e366]: C
+                    - generic [ref=e367]:
+                      - strong [ref=e368]: Caneta esferográfica azul
+                      - generic [ref=e369]: MAT-002
+                - cell "-6 un." [ref=e370]:
+                  - strong [ref=e371]: "-6"
+                  - text: un.
+                - cell "Setor Comercial" [ref=e372]
+                - cell "REQ-0103" [ref=e373]
+                - cell "Ana Ribeiro" [ref=e374]
+  - dialog "Registrar movimentação" [ref=e375]:
+    - generic [ref=e252]:
+      - generic [ref=e253]:
+        - paragraph [ref=e254]: CONTROLE DE ESTOQUE
+        - heading "Registrar movimentação" [level=2] [ref=e376]
+      - button "Fechar" [ref=e256] [cursor=pointer]:
+        - img [ref=e258]
+    - generic [ref=e260]:
+      - generic [ref=e377]:
+        - generic [ref=e378]:
+          - generic [ref=e379]: Item *
+          - combobox "Item *" [active] [ref=e380]:
+            - option "Selecione o item"
+            - 'option "Papel A4 · Saldo: 3" [selected]'
+            - 'option "Caneta esferográfica azul · Saldo: 24"'
+            - 'option "Notebook Dell Latitude 5440 · Saldo: 1"'
+            - 'option "Monitor LG 24 polegadas · Saldo: 2"'
+            - 'option "Toner HP 58A · Saldo: 1"'
+            - 'option "Headset Logitech H390 · Saldo: 1"'
+            - 'option "Bloco adesivo 76x76 · Saldo: 18"'
+            - 'option "Webcam Logitech C920 · Saldo: 3"'
+        - generic [ref=e381]:
+          - generic [ref=e382]: Tipo *
+          - combobox "Tipo *" [ref=e383]:
+            - option "Entrada" [selected]
+            - option "Saída"
+        - generic [ref=e384]:
+          - generic [ref=e385]: Quantidade *
+          - spinbutton "Quantidade *" [ref=e386]: "1"
+        - generic [ref=e387]:
+          - generic [ref=e388]: Data *
+          - textbox "Data *" [ref=e389]: 2026-06-19
+        - generic [ref=e390]:
+          - generic [ref=e391]: Fornecedor ou destino *
+          - textbox "Fornecedor ou destino *" [ref=e392]:
+            - /placeholder: Empresa, setor ou pessoa
+        - generic [ref=e393]:
+          - generic [ref=e394]: Nota fiscal / documento
+          - textbox "Nota fiscal / documento" [ref=e395]:
+            - /placeholder: "Ex.: NF-2031 ou REQ-0102"
+        - generic [ref=e396]:
+          - generic [ref=e397]: Responsável
+          - textbox "Responsável" [ref=e398]: Administração DFA
+        - generic [ref=e399]:
+          - generic [ref=e400]: Observações
+          - textbox "Observações" [ref=e401]:
+            - /placeholder: Motivo, condição recebida ou informações adicionais.
+      - generic [ref=e287]:
+        - button "Cancelar" [ref=e402] [cursor=pointer]
+        - button "Confirmar movimentação" [ref=e403] [cursor=pointer]
+  - generic:
+    - generic:
+      - img

@@ -1,0 +1,132 @@
+- generic [ref=e1]:
+  - generic [ref=e29]:
+    - complementary [ref=e30]:
+      - img "Daniel Frederighi Advogados Associados" [ref=e32]
+      - navigation "Navegação principal" [ref=e33]:
+        - button "Visão geral" [ref=e34] [cursor=pointer]:
+          - img [ref=e36]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e41] [cursor=pointer]:
+          - img [ref=e43]
+          - text: Materiais e equipamentos
+        - button "Movimentações" [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - text: Movimentações
+        - button "Solicitações 2" [ref=e50] [cursor=pointer]:
+          - img [ref=e52]
+          - text: Solicitações
+          - generic [ref=e55]: "2"
+        - button "Termos de posse" [active] [ref=e56] [cursor=pointer]:
+          - img [ref=e58]
+          - text: Termos de posse
+        - button "Relatórios" [ref=e61] [cursor=pointer]:
+          - img [ref=e63]
+          - text: Relatórios
+      - generic [ref=e65]:
+        - generic:
+          - img
+        - generic [ref=e68]:
+          - strong [ref=e69]: Patrimônio protegido
+          - paragraph [ref=e70]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "AD Administração DFA Administrador" [ref=e71] [cursor=pointer]:
+        - generic [ref=e72]: AD
+        - generic [ref=e73]:
+          - strong [ref=e74]: Administração DFA
+          - generic [ref=e75]: Administrador
+        - img [ref=e77]
+    - main [ref=e79]:
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - generic [ref=e82]: Gestão interna
+          - generic [ref=e83]: /
+          - strong [ref=e84]: Termos de posse
+        - generic [ref=e85]:
+          - 'button "Notificações: 4 alerta(s)" [ref=e86] [cursor=pointer]':
+            - img [ref=e88]
+          - button "Solicitar item" [ref=e91] [cursor=pointer]:
+            - img [ref=e93]
+            - text: Solicitar item
+      - text: 01 02 03 04
+      - generic [ref=e247]:
+        - generic [ref=e248]:
+          - generic [ref=e249]:
+            - paragraph [ref=e250]: PATRIMÔNIO
+            - heading "Termos de posse" [level=1] [ref=e251]
+            - paragraph [ref=e252]: Documente quem retirou, quando e a previsão de devolução.
+          - button "Registrar retirada" [ref=e253] [cursor=pointer]:
+            - img [ref=e255]
+            - text: Registrar retirada
+        - generic [ref=e257]:
+          - img [ref=e260]
+          - generic [ref=e263]:
+            - strong [ref=e264]: Registro de responsabilidade
+            - paragraph [ref=e265]: Cada retirada preserva o histórico do bem, responsável, datas e observações.
+          - generic [ref=e266]:
+            - generic [ref=e267]: Patrimônio em posse
+            - strong [ref=e268]: R$ 6.135,00
+        - generic [ref=e269]:
+          - generic [ref=e270]:
+            - img [ref=e272]
+            - searchbox [ref=e275]
+          - combobox [ref=e276]:
+            - option "Em posse" [selected]
+            - option "Devolvidos"
+            - option "Todos os registros"
+        - generic [ref=e277]:
+          - article [ref=e278]:
+            - generic [ref=e279]:
+              - img [ref=e281]
+              - generic [ref=e283]:
+                - heading "Notebook Dell Latitude 5440" [level=3] [ref=e284]
+                - text: PAT-014 · Diretoria
+              - generic [ref=e285]: Em posse
+            - generic [ref=e286]:
+              - generic [ref=e287]:
+                - generic [ref=e288]: Responsável
+                - strong [ref=e289]: Renata Alves
+              - generic [ref=e290]:
+                - generic [ref=e291]: Retirada
+                - strong [ref=e292]: 03/06/2026
+              - generic [ref=e293]:
+                - generic [ref=e294]: Devolver até
+                - strong [ref=e295]: 03/07/2026
+            - paragraph [ref=e296]: Equipamento, carregador e mochila entregues em perfeito estado.
+            - generic [ref=e297]:
+              - generic [ref=e298]:
+                - text: "Valor registrado:"
+                - strong [ref=e299]: R$ 5.890,00
+              - generic [ref=e300]:
+                - button "Gerar termo PDF" [ref=e301] [cursor=pointer]:
+                  - img [ref=e302]
+                  - text: Gerar termo PDF
+                - button "Registrar devolução" [ref=e304] [cursor=pointer]
+          - article [ref=e305]:
+            - generic [ref=e306]:
+              - img [ref=e308]
+              - generic [ref=e310]:
+                - heading "Headset Logitech H390" [level=3] [ref=e311]
+                - text: PAT-032 · Atendimento
+              - generic [ref=e312]: Em posse
+            - generic [ref=e313]:
+              - generic [ref=e314]:
+                - generic [ref=e315]: Responsável
+                - strong [ref=e316]: Bruno Tavares
+              - generic [ref=e317]:
+                - generic [ref=e318]: Retirada
+                - strong [ref=e319]: 10/06/2026
+              - generic [ref=e320]:
+                - generic [ref=e321]: Devolver até
+                - strong [ref=e322]: 24/06/2026
+            - paragraph [ref=e323]: Uso em trabalho remoto.
+            - generic [ref=e324]:
+              - generic [ref=e325]:
+                - text: "Valor registrado:"
+                - strong [ref=e326]: R$ 245,00
+              - generic [ref=e327]:
+                - button "Gerar termo PDF" [ref=e328] [cursor=pointer]:
+                  - img [ref=e329]
+                  - text: Gerar termo PDF
+                - button "Registrar devolução" [ref=e331] [cursor=pointer]
+  - generic:
+    - generic:
+      - img

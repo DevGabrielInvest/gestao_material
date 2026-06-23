@@ -1,0 +1,174 @@
+- generic [active] [ref=e1]:
+  - text: DF
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: DF
+        - generic [ref=e6]:
+          - strong [ref=e7]: Daniel Frederighi
+          - generic [ref=e8]: Advogados Associados
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e321] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "2"
+        - button "Termos de posse" [ref=e28] [cursor=pointer]:
+          - img [ref=e30]
+          - text: Termos de posse
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "CI Consulta Interna Somente consulta" [ref=e322] [cursor=pointer]:
+        - generic [ref=e40]: CI
+        - generic [ref=e41]:
+          - strong [ref=e42]: Consulta Interna
+          - generic [ref=e43]: Somente consulta
+        - img [ref=e45]
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]: Gestão interna
+          - generic [ref=e51]: /
+          - strong [ref=e52]: Solicitações
+        - button "Notificações" [ref=e54] [cursor=pointer]:
+          - img [ref=e56]
+      - text: 01 02 03 04
+      - generic [ref=e237]:
+        - generic [ref=e239]:
+          - paragraph [ref=e240]: PEDIDOS INTERNOS
+          - heading "Solicitações" [level=1] [ref=e241]
+          - paragraph [ref=e242]: Peça materiais e acompanhe a aprovação de cada pedido.
+        - generic [ref=e247]: "Perfil de consulta: pedidos e históricos estão disponíveis somente para leitura."
+        - generic [ref=e248]:
+          - button "Todas 5" [ref=e323] [cursor=pointer]
+          - button "Pendentes 2" [ref=e324] [cursor=pointer]
+          - button "Aprovadas" [ref=e251] [cursor=pointer]
+          - button "Entregues" [ref=e252] [cursor=pointer]
+          - button "Recusadas" [ref=e253] [cursor=pointer]
+        - generic [ref=e298]:
+          - article [ref=e325]:
+            - generic [ref=e326]:
+              - generic [ref=e327]: SOL-1781900428196
+              - generic [ref=e328]: Pendente
+            - heading "Bloco adesivo 76x76" [level=3] [ref=e329]
+            - paragraph [ref=e330]: Reposição para organização dos processos da equipe.
+            - generic [ref=e331]:
+              - generic [ref=e332]:
+                - generic [ref=e333]: Solicitante
+                - strong [ref=e334]: Lucas Colaborador
+              - generic [ref=e335]:
+                - generic [ref=e336]: Quantidade
+                - strong [ref=e337]: 1 unidade(s)
+              - generic [ref=e338]:
+                - generic [ref=e339]: Setor
+                - strong [ref=e340]: Jurídico
+              - generic [ref=e341]:
+                - generic [ref=e342]: Prioridade
+                - strong [ref=e343]: Normal
+            - generic [ref=e344]:
+              - generic [ref=e345]: Solicitado em 19/06/2026
+              - button "Histórico (1)" [ref=e346] [cursor=pointer]
+          - article [ref=e347]:
+            - generic [ref=e348]:
+              - generic [ref=e349]: SOL-0101
+              - generic [ref=e350]: Aprovada
+            - heading "Cadeira ergonômica" [level=3] [ref=e351]
+            - paragraph [ref=e352]: Substituição de cadeira com encosto danificado.
+            - generic [ref=e353]:
+              - generic [ref=e354]:
+                - generic [ref=e355]: Solicitante
+                - strong [ref=e356]: Marina Costa
+              - generic [ref=e357]:
+                - generic [ref=e358]: Quantidade
+                - strong [ref=e359]: 1 unidade(s)
+              - generic [ref=e360]:
+                - generic [ref=e361]: Setor
+                - strong [ref=e362]: Financeiro
+              - generic [ref=e363]:
+                - generic [ref=e364]: Prioridade
+                - strong [ref=e365]: Alta
+            - generic [ref=e366]:
+              - generic [ref=e367]: Administração DFA · 19/06/2026
+              - paragraph [ref=e368]: Aprovado apó verificação da necessidade e disponibilidade orçamentária.
+            - generic [ref=e369]:
+              - generic [ref=e370]: Solicitado em 18/06/2026
+              - button "Histórico (2)" [ref=e371] [cursor=pointer]
+          - article [ref=e372]:
+            - generic [ref=e373]:
+              - generic [ref=e374]: SOL-0102
+              - generic [ref=e375]: Aprovada
+            - heading "Papel A4" [level=3] [ref=e376]
+            - paragraph [ref=e377]: Reposição para impressões da equipe.
+            - generic [ref=e378]:
+              - generic [ref=e379]:
+                - generic [ref=e380]: Solicitante
+                - strong [ref=e381]: Lucas Mendes
+              - generic [ref=e382]:
+                - generic [ref=e383]: Quantidade
+                - strong [ref=e384]: 5 unidade(s)
+              - generic [ref=e385]:
+                - generic [ref=e386]: Setor
+                - strong [ref=e387]: Jurídico
+              - generic [ref=e388]:
+                - generic [ref=e389]: Prioridade
+                - strong [ref=e390]: Normal
+            - generic [ref=e391]:
+              - generic [ref=e392]: Solicitado em 17/06/2026
+              - button "Histórico (2)" [ref=e393] [cursor=pointer]
+          - article [ref=e394]:
+            - generic [ref=e395]:
+              - generic [ref=e396]: SOL-0103
+              - generic [ref=e397]: Entregue
+            - heading "Mouse sem fio" [level=3] [ref=e398]
+            - paragraph [ref=e399]: Novo posto de trabalho.
+            - generic [ref=e400]:
+              - generic [ref=e401]:
+                - generic [ref=e402]: Solicitante
+                - strong [ref=e403]: Ana Ribeiro
+              - generic [ref=e404]:
+                - generic [ref=e405]: Quantidade
+                - strong [ref=e406]: 1 unidade(s)
+              - generic [ref=e407]:
+                - generic [ref=e408]: Setor
+                - strong [ref=e409]: Comercial
+              - generic [ref=e410]:
+                - generic [ref=e411]: Prioridade
+                - strong [ref=e412]: Normal
+            - generic [ref=e413]:
+              - generic [ref=e414]: Solicitado em 16/06/2026
+              - button "Histórico (2)" [ref=e415] [cursor=pointer]
+          - article [ref=e416]:
+            - generic [ref=e417]:
+              - generic [ref=e418]: SOL-0104
+              - generic [ref=e419]: Pendente
+            - heading "Toner HP 58A" [level=3] [ref=e420]
+            - paragraph [ref=e421]: Estoque de segurança para a impressora central.
+            - generic [ref=e422]:
+              - generic [ref=e423]:
+                - generic [ref=e424]: Solicitante
+                - strong [ref=e425]: Carlos Lima
+              - generic [ref=e426]:
+                - generic [ref=e427]: Quantidade
+                - strong [ref=e428]: 2 unidade(s)
+              - generic [ref=e429]:
+                - generic [ref=e430]: Setor
+                - strong [ref=e431]: Administrativo
+              - generic [ref=e432]:
+                - generic [ref=e433]: Prioridade
+                - strong [ref=e434]: Alta
+            - generic [ref=e435]:
+              - generic [ref=e436]: Solicitado em 19/06/2026
+              - button "Histórico (1)" [ref=e437] [cursor=pointer]
+  - generic:
+    - generic:
+      - img
+    - generic: Solicitação enviada para análise.

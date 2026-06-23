@@ -1,0 +1,185 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e29]:
+    - complementary [ref=e30]:
+      - img "Daniel Frederighi Advogados Associados" [ref=e32]
+      - navigation "Navegação principal" [ref=e33]:
+        - button "Visão geral" [ref=e34] [cursor=pointer]:
+          - img [ref=e36]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e41] [cursor=pointer]:
+          - img [ref=e43]
+          - text: Materiais e equipamentos
+        - button "Movimentações" [ref=e46] [cursor=pointer]:
+          - img [ref=e48]
+          - text: Movimentações
+        - button "Solicitações 2" [ref=e50] [cursor=pointer]:
+          - img [ref=e52]
+          - text: Solicitações
+          - generic [ref=e55]: "2"
+        - button "Termos de posse" [ref=e56] [cursor=pointer]:
+          - img [ref=e58]
+          - text: Termos de posse
+        - button "Relatórios" [ref=e61] [cursor=pointer]:
+          - img [ref=e63]
+          - text: Relatórios
+      - generic [ref=e65]:
+        - generic:
+          - img
+        - generic [ref=e68]:
+          - strong [ref=e69]: Patrimônio protegido
+          - paragraph [ref=e70]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "AD Administração DFA Administrador" [ref=e71] [cursor=pointer]:
+        - generic [ref=e72]: AD
+        - generic [ref=e73]:
+          - strong [ref=e74]: Administração DFA
+          - generic [ref=e75]: Administrador
+        - img [ref=e77]
+    - main [ref=e79]:
+      - generic [ref=e80]:
+        - generic [ref=e81]:
+          - generic [ref=e82]: Gestão interna
+          - generic [ref=e83]: /
+          - strong [ref=e84]: Visão geral
+        - generic [ref=e85]:
+          - 'button "Notificações: 4 alerta(s)" [ref=e86] [cursor=pointer]':
+            - img [ref=e88]
+          - button "Solicitar item" [ref=e91] [cursor=pointer]:
+            - img [ref=e93]
+            - text: Solicitar item
+      - generic [ref=e95]:
+        - generic [ref=e96]:
+          - generic [ref=e97]:
+            - paragraph [ref=e98]: PAINEL OPERACIONAL
+            - heading "Bom dia, Administração." [level=1] [ref=e99]
+            - paragraph [ref=e100]: Veja o que precisa da sua atenção hoje.
+          - generic [ref=e101]:
+            - img [ref=e103]
+            - generic [ref=e106]: segunda-feira, 22 de junho
+        - generic [ref=e107]:
+          - article [ref=e108]:
+            - img [ref=e111]
+            - generic [ref=e114]:
+              - generic [ref=e115]: Itens cadastrados
+              - strong [ref=e116]: "8"
+              - generic [ref=e117]: 4 categorias
+            - text: "01"
+          - article [ref=e118]:
+            - img [ref=e121]
+            - generic [ref=e123]:
+              - generic [ref=e124]: Estoque baixo
+              - strong [ref=e125]: "2"
+              - generic [ref=e126]: Precisam de reposição
+            - text: "02"
+          - article [ref=e127]:
+            - img [ref=e130]
+            - generic [ref=e133]:
+              - generic [ref=e134]: Itens em posse
+              - strong [ref=e135]: "2"
+              - generic [ref=e136]: R$ 6.135,00 sob responsabilidade
+            - text: "03"
+          - article [ref=e137]:
+            - img [ref=e140]
+            - generic [ref=e143]:
+              - generic [ref=e144]: Pedidos pendentes
+              - strong [ref=e145]: "2"
+              - generic [ref=e146]: Aguardando análise
+            - text: "04"
+        - generic [ref=e147]:
+          - article [ref=e148]:
+            - generic [ref=e149]:
+              - generic [ref=e150]:
+                - paragraph [ref=e151]: ATENÇÃO
+                - heading "O que precisa ser resolvido" [level=2] [ref=e152]
+              - button "Ver inventário" [ref=e153] [cursor=pointer]:
+                - text: Ver inventário
+                - img [ref=e155]
+            - generic [ref=e157]:
+              - generic [ref=e158]:
+                - generic [ref=e159]: "!"
+                - generic [ref=e160]:
+                  - strong [ref=e161]: Papel A4
+                  - generic [ref=e162]: "Restam 3 un. · Mínimo recomendado: 5"
+                - generic [ref=e163]: Estoque baixo
+              - generic [ref=e164]:
+                - generic [ref=e165]: "!"
+                - generic [ref=e166]:
+                  - strong [ref=e167]: Toner HP 58A
+                  - generic [ref=e168]: "Restam 1 un. · Mínimo recomendado: 2"
+                - generic [ref=e169]: Estoque baixo
+              - generic [ref=e170]:
+                - generic [ref=e171]: •
+                - generic [ref=e172]:
+                  - strong [ref=e173]: Cadeira ergonômica
+                  - generic [ref=e174]: Marina Costa · Solicitado em 18/06/2026
+                - generic [ref=e175]: Pendente
+              - generic [ref=e176]:
+                - generic [ref=e177]: •
+                - generic [ref=e178]:
+                  - strong [ref=e179]: Toner HP 58A
+                  - generic [ref=e180]: Carlos Lima · Solicitado em 19/06/2026
+                - generic [ref=e181]: Pendente
+          - article [ref=e182]:
+            - generic [ref=e184]:
+              - paragraph [ref=e185]: MOVIMENTAÇÕES
+              - heading "Atividade recente" [level=2] [ref=e186]
+            - generic [ref=e187]:
+              - generic [ref=e188]:
+                - strong [ref=e190]: Nova solicitação criada
+                - paragraph [ref=e191]: Carlos pediu 2 unidades de Toner HP 58A
+                - time [ref=e192]: 19/06/2026 às 09:20
+              - generic [ref=e193]:
+                - strong [ref=e195]: Material entregue
+                - paragraph [ref=e196]: Mouse sem fio entregue para Ana Ribeiro
+                - time [ref=e197]: 18/06/2026 às 16:15
+              - generic [ref=e198]:
+                - strong [ref=e200]: Retirada registrada
+                - paragraph [ref=e201]: Headset entregue para Bruno Tavares
+                - time [ref=e202]: 10/06/2026 às 10:30
+        - article [ref=e203]:
+          - generic [ref=e204]:
+            - generic [ref=e205]:
+              - paragraph [ref=e206]: RESPONSABILIDADE
+              - heading "Equipamentos atualmente em posse" [level=2] [ref=e207]
+            - button "Ver todos" [ref=e208] [cursor=pointer]
+          - table [ref=e210]:
+            - rowgroup [ref=e211]:
+              - row "Equipamento Responsável Retirada Devolução prevista Status" [ref=e212]:
+                - columnheader "Equipamento" [ref=e213]
+                - columnheader "Responsável" [ref=e214]
+                - columnheader "Retirada" [ref=e215]
+                - columnheader "Devolução prevista" [ref=e216]
+                - columnheader "Status" [ref=e217]
+            - rowgroup [ref=e218]:
+              - row "N Notebook Dell Latitude 5440 PAT-014 RA Renata Alves 03/06/2026 03/07/2026 Em posse" [ref=e219]:
+                - cell "N Notebook Dell Latitude 5440 PAT-014" [ref=e220]:
+                  - generic [ref=e221]:
+                    - generic [ref=e222]: "N"
+                    - generic [ref=e223]:
+                      - strong [ref=e224]: Notebook Dell Latitude 5440
+                      - generic [ref=e225]: PAT-014
+                - cell "RA Renata Alves" [ref=e226]:
+                  - generic [ref=e227]:
+                    - generic [ref=e228]: RA
+                    - text: Renata Alves
+                - cell "03/06/2026" [ref=e229]
+                - cell "03/07/2026" [ref=e230]
+                - cell "Em posse" [ref=e231]:
+                  - generic [ref=e232]: Em posse
+              - row "H Headset Logitech H390 PAT-032 BT Bruno Tavares 10/06/2026 24/06/2026 Em posse" [ref=e233]:
+                - cell "H Headset Logitech H390 PAT-032" [ref=e234]:
+                  - generic [ref=e235]:
+                    - generic [ref=e236]: H
+                    - generic [ref=e237]:
+                      - strong [ref=e238]: Headset Logitech H390
+                      - generic [ref=e239]: PAT-032
+                - cell "BT Bruno Tavares" [ref=e240]:
+                  - generic [ref=e241]:
+                    - generic [ref=e242]: BT
+                    - text: Bruno Tavares
+                - cell "10/06/2026" [ref=e243]
+                - cell "24/06/2026" [ref=e244]
+                - cell "Em posse" [ref=e245]:
+                  - generic [ref=e246]: Em posse
+  - generic:
+    - generic:
+      - img

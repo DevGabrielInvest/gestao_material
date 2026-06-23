@@ -1,0 +1,96 @@
+- generic [ref=e1]:
+  - text: DF
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: DF
+        - generic [ref=e6]:
+          - strong [ref=e7]: Daniel Frederighi
+          - generic [ref=e8]: Advogados Associados
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Solicitações 0" [ref=e235] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "0"
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "LC Lucas Colaborador Solicitante" [ref=e236] [cursor=pointer]:
+        - generic [ref=e40]: LC
+        - generic [ref=e41]:
+          - strong [ref=e42]: Lucas Colaborador
+          - generic [ref=e43]: Solicitante
+        - img [ref=e45]
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]: Gestão interna
+          - generic [ref=e51]: /
+          - strong [ref=e52]: Solicitações
+        - generic [ref=e53]:
+          - button "Notificações" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+          - button "Solicitar item" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - text: Solicitar item
+      - text: 01 02 03 04
+      - generic [ref=e237]:
+        - generic [ref=e238]:
+          - generic [ref=e239]:
+            - paragraph [ref=e240]: PEDIDOS INTERNOS
+            - heading "Solicitações" [level=1] [ref=e241]
+            - paragraph [ref=e242]: Peça materiais e acompanhe a aprovação de cada pedido.
+          - button "Nova solicitação" [ref=e243] [cursor=pointer]:
+            - img [ref=e245]
+            - text: Nova solicitação
+        - generic [ref=e247]: Você está visualizando apenas as solicitações criadas pela sua conta.
+        - generic [ref=e248]:
+          - button "Todas 0" [ref=e249] [cursor=pointer]
+          - button "Pendentes 0" [ref=e250] [cursor=pointer]
+          - button "Aprovadas" [ref=e251] [cursor=pointer]
+          - button "Entregues" [ref=e252] [cursor=pointer]
+          - button "Recusadas" [ref=e253] [cursor=pointer]
+        - generic [ref=e254]:
+          - img [ref=e256]
+          - heading "Nenhuma solicitação aqui" [level=3] [ref=e259]
+          - paragraph [ref=e260]: Os pedidos aparecerão nesta área.
+  - dialog "Solicitar material ou equipamento" [ref=e262]:
+    - generic [ref=e263]:
+      - generic [ref=e264]:
+        - paragraph [ref=e265]: NOVO PEDIDO
+        - heading "Solicitar material ou equipamento" [level=2] [ref=e266]
+      - button "Fechar" [ref=e267] [cursor=pointer]:
+        - img [ref=e269]
+    - generic [ref=e271]:
+      - generic [ref=e273]:
+        - generic [ref=e274]:
+          - generic [ref=e275]: Item solicitado *
+          - combobox "Item solicitado *" [active] [ref=e276]
+        - generic [ref=e277]:
+          - generic [ref=e278]: Solicitante *
+          - textbox "Solicitante *" [ref=e279]: Lucas Colaborador
+        - generic [ref=e280]:
+          - generic [ref=e281]: Setor *
+          - textbox "Setor *" [ref=e282]: Jurídico
+        - generic [ref=e283]:
+          - generic [ref=e284]: Quantidade *
+          - spinbutton "Quantidade *" [ref=e285]: "1"
+        - generic [ref=e286]:
+          - generic [ref=e287]: Prioridade
+          - combobox "Prioridade" [ref=e288]:
+            - option "Normal" [selected]
+            - option "Alta"
+            - option "Urgente"
+        - generic [ref=e289]:
+          - generic [ref=e290]: Motivo da solicitação *
+          - textbox "Motivo da solicitação *" [ref=e291]:
+            - /placeholder: Explique brevemente a necessidade.
+      - generic [ref=e292]:
+        - button "Cancelar" [ref=e293] [cursor=pointer]
+        - button "Enviar solicitação" [ref=e294] [cursor=pointer]
+  - generic:
+    - generic:
+      - img

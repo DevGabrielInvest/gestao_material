@@ -1,0 +1,81 @@
+- generic [active] [ref=e1]:
+  - text: DF
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: DF
+        - generic [ref=e6]:
+          - strong [ref=e7]: Daniel Frederighi
+          - generic [ref=e8]: Advogados Associados
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Solicitações 1" [ref=e295] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Solicitações
+          - generic [ref=e27]: "1"
+      - generic [ref=e33]:
+        - generic:
+          - img
+        - generic [ref=e36]:
+          - strong [ref=e37]: Patrimônio protegido
+          - paragraph [ref=e38]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "LC Lucas Colaborador Solicitante" [ref=e236] [cursor=pointer]:
+        - generic [ref=e40]: LC
+        - generic [ref=e41]:
+          - strong [ref=e42]: Lucas Colaborador
+          - generic [ref=e43]: Solicitante
+        - img [ref=e45]
+    - main [ref=e47]:
+      - generic [ref=e48]:
+        - generic [ref=e49]:
+          - generic [ref=e50]: Gestão interna
+          - generic [ref=e51]: /
+          - strong [ref=e52]: Solicitações
+        - generic [ref=e53]:
+          - button "Notificações" [ref=e54] [cursor=pointer]:
+            - img [ref=e56]
+          - button "Solicitar item" [ref=e59] [cursor=pointer]:
+            - img [ref=e61]
+            - text: Solicitar item
+      - text: 01 02 03 04
+      - generic [ref=e237]:
+        - generic [ref=e238]:
+          - generic [ref=e239]:
+            - paragraph [ref=e240]: PEDIDOS INTERNOS
+            - heading "Solicitações" [level=1] [ref=e241]
+            - paragraph [ref=e242]: Peça materiais e acompanhe a aprovação de cada pedido.
+          - button "Nova solicitação" [ref=e243] [cursor=pointer]:
+            - img [ref=e245]
+            - text: Nova solicitação
+        - generic [ref=e247]: Você está visualizando apenas as solicitações criadas pela sua conta.
+        - generic [ref=e248]:
+          - button "Todas 1" [ref=e296] [cursor=pointer]
+          - button "Pendentes 1" [ref=e297] [cursor=pointer]
+          - button "Aprovadas" [ref=e251] [cursor=pointer]
+          - button "Entregues" [ref=e252] [cursor=pointer]
+          - button "Recusadas" [ref=e253] [cursor=pointer]
+        - article [ref=e299]:
+          - generic [ref=e300]:
+            - generic [ref=e301]: SOL-1781900428196
+            - generic [ref=e302]: Pendente
+          - heading "Bloco adesivo 76x76" [level=3] [ref=e303]
+          - paragraph [ref=e304]: Reposição para organização dos processos da equipe.
+          - generic [ref=e305]:
+            - generic [ref=e306]:
+              - generic [ref=e307]: Solicitante
+              - strong [ref=e308]: Lucas Colaborador
+            - generic [ref=e309]:
+              - generic [ref=e310]: Quantidade
+              - strong [ref=e311]: 1 unidade(s)
+            - generic [ref=e312]:
+              - generic [ref=e313]: Setor
+              - strong [ref=e314]: Jurídico
+            - generic [ref=e315]:
+              - generic [ref=e316]: Prioridade
+              - strong [ref=e317]: Normal
+          - generic [ref=e318]:
+            - generic [ref=e319]: Solicitado em 19/06/2026
+            - button "Histórico (1)" [ref=e320] [cursor=pointer]
+  - generic:
+    - generic:
+      - img
+    - generic: Solicitação enviada para análise.

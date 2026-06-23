@@ -1,0 +1,35 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - img "Daniel Frederighi Advogados Associados" [ref=e4]
+      - generic [ref=e5]:
+        - paragraph [ref=e6]: DANIEL FREDERIGHI
+        - heading "Gestão patrimonial com responsabilidade." [level=1] [ref=e7]:
+          - text: Gestão patrimonial
+          - text: com responsabilidade.
+        - paragraph [ref=e8]: Controle materiais, solicitações e termos de posse em um ambiente organizado e auditável.
+      - generic [ref=e9]: ADVOGADOS ASSOCIADOS · GESTÃO INTERNA
+    - generic [ref=e11]:
+      - paragraph [ref=e12]: ACESSO RESTRITO
+      - heading "Entrar no sistema" [level=2] [ref=e13]
+      - paragraph [ref=e14]: Use suas credenciais para continuar.
+      - generic [ref=e15]:
+        - generic [ref=e16]: E-mail
+        - textbox "E-mail" [active] [ref=e17]:
+          - /placeholder: seuemail@dfa.com
+      - generic [ref=e18]:
+        - generic [ref=e19]: Senha
+        - textbox "Senha" [ref=e20]:
+          - /placeholder: Digite sua senha
+      - alert [ref=e21]
+      - button "Entrar" [ref=e22] [cursor=pointer]
+      - generic [ref=e23]:
+        - strong [ref=e24]: Acessos para demonstração
+        - button "Administrador" [ref=e25] [cursor=pointer]
+        - button "Gestor" [ref=e26] [cursor=pointer]
+        - button "Solicitante" [ref=e27] [cursor=pointer]
+        - button "Consulta" [ref=e28] [cursor=pointer]
+  - text: 01 02 03 04
+  - generic:
+    - generic:
+      - img

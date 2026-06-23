@@ -1,0 +1,178 @@
+- generic [ref=e1]:
+  - text: DF
+  - generic [ref=e29]:
+    - complementary [ref=e30]:
+      - generic [ref=e31]:
+        - generic [ref=e32]: DF
+        - generic [ref=e33]:
+          - strong [ref=e34]: Daniel Frederighi
+          - generic [ref=e35]: Advogados Associados
+      - navigation "Navegação principal" [ref=e36]:
+        - button "Visão geral" [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e44] [cursor=pointer]:
+          - img [ref=e46]
+          - text: Materiais e equipamentos
+        - button "Solicitações 2" [ref=e49] [cursor=pointer]:
+          - img [ref=e51]
+          - text: Solicitações
+          - generic [ref=e54]: "2"
+        - button "Termos de posse" [ref=e55] [cursor=pointer]:
+          - img [ref=e57]
+          - text: Termos de posse
+      - generic [ref=e60]:
+        - generic:
+          - img
+        - generic [ref=e63]:
+          - strong [ref=e64]: Patrimônio protegido
+          - paragraph [ref=e65]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "AD Administração DFA Administrador" [ref=e66] [cursor=pointer]:
+        - generic [ref=e67]: AD
+        - generic [ref=e68]:
+          - strong [ref=e69]: Administração DFA
+          - generic [ref=e70]: Administrador
+        - img [ref=e72]
+    - main [ref=e74]:
+      - generic [ref=e75]:
+        - generic [ref=e76]:
+          - generic [ref=e77]: Gestão interna
+          - generic [ref=e78]: /
+          - strong [ref=e79]: Solicitações
+        - generic [ref=e80]:
+          - button "Notificações" [ref=e81] [cursor=pointer]:
+            - img [ref=e83]
+          - button "Solicitar item" [ref=e86] [cursor=pointer]:
+            - img [ref=e88]
+            - text: Solicitar item
+      - text: 01 02 03 04
+      - generic [ref=e230]:
+        - generic [ref=e231]:
+          - generic [ref=e232]:
+            - paragraph [ref=e233]: PEDIDOS INTERNOS
+            - heading "Solicitações" [level=1] [ref=e234]
+            - paragraph [ref=e235]: Peça materiais e acompanhe a aprovação de cada pedido.
+          - button "Nova solicitação" [ref=e236] [cursor=pointer]:
+            - img [ref=e238]
+            - text: Nova solicitação
+        - generic [ref=e240]: Você pode analisar pedidos. Toda aprovação ou recusa exige justificativa e fica registrada no histórico.
+        - generic [ref=e241]:
+          - button "Todas 4" [ref=e242] [cursor=pointer]
+          - button "Pendentes 2" [ref=e243] [cursor=pointer]
+          - button "Aprovadas" [ref=e244] [cursor=pointer]
+          - button "Entregues" [ref=e245] [cursor=pointer]
+          - button "Recusadas" [ref=e246] [cursor=pointer]
+        - generic [ref=e247]:
+          - article [ref=e248]:
+            - generic [ref=e249]:
+              - generic [ref=e250]: SOL-0101
+              - generic [ref=e251]: Pendente
+            - heading "Cadeira ergonômica" [level=3] [ref=e252]
+            - paragraph [ref=e253]: Substituição de cadeira com encosto danificado.
+            - generic [ref=e254]:
+              - generic [ref=e255]:
+                - generic [ref=e256]: Solicitante
+                - strong [ref=e257]: Marina Costa
+              - generic [ref=e258]:
+                - generic [ref=e259]: Quantidade
+                - strong [ref=e260]: 1 unidade(s)
+              - generic [ref=e261]:
+                - generic [ref=e262]: Setor
+                - strong [ref=e263]: Financeiro
+              - generic [ref=e264]:
+                - generic [ref=e265]: Prioridade
+                - strong [ref=e266]: Alta
+            - generic [ref=e267]:
+              - button "Aprovar" [ref=e268] [cursor=pointer]
+              - button "Recusar" [ref=e269] [cursor=pointer]
+              - button "Histórico (1)" [ref=e270] [cursor=pointer]
+          - article [ref=e271]:
+            - generic [ref=e272]:
+              - generic [ref=e273]: SOL-0102
+              - generic [ref=e274]: Aprovada
+            - heading "Papel A4" [level=3] [ref=e275]
+            - paragraph [ref=e276]: Reposição para impressões da equipe.
+            - generic [ref=e277]:
+              - generic [ref=e278]:
+                - generic [ref=e279]: Solicitante
+                - strong [ref=e280]: Lucas Mendes
+              - generic [ref=e281]:
+                - generic [ref=e282]: Quantidade
+                - strong [ref=e283]: 5 unidade(s)
+              - generic [ref=e284]:
+                - generic [ref=e285]: Setor
+                - strong [ref=e286]: Jurídico
+              - generic [ref=e287]:
+                - generic [ref=e288]: Prioridade
+                - strong [ref=e289]: Normal
+            - generic [ref=e290]:
+              - button "Marcar como entregue" [ref=e291] [cursor=pointer]
+              - button "Histórico (2)" [ref=e292] [cursor=pointer]
+          - article [ref=e293]:
+            - generic [ref=e294]:
+              - generic [ref=e295]: SOL-0103
+              - generic [ref=e296]: Entregue
+            - heading "Mouse sem fio" [level=3] [ref=e297]
+            - paragraph [ref=e298]: Novo posto de trabalho.
+            - generic [ref=e299]:
+              - generic [ref=e300]:
+                - generic [ref=e301]: Solicitante
+                - strong [ref=e302]: Ana Ribeiro
+              - generic [ref=e303]:
+                - generic [ref=e304]: Quantidade
+                - strong [ref=e305]: 1 unidade(s)
+              - generic [ref=e306]:
+                - generic [ref=e307]: Setor
+                - strong [ref=e308]: Comercial
+              - generic [ref=e309]:
+                - generic [ref=e310]: Prioridade
+                - strong [ref=e311]: Normal
+            - generic [ref=e312]:
+              - generic [ref=e313]: Solicitado em 16/06/2026
+              - button "Histórico (2)" [ref=e314] [cursor=pointer]
+          - article [ref=e315]:
+            - generic [ref=e316]:
+              - generic [ref=e317]: SOL-0104
+              - generic [ref=e318]: Pendente
+            - heading "Toner HP 58A" [level=3] [ref=e319]
+            - paragraph [ref=e320]: Estoque de segurança para a impressora central.
+            - generic [ref=e321]:
+              - generic [ref=e322]:
+                - generic [ref=e323]: Solicitante
+                - strong [ref=e324]: Carlos Lima
+              - generic [ref=e325]:
+                - generic [ref=e326]: Quantidade
+                - strong [ref=e327]: 2 unidade(s)
+              - generic [ref=e328]:
+                - generic [ref=e329]: Setor
+                - strong [ref=e330]: Administrativo
+              - generic [ref=e331]:
+                - generic [ref=e332]: Prioridade
+                - strong [ref=e333]: Alta
+            - generic [ref=e334]:
+              - button "Aprovar" [ref=e335] [cursor=pointer]
+              - button "Recusar" [ref=e336] [cursor=pointer]
+              - button "Histórico (1)" [ref=e337] [cursor=pointer]
+  - dialog "Aprovar solicitação" [ref=e339]:
+    - generic [ref=e340]:
+      - generic [ref=e341]:
+        - paragraph [ref=e342]: DECISÃO AUDITÁVEL
+        - heading "Aprovar solicitação" [level=2] [ref=e343]
+      - button "Fechar" [ref=e344] [cursor=pointer]:
+        - img [ref=e346]
+    - generic [ref=e348]:
+      - generic [ref=e349]:
+        - generic [ref=e350]:
+          - strong [ref=e351]: Cadeira ergonômica
+          - text: 1 unidade(s) · Marina Costa
+        - generic [ref=e352]:
+          - generic [ref=e353]: Justificativa da decisão *
+          - textbox "Justificativa da decisão *" [active] [ref=e354]:
+            - /placeholder: Registre o motivo para manter a decisão documentada.
+          - generic [ref=e355]: A decisão será vinculada a Administração DFA.
+      - generic [ref=e356]:
+        - button "Cancelar" [ref=e357] [cursor=pointer]
+        - button "Confirmar aprovação" [ref=e358] [cursor=pointer]
+  - generic:
+    - generic:
+      - img

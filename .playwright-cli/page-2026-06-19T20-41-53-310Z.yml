@@ -1,0 +1,197 @@
+- generic [ref=e1]:
+  - text: DF
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]: DF
+        - generic [ref=e6]:
+          - strong [ref=e7]: Daniel Frederighi
+          - generic [ref=e8]: Advogados Associados
+      - navigation "Navegação principal" [ref=e9]:
+        - button "Visão geral" [ref=e10] [cursor=pointer]:
+          - img [ref=e12]
+          - text: Visão geral
+        - button "Materiais e equipamentos" [ref=e17] [cursor=pointer]:
+          - img [ref=e19]
+          - text: Materiais e equipamentos
+        - button "Movimentações" [ref=e22] [cursor=pointer]:
+          - img [ref=e24]
+          - text: Movimentações
+        - button "Solicitações 2" [ref=e26] [cursor=pointer]:
+          - img [ref=e28]
+          - text: Solicitações
+          - generic [ref=e31]: "2"
+        - button "Termos de posse" [ref=e32] [cursor=pointer]:
+          - img [ref=e34]
+          - text: Termos de posse
+        - button "Relatórios" [ref=e37] [cursor=pointer]:
+          - img [ref=e39]
+          - text: Relatórios
+      - generic [ref=e41]:
+        - generic:
+          - img
+        - generic [ref=e44]:
+          - strong [ref=e45]: Patrimônio protegido
+          - paragraph [ref=e46]: Mantenha as retiradas de itens de valor sempre documentadas.
+      - button "AD Administração DFA Administrador" [ref=e47] [cursor=pointer]:
+        - generic [ref=e48]: AD
+        - generic [ref=e49]:
+          - strong [ref=e50]: Administração DFA
+          - generic [ref=e51]: Administrador
+        - img [ref=e53]
+    - main [ref=e55]:
+      - generic [ref=e56]:
+        - generic [ref=e57]:
+          - generic [ref=e58]: Gestão interna
+          - generic [ref=e59]: /
+          - strong [ref=e60]: Relatórios
+        - generic [ref=e61]:
+          - 'button "Notificações: 3 alerta(s)" [ref=e62] [cursor=pointer]':
+            - img [ref=e64]
+          - button "Solicitar item" [ref=e67] [cursor=pointer]:
+            - img [ref=e69]
+            - text: Solicitar item
+      - text: 01 02 03 04
+      - generic [ref=e307]:
+        - generic [ref=e308]:
+          - generic [ref=e309]:
+            - paragraph [ref=e310]: INTELIGÊNCIA OPERACIONAL
+            - heading "Relatórios gerenciais" [level=1] [ref=e311]
+            - paragraph [ref=e312]: Acompanhe estoque, consumo e patrimônio sob responsabilidade.
+          - button "Exportar PDF" [active] [ref=e313] [cursor=pointer]:
+            - img [ref=e315]
+            - text: Exportar PDF
+        - generic [ref=e317]:
+          - article [ref=e318]:
+            - generic [ref=e319]: Valor em inventário
+            - strong [ref=e320]: R$ 10.390,40
+          - article [ref=e321]:
+            - generic [ref=e322]: Patrimônio em posse
+            - strong [ref=e323]: R$ 6.135,00
+          - article [ref=e324]:
+            - generic [ref=e325]: Unidades consumidas
+            - strong [ref=e326]: "10"
+          - article [ref=e327]:
+            - generic [ref=e328]: Itens para reposição
+            - strong [ref=e329]: "1"
+        - generic [ref=e330]:
+          - article [ref=e331]:
+            - generic [ref=e333]:
+              - paragraph [ref=e334]: CONSUMO
+              - heading "Saídas por item" [level=2] [ref=e335]
+            - generic [ref=e336]:
+              - generic [ref=e338]:
+                - strong [ref=e339]: Caneta esferográfica azul
+                - generic [ref=e340]: 6 unidade(s)
+              - generic [ref=e344]:
+                - strong [ref=e345]: Papel A4
+                - generic [ref=e346]: 4 unidade(s)
+          - article [ref=e349]:
+            - generic [ref=e351]:
+              - paragraph [ref=e352]: RESPONSABILIDADE
+              - heading "Patrimônio por pessoa" [level=2] [ref=e353]
+            - generic [ref=e354]:
+              - generic [ref=e356]:
+                - strong [ref=e357]: Renata Alves
+                - generic [ref=e358]: 1 bem(ns) · R$ 5.890,00
+              - generic [ref=e362]:
+                - strong [ref=e363]: Bruno Tavares
+                - generic [ref=e364]: 1 bem(ns) · R$ 245,00
+        - article [ref=e367]:
+          - generic [ref=e369]:
+            - paragraph [ref=e370]: POSIÇÃO ATUAL
+            - heading "Resumo do inventário" [level=2] [ref=e371]
+          - table [ref=e373]:
+            - rowgroup [ref=e374]:
+              - row "Item Categoria Quantidade Estoque mínimo Valor total Situação" [ref=e375]:
+                - columnheader "Item" [ref=e376]
+                - columnheader "Categoria" [ref=e377]
+                - columnheader "Quantidade" [ref=e378]
+                - columnheader "Estoque mínimo" [ref=e379]
+                - columnheader "Valor total" [ref=e380]
+                - columnheader "Situação" [ref=e381]
+            - rowgroup [ref=e382]:
+              - row "Papel A4 MAT-001 Papelaria 8 un. 5 un. R$ 263,20 Regular" [ref=e383]:
+                - cell "Papel A4 MAT-001" [ref=e384]:
+                  - strong [ref=e385]: Papel A4
+                  - generic [ref=e386]: MAT-001
+                - cell "Papelaria" [ref=e387]
+                - cell "8 un." [ref=e388]
+                - cell "5 un." [ref=e389]
+                - cell "R$ 263,20" [ref=e390]
+                - cell "Regular" [ref=e391]:
+                  - generic [ref=e392]: Regular
+              - row "Caneta esferográfica azul MAT-002 Papelaria 24 un. 10 un. R$ 60,00 Regular" [ref=e393]:
+                - cell "Caneta esferográfica azul MAT-002" [ref=e394]:
+                  - strong [ref=e395]: Caneta esferográfica azul
+                  - generic [ref=e396]: MAT-002
+                - cell "Papelaria" [ref=e397]
+                - cell "24 un." [ref=e398]
+                - cell "10 un." [ref=e399]
+                - cell "R$ 60,00" [ref=e400]
+                - cell "Regular" [ref=e401]:
+                  - generic [ref=e402]: Regular
+              - row "Notebook Dell Latitude 5440 PAT-014 Informática 1 un. 1 un. R$ 5.890,00 Em posse" [ref=e403]:
+                - cell "Notebook Dell Latitude 5440 PAT-014" [ref=e404]:
+                  - strong [ref=e405]: Notebook Dell Latitude 5440
+                  - generic [ref=e406]: PAT-014
+                - cell "Informática" [ref=e407]
+                - cell "1 un." [ref=e408]
+                - cell "1 un." [ref=e409]
+                - cell "R$ 5.890,00" [ref=e410]
+                - cell "Em posse" [ref=e411]:
+                  - generic [ref=e412]: Em posse
+              - row "Monitor LG 24 polegadas PAT-021 Informática 2 un. 1 un. R$ 1.840,00 Regular" [ref=e413]:
+                - cell "Monitor LG 24 polegadas PAT-021" [ref=e414]:
+                  - strong [ref=e415]: Monitor LG 24 polegadas
+                  - generic [ref=e416]: PAT-021
+                - cell "Informática" [ref=e417]
+                - cell "2 un." [ref=e418]
+                - cell "1 un." [ref=e419]
+                - cell "R$ 1.840,00" [ref=e420]
+                - cell "Regular" [ref=e421]:
+                  - generic [ref=e422]: Regular
+              - row "Toner HP 58A MAT-018 Impressão 1 un. 2 un. R$ 465,00 Repor" [ref=e423]:
+                - cell "Toner HP 58A MAT-018" [ref=e424]:
+                  - strong [ref=e425]: Toner HP 58A
+                  - generic [ref=e426]: MAT-018
+                - cell "Impressão" [ref=e427]
+                - cell "1 un." [ref=e428]
+                - cell "2 un." [ref=e429]
+                - cell "R$ 465,00" [ref=e430]
+                - cell "Repor" [ref=e431]:
+                  - generic [ref=e432]: Repor
+              - row "Headset Logitech H390 PAT-032 Periféricos 1 un. 1 un. R$ 245,00 Em posse" [ref=e433]:
+                - cell "Headset Logitech H390 PAT-032" [ref=e434]:
+                  - strong [ref=e435]: Headset Logitech H390
+                  - generic [ref=e436]: PAT-032
+                - cell "Periféricos" [ref=e437]
+                - cell "1 un." [ref=e438]
+                - cell "1 un." [ref=e439]
+                - cell "R$ 245,00" [ref=e440]
+                - cell "Em posse" [ref=e441]:
+                  - generic [ref=e442]: Em posse
+              - row "Bloco adesivo 76x76 MAT-027 Papelaria 18 un. 6 un. R$ 160,20 Regular" [ref=e443]:
+                - cell "Bloco adesivo 76x76 MAT-027" [ref=e444]:
+                  - strong [ref=e445]: Bloco adesivo 76x76
+                  - generic [ref=e446]: MAT-027
+                - cell "Papelaria" [ref=e447]
+                - cell "18 un." [ref=e448]
+                - cell "6 un." [ref=e449]
+                - cell "R$ 160,20" [ref=e450]
+                - cell "Regular" [ref=e451]:
+                  - generic [ref=e452]: Regular
+              - row "Webcam Logitech C920 PAT-038 Periféricos 3 un. 1 un. R$ 1.467,00 Regular" [ref=e453]:
+                - cell "Webcam Logitech C920 PAT-038" [ref=e454]:
+                  - strong [ref=e455]: Webcam Logitech C920
+                  - generic [ref=e456]: PAT-038
+                - cell "Periféricos" [ref=e457]
+                - cell "3 un." [ref=e458]
+                - cell "1 un." [ref=e459]
+                - cell "R$ 1.467,00" [ref=e460]
+                - cell "Regular" [ref=e461]:
+                  - generic [ref=e462]: Regular
+  - generic:
+    - generic:
+      - img
+    - generic: Relatório gerencial exportado em PDF.

@@ -1,0 +1,36 @@
+- generic [ref=e1]:
+  - generic [ref=e208]:
+    - generic [ref=e209]:
+      - text: DF
+      - generic [ref=e210]: DF
+      - generic [ref=e211]:
+        - paragraph [ref=e212]: DANIEL FREDERIGHI
+        - heading "Gestão patrimonial com responsabilidade." [level=1] [ref=e213]:
+          - text: Gestão patrimonial
+          - text: com responsabilidade.
+        - paragraph [ref=e214]: Controle materiais, solicitações e termos de posse em um ambiente organizado e auditável.
+      - generic [ref=e215]: ADVOGADOS ASSOCIADOS · GESTÃO INTERNA
+    - generic [ref=e217]:
+      - paragraph [ref=e218]: ACESSO RESTRITO
+      - heading "Entrar no sistema" [level=2] [ref=e219]
+      - paragraph [ref=e220]: Use suas credenciais para continuar.
+      - generic [ref=e221]:
+        - generic [ref=e222]: E-mail
+        - textbox "E-mail" [active] [ref=e223]:
+          - /placeholder: seuemail@dfa.com
+      - generic [ref=e224]:
+        - generic [ref=e225]: Senha
+        - textbox "Senha" [ref=e226]:
+          - /placeholder: Digite sua senha
+      - alert [ref=e227]
+      - button "Entrar" [ref=e228] [cursor=pointer]
+      - generic [ref=e229]:
+        - strong [ref=e230]: Acessos para demonstração
+        - button "Administrador" [ref=e231] [cursor=pointer]
+        - button "Gestor" [ref=e232] [cursor=pointer]
+        - button "Solicitante" [ref=e233] [cursor=pointer]
+        - button "Consulta" [ref=e234] [cursor=pointer]
+  - text: 01 02 03 04
+  - generic:
+    - generic:
+      - img
