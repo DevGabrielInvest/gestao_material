@@ -72,6 +72,21 @@
             <article class="stat-card"><div class="stat-icon coral"><span data-icon="clock"></span></div><div><span>Pedidos pendentes</span><strong id="statRequests">0</strong><small>Aguardando análise</small></div></article>
           </div>
 
+          <div class="charts-grid">
+            <article class="panel chart-panel">
+              <div class="panel-header"><div><p class="eyebrow">ESTOQUE</p><h2>Itens por categoria</h2></div></div>
+              <div class="chart-body"><canvas id="categoryChart"></canvas><p class="chart-empty" id="categoryEmpty">Sem itens cadastrados.</p></div>
+            </article>
+            <article class="panel chart-panel">
+              <div class="panel-header"><div><p class="eyebrow">MOVIMENTAÇÕES</p><h2>Últimos 6 meses</h2></div><div class="chart-legend"><span class="legend-entry"><i class="legend-dot entry"></i>Entradas</span><span class="legend-entry"><i class="legend-dot exit"></i>Saídas</span></div></div>
+              <div class="chart-body"><canvas id="movementChart"></canvas></div>
+            </article>
+            <article class="panel chart-panel">
+              <div class="panel-header"><div><p class="eyebrow">SOLICITAÇÕES</p><h2>Por status</h2></div></div>
+              <div class="chart-body"><canvas id="requestChart"></canvas></div>
+            </article>
+          </div>
+
           <div class="dashboard-grid">
             <article class="panel attention-panel">
               <div class="panel-header"><div><p class="eyebrow">ATENÇÃO</p><h2>O que precisa ser resolvido</h2></div><button class="text-button" data-go="inventory">Ver inventário <span data-icon="arrow-right"></span></button></div>
@@ -98,7 +113,7 @@
         <section class="page" id="movementsPage">
           <div class="page-heading"><div><p class="eyebrow">ENTRADAS E SAÍDAS</p><h1>Movimentações de estoque</h1><p>Documente cada alteração de saldo, fornecedor, nota fiscal e responsável.</p></div><button class="button primary" id="newMovementButton"><span data-icon="plus"></span>Nova movimentação</button></div>
           <div class="movement-stats" id="movementStats"></div>
-          <div class="toolbar panel"><label class="search-box"><span data-icon="search"></span><input id="movementSearch" type="search" placeholder="Buscar item, fornecedor, nota ou responsável..." /></label><select id="movementType"><option value="all">Todos os tipos</option><option value="entry">Entradas</option><option value="exit">Saídas</option></select></div>
+          <div class="toolbar panel"><label class="search-box"><span data-icon="search"></span><input id="movementSearch" type="search" placeholder="Buscar item, fornecedor, nota ou responsável..." /></label><select id="movementType"><option value="all">Todos os tipos</option><option value="entry">Entradas</option><option value="exit">Saídas</option></select><div class="date-range"><input id="movementDateFrom" type="date" title="Data inicial" /><span>até</span><input id="movementDateTo" type="date" title="Data final" /></div><button type="button" class="button small secondary" id="exportMovementCsv" title="Exportar tabela para CSV / Excel"><span data-icon="download"></span>CSV</button></div>
           <article class="panel movement-table-panel"><div class="table-wrap"><table><thead><tr><th>Data</th><th>Tipo</th><th>Item</th><th>Quantidade</th><th>Fornecedor / destino</th><th>Documento</th><th>Responsável</th></tr></thead><tbody id="movementBody"></tbody></table></div><div class="empty-state" id="movementEmpty"><span data-icon="swap"></span><h3>Nenhuma movimentação encontrada</h3><p>As entradas e saídas aparecerão aqui.</p></div></article>
         </section>
 
@@ -117,7 +132,8 @@
         </section>
 
         <section class="page" id="reportsPage">
-          <div class="page-heading"><div><p class="eyebrow">INTELIGÊNCIA OPERACIONAL</p><h1>Relatórios gerenciais</h1><p>Acompanhe estoque, consumo e patrimônio sob responsabilidade.</p></div><button class="button primary" id="exportReportButton"><span data-icon="download"></span>Exportar PDF</button></div>
+          <div class="page-heading"><div><p class="eyebrow">INTELIGÊNCIA OPERACIONAL</p><h1>Relatórios gerenciais</h1><p>Acompanhe estoque, consumo e patrimônio sob responsabilidade.</p></div><div class="heading-actions"><button type="button" class="button secondary" id="exportInventoryCsv"><span data-icon="download"></span>Exportar CSV</button><button type="button" class="button primary" id="exportReportButton"><span data-icon="download"></span>Exportar PDF</button></div></div>
+          <div class="toolbar panel report-toolbar"><span class="toolbar-label">Filtrar consumo por período:</span><div class="date-range"><input id="reportDateFrom" type="date" title="Data inicial" /><span>até</span><input id="reportDateTo" type="date" title="Data final" /></div><button type="button" class="button small secondary" id="clearReportDates">Limpar</button></div>
           <div class="report-kpis" id="reportKpis"></div>
           <div class="reports-grid">
             <article class="panel report-panel"><div class="panel-header"><div><p class="eyebrow">CONSUMO</p><h2>Saídas por item</h2></div></div><div id="consumptionReport" class="report-list"></div></article>
