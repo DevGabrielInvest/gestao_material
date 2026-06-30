@@ -680,17 +680,46 @@ function applyPermissions() {
   if (requesterOnly) navigate('requests');
 }
 
-function exportCsv(filename, headers, rows) {
+function exportCsv(filename, headers, rows, delimiter = ',') {
   const esc = (v) => {
     const s = String(v ?? '');
-    return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+    return (s.includes(delimiter) || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
   };
-  const csv = [headers, ...rows].map((row) => row.map(esc).join(',')).join('\n');
+  const csv = [headers, ...rows].map((row) => row.map(esc).join(delimiter)).join('\n');
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+const requestStatusLabels = { pending: 'Pendente', approved: 'Aprovada', delivered: 'Entregue', rejected: 'Recusada' };
+
+function csvMoney(value) {
+  return Number(value || 0).toFixed(2).replace('.', ',');
+}
+
+function findInventoryByName(name) {
+  return state.inventory.find((item) => item.name.toLowerCase() === String(name || '').toLowerCase());
+}
+
+function requestCode(id) {
+  return `SOL-${String(id).padStart(4, '0')}`;
+}
+
+function requestFromMovement(movement) {
+  const match = String(movement.document || '').match(/^SOL-(\d+)$/i);
+  if (!match) return null;
+  return state.requests.find((request) => request.id === Number(match[1]));
+}
+
+function movementCostCenter(movement, request = null) {
+  if (request?.department) return request.department;
+  if (movement.type === 'entry') return 'Estoque / compras';
+  const destination = String(movement.supplier || '').trim();
+  if (!destination) return 'Nao informado';
+  if (destination.includes('·')) return destination.split('·')[0].trim();
+  return destination.replace(/^Setor\s+/i, '').trim();
 }
 
 function exportMovementsCsv() {
@@ -703,8 +732,32 @@ function exportMovementsCsv() {
   });
   exportCsv(
     `movimentacoes-${new Date().toISOString().slice(0, 10)}.csv`,
-    ['Data', 'Tipo', 'Item', 'Código', 'Quantidade', 'Fornecedor / Destino', 'Documento', 'Responsável'],
-    rows.map((m) => [dateLabel(m.date), m.type === 'entry' ? 'Entrada' : 'Saída', m.item, m.code, m.quantity, m.supplier || '', m.document || '', m.responsible])
+    ['Data', 'Tipo', 'Centro de custo', 'Item', 'Codigo', 'Categoria', 'Quantidade', 'Valor unitario (R$)', 'Valor total estimado (R$)', 'Fornecedor / destino', 'Documento / NF', 'Responsavel', 'Solicitacao vinculada', 'Aprovador', 'Data da decisao', 'Status do pedido', 'Observacoes'],
+    rows.map((m) => {
+      const request = requestFromMovement(m);
+      const item = state.inventory.find((entry) => entry.id === m.inventory_id) || findInventoryByName(m.item) || {};
+      const unitValue = Number(item.value || 0);
+      return [
+        dateLabel(m.date),
+        m.type === 'entry' ? 'Entrada' : 'Saida',
+        movementCostCenter(m, request),
+        m.item,
+        m.code,
+        item.category || '',
+        m.quantity,
+        csvMoney(unitValue),
+        csvMoney(Number(m.quantity) * unitValue),
+        m.supplier || '',
+        m.document || '',
+        m.responsible,
+        request ? requestCode(request.id) : '',
+        request?.decided_by || '',
+        request?.decided_at ? dateLabel(request.decided_at.slice(0, 10)) : '',
+        request ? requestStatusLabels[request.status] || request.status : 'Registrada',
+        m.notes || request?.decision_note || '',
+      ];
+    }),
+    ';'
   );
   showToast('Movimentações exportadas — abra o arquivo no Excel.');
 }
@@ -722,6 +775,71 @@ function exportInventoryCsv() {
     ])
   );
   showToast('Inventário exportado — abra o arquivo no Excel.');
+}
+
+function exportFinancialCsv() {
+  const dateFrom = $('#reportDateFrom')?.value || '';
+  const dateTo = $('#reportDateTo')?.value || '';
+  const inPeriod = (value) => {
+    const d = (value || '').slice(0, 10);
+    return (!dateFrom || d >= dateFrom) && (!dateTo || d <= dateTo);
+  };
+  const requestRows = state.requests.filter((request) => inPeriod(request.date)).map((request) => {
+    const item = findInventoryByName(request.item) || {};
+    const linkedMovement = state.movements.find((movement) => movement.document === requestCode(request.id));
+    const unitValue = Number(item.value || 0);
+    return [
+      'Solicitacao',
+      dateLabel(request.date),
+      request.department,
+      requestStatusLabels[request.status] || request.status,
+      request.item,
+      item.code || '',
+      item.category || '',
+      request.quantity,
+      csvMoney(unitValue),
+      csvMoney(Number(request.quantity) * unitValue),
+      linkedMovement?.supplier || '',
+      linkedMovement?.document || requestCode(request.id),
+      request.requester,
+      request.decided_by || '',
+      request.decided_at ? dateLabel(request.decided_at.slice(0, 10)) : '',
+      request.priority,
+      linkedMovement?.notes || request.reason,
+      request.decision_note || '',
+    ];
+  });
+  const movementRows = state.movements.filter((movement) => inPeriod(movement.date) && !requestFromMovement(movement)).map((movement) => {
+    const item = state.inventory.find((entry) => entry.id === movement.inventory_id) || findInventoryByName(movement.item) || {};
+    const unitValue = Number(item.value || 0);
+    return [
+      movement.type === 'entry' ? 'Entrada' : 'Saida',
+      dateLabel(movement.date),
+      movementCostCenter(movement),
+      'Registrada',
+      movement.item,
+      movement.code,
+      item.category || '',
+      movement.quantity,
+      csvMoney(unitValue),
+      csvMoney(Number(movement.quantity) * unitValue),
+      movement.supplier || '',
+      movement.document || '',
+      movement.responsible,
+      '',
+      '',
+      '',
+      movement.notes || '',
+      '',
+    ];
+  });
+  exportCsv(
+    `financeiro-${new Date().toISOString().slice(0, 10)}.csv`,
+    ['Tipo', 'Data', 'Centro de custo / setor', 'Status', 'Item', 'Codigo', 'Categoria', 'Quantidade', 'Valor unitario estimado (R$)', 'Valor total estimado (R$)', 'Fornecedor / destino', 'Documento / NF', 'Solicitante / responsavel', 'Aprovador', 'Data da aprovacao / decisao', 'Prioridade', 'Justificativa / observacoes', 'Observacao da decisao'],
+    [...requestRows, ...movementRows],
+    ';'
+  );
+  showToast('CSV financeiro exportado com dados de pedidos, custos e documentos.');
 }
 
 function setupCanvas(canvas) {
@@ -887,6 +1005,7 @@ $('#modalForm').addEventListener('submit', (event) => { event.preventDefault(); 
 ['custodySearch', 'custodyStatus'].forEach((id) => $(`#${id}`).addEventListener(id === 'custodySearch' ? 'input' : 'change', renderCustody));
 $('#exportMovementCsv').addEventListener('click', exportMovementsCsv);
 $('#exportInventoryCsv').addEventListener('click', exportInventoryCsv);
+$('#exportFinancialCsv').addEventListener('click', exportFinancialCsv);
 $('#reportDateFrom').addEventListener('change', renderReports);
 $('#reportDateTo').addEventListener('change', renderReports);
 $('#clearReportDates').addEventListener('click', () => { $('#reportDateFrom').value = ''; $('#reportDateTo').value = ''; renderReports(); });

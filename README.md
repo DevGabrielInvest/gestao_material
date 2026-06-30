@@ -10,6 +10,7 @@ Sistema web para controle de materiais, equipamentos, solicitações e termos de
 - Termos de responsabilidade exportáveis em PDF
 - Alertas de reposição, devolução atrasada e pedidos pendentes
 - Relatórios de consumo, inventário e bens por responsável, com exportação em PDF
+- Exportação CSV financeira com centro de custo, fornecedor/destino, documento/NF, aprovador, data de decisão, status e valores estimados
 
 ## Requisitos
 
