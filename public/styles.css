@@ -212,6 +212,8 @@ td { border-color: rgba(219,164,81,.1); }
 .inventory-table-panel { background: rgba(255,255,255,.025); }
 .row-action { border-color: var(--line); border-radius: 3px; color: #DBA451; background: transparent; }
 .row-action:hover { color: #141414; background: #DBA451; }
+.row-action.danger { color: #e68b79; }
+.row-action.danger:hover { color: #141414; background: #d8624e; }
 .request-tabs { border-color: var(--line); }.request-tabs button { color: rgba(255,255,255,.5); font-family: "Sora", sans-serif; }.request-tabs button.active { color: #DBA451; border-color: #DBA451; }.request-tabs b { color: #DBA451; background: rgba(219,164,81,.12); }
 .request-meta { border-color: rgba(219,164,81,.14); }.request-meta span, .request-card .code, .request-card > p { color: var(--muted); }
 .custody-banner { border: 1px solid rgba(219,164,81,.48); border-radius: 7px; background: linear-gradient(135deg, #141414 0%, #2a1f0a 60%, #DBA451 150%); }

@@ -21,6 +21,7 @@ const icons = {
   swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h14l-3-3M20 17H6l3 3M18 7l-3 3M6 17l3-3"/></svg>',
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
 };
 
@@ -35,7 +36,13 @@ const $ = (selector) => document.querySelector(selector);
 const money = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateLabel = (value) => value ? new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR') : '—';
 const initials = (name) => name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase();
-const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&', '<': '<', '>': '>', "'": ''', '"': '"' }[char]));
+const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({
+  '&': '&amp;',
+  '<': '&lt;',
+  '>': '&gt;',
+  "'": '&#39;',
+  '"': '&quot;',
+}[char]));
 const isOverdue = (record) => record.status === 'active' && new Date(`${record.expected}T23:59:59`) < new Date();
 
 // Frontend validation
@@ -154,13 +161,19 @@ async function api(path, options = {}) {
   const maxRetries = options._retries ?? 0;
   try {
     const res = await fetch(`/api${path}`, { ...options, headers });
-    const data = await res.json();
+    let data = {};
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
     if (!res.ok) {
       if (res.status >= 500 && maxRetries < 2) {
         await new Promise((resolve) => setTimeout(resolve, 1000));
         return api(path, { ...options, _retries: maxRetries + 1 });
       }
-      throw new Error(data.error || 'Erro na requisição');
+      const suffix = data.requestId ? ` (id: ${data.requestId})` : '';
+      throw new Error(`${data.error || 'Erro na requisição'}${suffix}`);
     }
     return data;
   } catch (err) {
@@ -174,6 +187,7 @@ async function api(path, options = {}) {
 const apiGet = (path) => api(path);
 const apiPost = (path, body) => api(path, { method: 'POST', body: JSON.stringify(body) });
 const apiPut = (path, body) => api(path, { method: 'PUT', body: JSON.stringify(body) });
+const apiDelete = (path) => api(path, { method: 'DELETE' });
 
 async function loadState() {
   try {
@@ -198,6 +212,7 @@ async function loadState() {
     };
   } catch (err) {
     console.error('Erro ao carregar dados:', err);
+    showToast(err.message || 'Não foi possível carregar os dados agora.');
   }
 }
 
@@ -206,7 +221,7 @@ async function loadMore(section) {
     const pagInfo = state.pagination[section];
     if (!pagInfo || !pagInfo.hasMore) return;
     const newOffset = pagInfo.offset + pagInfo.limit;
-    const response = await apiGet(`/api/${section}?limit=${pagInfo.limit}&offset=${newOffset}`);
+    const response = await apiGet(`/${section}?limit=${pagInfo.limit}&offset=${newOffset}`);
     const newData = response.data || response;
     state[section].push(...newData);
     pagInfo.offset = newOffset;
@@ -303,7 +318,9 @@ function renderInventory() {
     const inCustody = custodyIds.has(item.id);
     const low = item.quantity <= item.minimum;
     const badge = inCustody ? statusBadge('active', 'custody') : low ? '<span class="status amber">Estoque baixo</span>' : '<span class="status green">Disponível</span>';
-    const actions = can('manageInventory') ? `<button class="row-action edit-item" data-id="${item.id}" title="Editar item">${icons.edit}</button>` : '';
+    const actions = can('manageInventory')
+      ? `<button class="row-action edit-item" data-id="${item.id}" title="Editar item">${icons.edit}</button><button class="row-action danger delete-item" data-id="${item.id}" title="Excluir item">${icons.trash}</button>`
+      : '';
     return `<tr><td><div class="item-cell"><div class="item-thumb">${escapeHtml(item.name[0])}</div><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.code)} · ${money(item.value)}</small></div></div></td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(item.location)}</td><td><span class="quantity ${low ? 'low' : ''}">${item.quantity}</span> <small>un.</small></td><td>${badge}</td><td><div class="row-actions">${actions}</div></td></tr>`;
   }).join('');
   const pagInfo = state.pagination.inventory;
@@ -313,6 +330,7 @@ function renderInventory() {
   }
   $('#inventoryEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.edit-item').forEach((button) => button.addEventListener('click', () => openItemModal(Number(button.dataset.id))));
+  document.querySelectorAll('.delete-item').forEach((button) => button.addEventListener('click', () => deleteInventoryItem(Number(button.dataset.id))));
 }
 
 function renderRequests() {
@@ -380,14 +398,18 @@ function renderMovements() {
   const hasPeriod = dateFrom || dateTo;
   const periodNote = hasPeriod ? `${dateFrom ? dateLabel(dateFrom) : '...'} a ${dateTo ? dateLabel(dateTo) : '...'}` : '';
   $('#movementStats').innerHTML = `<article><span>Unidades recebidas</span><strong>+${entries}</strong><small>${hasPeriod ? periodNote : 'Entradas documentadas'}</small></article><article><span>Unidades distribuídas</span><strong>-${exits}</strong><small>${hasPeriod ? periodNote : 'Saídas documentadas'}</small></article><article><span>Fornecedores registrados</span><strong>${suppliers}</strong><small>Com histórico de compra</small></article>`;
-  let movementHtml = filtered.map((movement) => `<tr><td>${dateLabel(movement.date)}</td><td><span class="movement-type ${movement.type}">${movement.type === 'entry' ? 'Entrada' : 'Saída'}</span></td><td><div class="item-cell"><div class="item-thumb">${escapeHtml(movement.item[0])}</div><div><strong>${escapeHtml(movement.item)}</strong><small>${escapeHtml(movement.code)}</small></div></div></td><td><strong class="movement-quantity ${movement.type}">${movement.type === 'entry' ? '+' : '-'}${movement.quantity}</strong> un.</td><td>${escapeHtml(movement.supplier || '—')}</td><td>${escapeHtml(movement.document || '—')}</td><td>${escapeHtml(movement.responsible)}</td></tr>`).join('');
+  let movementHtml = filtered.map((movement) => {
+    const actions = can('manageInventory') ? `<button class="row-action danger delete-movement" data-id="${movement.id}" title="Excluir movimentação">${icons.trash}</button>` : '';
+    return `<tr><td>${dateLabel(movement.date)}</td><td><span class="movement-type ${movement.type}">${movement.type === 'entry' ? 'Entrada' : 'Saída'}</span></td><td><div class="item-cell"><div class="item-thumb">${escapeHtml(movement.item[0])}</div><div><strong>${escapeHtml(movement.item)}</strong><small>${escapeHtml(movement.code)}</small></div></div></td><td><strong class="movement-quantity ${movement.type}">${movement.type === 'entry' ? '+' : '-'}${movement.quantity}</strong> un.</td><td>${escapeHtml(movement.supplier || '—')}</td><td>${escapeHtml(movement.document || '—')}</td><td>${escapeHtml(movement.responsible)}</td><td><div class="row-actions">${actions}</div></td></tr>`;
+  }).join('');
   const pagInfo = state.pagination.movements;
   if (pagInfo && pagInfo.hasMore && filtered.length > 0) {
-    movementHtml += `<tr><td colspan="7" style="text-align: center; padding: 1.5rem;"><button class="button secondary" id="loadMoreMovements">Carregar mais movimentações (${pagInfo.total - state.movements.length} restantes)</button></td></tr>`;
+    movementHtml += `<tr><td colspan="8" style="text-align: center; padding: 1.5rem;"><button class="button secondary" id="loadMoreMovements">Carregar mais movimentações (${pagInfo.total - state.movements.length} restantes)</button></td></tr>`;
     setTimeout(() => $('#loadMoreMovements')?.addEventListener('click', () => loadMore('movements')), 0);
   }
   $('#movementBody').innerHTML = movementHtml;
   $('#movementEmpty').classList.toggle('show', !filtered.length);
+  document.querySelectorAll('.delete-movement').forEach((button) => button.addEventListener('click', () => deleteMovement(Number(button.dataset.id))));
 }
 
 function consumptionSummary(dateFrom, dateTo) {
@@ -738,6 +760,47 @@ function openItemModal(id = null) {
   } });
 }
 
+async function deleteInventoryItem(id) {
+  if (!can('manageInventory')) { showToast('Seu perfil não pode excluir itens.'); return; }
+  const item = state.inventory.find((entry) => entry.id === id);
+  if (!item) return;
+  showConfirm({
+    title: 'Excluir item',
+    message: `Tem certeza que deseja excluir ${item.name}? Itens com movimentações ou termos vinculados serão bloqueados para preservar o histórico.`,
+    confirmLabel: 'Excluir item',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await apiDelete(`/inventory/${id}`);
+        state.inventory = state.inventory.filter((entry) => entry.id !== id);
+        await loadState();
+        renderAll();
+        showToast('Item excluído do inventário.');
+      } catch (err) { showToast(err.message); }
+    }
+  });
+}
+
+async function deleteMovement(id) {
+  if (!can('manageInventory')) { showToast('Seu perfil não pode excluir movimentações.'); return; }
+  const movement = state.movements.find((entry) => entry.id === id);
+  if (!movement) return;
+  showConfirm({
+    title: 'Excluir movimentação',
+    message: `Tem certeza que deseja excluir a movimentação de ${movement.item}? O saldo do estoque será ajustado automaticamente.`,
+    confirmLabel: 'Excluir movimentação',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        await apiDelete(`/movements/${id}`);
+        await loadState();
+        renderAll();
+        showToast('Movimentação excluída e saldo recalculado.');
+      } catch (err) { showToast(err.message); }
+    }
+  });
+}
+
 async function openCustodyModal() {
   if (!can('manageCustody')) { showToast('Seu perfil não pode registrar retiradas.'); return; }
   const available = state.inventory.filter((item) => item.valuable && !state.custody.some((record) => record.inventory_id === item.id && record.status === 'active'));
@@ -800,7 +863,10 @@ async function deliverRequest(id) {
         if (inventoryItem) {
           inventoryItem.quantity -= request.quantity;
           const mov = await apiGet('/movements');
-          state.movements = mov;
+          state.movements = mov.data || mov;
+          if (mov.total) {
+            state.pagination.movements = { total: mov.total, limit: mov.limit, offset: mov.offset, hasMore: mov.hasMore };
+          }
         }
         addActivity('Material entregue', `${request.item} entregue para ${request.requester}`);
         renderAll();

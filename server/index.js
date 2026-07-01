@@ -125,6 +125,45 @@ function validationError(res, field, message) {
   return res.status(400).json({ error: `${field}: ${message}` });
 }
 
+function parsePositiveId(req, res) {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    res.status(400).json({ error: 'ID inválido' });
+    return null;
+  }
+  return id;
+}
+
+function handleRouteError(err, req, res) {
+  const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  console.error(JSON.stringify({
+    level: 'error',
+    requestId,
+    method: req.method,
+    path: req.originalUrl,
+    userId: req.user?.id || null,
+    message: err.message,
+    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
+  }));
+  if (!res.headersSent) {
+    res.status(500).json({ error: 'Erro interno ao processar a requisição.', requestId });
+  }
+}
+
+app.get('/api/health', async (req, res) => {
+  try {
+    await sql`SELECT 1`;
+    res.json({
+      ok: true,
+      status: 'healthy',
+      timestamp: new Date().toISOString(),
+      uptime: Math.floor(process.uptime()),
+    });
+  } catch (err) {
+    handleRouteError(err, req, res);
+  }
+});
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 app.post('/api/auth/login', loginLimiter, async (req, res) => {
@@ -140,7 +179,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     const payload = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
     res.json({ token, user: payload });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.get('/api/auth/me', authMiddleware, (req, res) => res.json(req.user));
@@ -161,7 +200,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
       activeCustody: Number(activeCustody[0].count),
       pendingRequests: Number(pendingRequests[0].count),
     });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 // ─── Inventory ────────────────────────────────────────────────────────────────
@@ -174,7 +213,7 @@ app.get('/api/inventory', authMiddleware, async (req, res) => {
     const total = Number(countResult[0].count);
     const items = await sql`SELECT * FROM inventory ORDER BY id LIMIT ${limit} OFFSET ${offset}`;
     res.json({ data: items, total, limit, offset, hasMore: offset + limit < total });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 function validateInventoryBody(req, res) {
@@ -202,7 +241,7 @@ app.post('/api/inventory', authMiddleware, roleMiddleware('admin', 'manager'), a
     `;
     await logActivity('Novo item cadastrado', `${name} · ${quantity} unidade(s)`, req);
     res.status(201).json(items[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
@@ -220,7 +259,39 @@ app.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager')
     if (!items.length) return res.status(404).json({ error: 'Item não encontrado' });
     await logActivity('Cadastro atualizado', `${name} · ${quantity} unidade(s)`, req);
     res.json(items[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+app.delete('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
+  try {
+    const id = parsePositiveId(req, res);
+    if (!id) return;
+
+    const result = await sql.begin(async (trx) => {
+      const items = await trx`SELECT * FROM inventory WHERE id = ${id} FOR UPDATE`;
+      if (!items.length) return { status: 404 };
+
+      const links = await trx`
+        SELECT
+          (SELECT COUNT(*)::int FROM custody WHERE inventory_id = ${id}) AS custody_count,
+          (SELECT COUNT(*)::int FROM movements WHERE inventory_id = ${id}) AS movement_count
+      `;
+      if (links[0].custody_count > 0 || links[0].movement_count > 0) {
+        return { status: 409 };
+      }
+
+      const deleted = await trx`DELETE FROM inventory WHERE id = ${id} RETURNING *`;
+      return { status: 200, item: deleted[0] };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: 'Item não encontrado' });
+    if (result.status === 409) {
+      return res.status(409).json({ error: 'Item possui movimentações ou termos vinculados. Preserve o histórico antes de excluir.' });
+    }
+
+    await logActivity('Item removido do inventário', `${result.item.name} · ${result.item.code}`, req);
+    res.json({ ok: true, deleted: result.item });
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 // ─── Requests ─────────────────────────────────────────────────────────────────
@@ -244,7 +315,7 @@ app.get('/api/requests', authMiddleware, async (req, res) => {
       r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     }
     res.json({ data: requests, total, limit, offset, hasMore: offset + limit < total });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 'requester'), async (req, res) => {
@@ -271,7 +342,7 @@ app.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 're
     created.history = await sql`SELECT * FROM request_history WHERE request_id = ${created.id} ORDER BY id ASC`;
     await logActivity('Nova solicitação criada', `${requester} pediu ${quantity} unidade(s) de ${item}`, req);
     res.status(201).json(created);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
@@ -291,7 +362,7 @@ app.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 'ma
     const r = requests[0];
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     res.json(r);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
@@ -311,7 +382,7 @@ app.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', 'man
     const r = requests[0];
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     res.json(r);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
@@ -336,14 +407,14 @@ app.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 'ma
     await logActivity('Material entregue', `${r.item} entregue para ${r.requester}`, req);
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     res.json(r);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.get('/api/requests/:id/history', authMiddleware, async (req, res) => {
   try {
     const history = await sql`SELECT * FROM request_history WHERE request_id = ${req.params.id} ORDER BY id DESC`;
     res.json(history);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 // ─── Custody ──────────────────────────────────────────────────────────────────
@@ -356,7 +427,7 @@ app.get('/api/custody', authMiddleware, async (req, res) => {
     const total = Number(countResult[0].count);
     const records = await sql`SELECT * FROM custody ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
     res.json({ data: records, total, limit, offset, hasMore: offset + limit < total });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
@@ -380,7 +451,7 @@ app.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), asy
     await sql`UPDATE inventory SET location = 'Em posse', updated_at = NOW() WHERE id = ${item.id}`;
     await logActivity('Retirada registrada', `${item.name} entregue para ${holder}`, req);
     res.status(201).json(records[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
@@ -393,7 +464,7 @@ app.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'mana
     await sql`UPDATE inventory SET location = 'Armário de equipamentos', updated_at = NOW() WHERE id = ${record.inventory_id}`;
     await logActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`, req);
     res.json(record);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 // ─── Movements ────────────────────────────────────────────────────────────────
@@ -406,7 +477,7 @@ app.get('/api/movements', authMiddleware, async (req, res) => {
     const total = Number(countResult[0].count);
     const movements = await sql`SELECT * FROM movements ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
     res.json({ data: movements, total, limit, offset, hasMore: offset + limit < total });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 app.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
@@ -431,7 +502,55 @@ app.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager'), a
     `;
     await logActivity(type === 'entry' ? 'Entrada de estoque registrada' : 'Saída de estoque registrada', `${item.name} · ${quantity} unidade(s) · ${req.user.name}`, req);
     res.status(201).json(movements[0]);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+app.delete('/api/movements/:id', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
+  try {
+    const id = parsePositiveId(req, res);
+    if (!id) return;
+
+    const result = await sql.begin(async (trx) => {
+      const movements = await trx`SELECT * FROM movements WHERE id = ${id} FOR UPDATE`;
+      if (!movements.length) return { status: 404 };
+      const movement = movements[0];
+
+      if (/^SOL-\d+$/i.test(movement.document || '')) {
+        return { status: 409, reason: 'linked_request' };
+      }
+
+      const items = await trx`SELECT * FROM inventory WHERE id = ${movement.inventory_id} FOR UPDATE`;
+      if (!items.length) return { status: 409, reason: 'missing_inventory' };
+      const item = items[0];
+
+      if (movement.type === 'entry' && Number(item.quantity) < Number(movement.quantity)) {
+        return { status: 409, reason: 'insufficient_stock' };
+      }
+
+      const operation = movement.type === 'entry' ? trx`-` : trx`+`;
+      await trx`
+        UPDATE inventory
+        SET quantity = quantity ${operation} ${movement.quantity}, updated_at = NOW()
+        WHERE id = ${movement.inventory_id}
+      `;
+      const deleted = await trx`DELETE FROM movements WHERE id = ${id} RETURNING *`;
+      return { status: 200, movement: deleted[0] };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: 'Movimentação não encontrada' });
+    if (result.status === 409 && result.reason === 'linked_request') {
+      return res.status(409).json({ error: 'Movimentação vinculada a solicitação entregue não pode ser excluída pelo histórico.' });
+    }
+    if (result.status === 409 && result.reason === 'missing_inventory') {
+      return res.status(409).json({ error: 'Inventário vinculado não encontrado. Exclusão bloqueada para evitar inconsistência de saldo.' });
+    }
+    if (result.status === 409 && result.reason === 'insufficient_stock') {
+      return res.status(409).json({ error: 'Exclusão bloquearia saldo negativo no inventário.' });
+    }
+
+    await logActivity('Movimentação removida', `${result.movement.item} · ${result.movement.quantity} unidade(s)`, req);
+    res.json({ ok: true, deleted: result.movement });
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 // ─── Activity ─────────────────────────────────────────────────────────────────
@@ -444,7 +563,7 @@ app.get('/api/activity', authMiddleware, async (req, res) => {
     const total = Number(countResult[0].count);
     const activities = await sql`SELECT * FROM activity ORDER BY date DESC LIMIT ${limit} OFFSET ${offset}`;
     res.json({ data: activities, total, limit, offset, hasMore: offset + limit < total });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { handleRouteError(err, req, res); }
 });
 
 async function logActivity(text, detail, req) {
