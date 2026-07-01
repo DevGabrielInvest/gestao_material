@@ -1203,9 +1203,15 @@ document.addEventListener('keydown', (event) => { if (event.key === 'Escape') cl
 $('#modalForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   if (!modalAction) return;
+  const form = event.currentTarget;
+  const errors = validateForm(form);
+  if (errors.length) {
+    showToast(errors[0].message);
+    return;
+  }
   setLoading(true);
   try {
-    await modalAction(event.currentTarget);
+    await modalAction(form);
   } catch (err) {
     showToast(err.message || 'Erro ao processar. Tente novamente.');
   } finally {
@@ -1233,6 +1239,12 @@ $('#requestTabs').addEventListener('click', (event) => {
 $('#loginForm').addEventListener('submit', async (event) => {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(event.currentTarget));
+  const emailError = validateField('email', data.email);
+  if (emailError || !data.password) {
+    $('#loginError').textContent = emailError || 'Senha é obrigatória.';
+    return;
+  }
+  $('#loginError').textContent = '';
   try {
     const result = await apiPost('/auth/login', { email: data.email, password: data.password });
     setToken(result.token);
