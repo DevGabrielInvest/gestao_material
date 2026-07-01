@@ -62,7 +62,7 @@ app.use(helmet({
 }));
 app.use(cors());
 app.use(express.json());
-app.use(express.static('.', { index: 'index.html' }));
+app.use(express.static('public', { index: 'index.html' }));
 app.use('/api', apiLimiter);
 
 function authMiddleware(req, res, next) {
