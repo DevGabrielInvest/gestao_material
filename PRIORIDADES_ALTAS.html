@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prioridades Altas - Gestão Patrimonial</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      color: #333;
+      background: #f8f9fa;
+      padding: 2rem;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .header {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: white;
+      padding: 2.5rem 2rem;
+    }
+    .header h1 {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+    .header p {
+      opacity: 0.95;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+    }
+    .header .stats {
+      display: flex;
+      gap: 2rem;
+      margin-top: 1.5rem;
+      flex-wrap: wrap;
+    }
+    .stat {
+      flex: 1;
+      min-width: 200px;
+      background: rgba(255,255,255,0.2);
+      padding: 1rem;
+      border-radius: 8px;
+    }
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: bold;
+    }
+    .stat-label {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      margin-top: 0.5rem;
+    }
+    .content {
+      padding: 2rem;
+    }
+    .section {
+      margin-bottom: 3rem;
+    }
+    .section h2 {
+      color: #ef4444;
+      font-size: 1.6rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 3px solid #ef4444;
+      padding-bottom: 0.8rem;
+    }
+    .task-list {
+      display: grid;
+      gap: 1.5rem;
+    }
+    .task-card {
+      background: #fff5f5;
+      border-left: 5px solid #ef4444;
+      padding: 1.5rem;
+      border-radius: 8px;
+      transition: all 0.3s;
+    }
+    .task-card:hover {
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.15);
+      transform: translateY(-2px);
+    }
+    .task-card h3 {
+      color: #dc2626;
+      margin-bottom: 0.8rem;
+      font-size: 1.1rem;
+    }
+    .task-card p {
+      color: #666;
+      margin-bottom: 1rem;
+      line-height: 1.6;
+    }
+    .task-meta {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin: 1rem 0;
+    }
+    .tag {
+      display: inline-block;
+      background: #fee2e2;
+      color: #dc2626;
+      padding: 0.3rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+    .tag.backend { background: #dbeafe; color: #1e40af; }
+    .tag.frontend { background: #dcfce7; color: #166534; }
+    .tag.database { background: #fef3c7; color: #b45309; }
+    .tag.security { background: #fecaca; color: #991b1b; }
+    .tag.ux { background: #e9d5ff; color: #6b21a8; }
+
+    .effort {
+      display: inline-block;
+      padding: 0.4rem 0.8rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+    .effort.low { background: #dcfce7; color: #166534; }
+    .effort.medium { background: #fef3c7; color: #b45309; }
+    .effort.high { background: #fecaca; color: #991b1b; }
+
+    .description {
+      background: white;
+      padding: 1rem;
+      border-radius: 6px;
+      margin: 0.8rem 0;
+      border-left: 3px solid #ef4444;
+      font-size: 0.95rem;
+    }
+
+    .implementation {
+      margin-top: 1rem;
+      padding: 1rem;
+      background: white;
+      border-radius: 6px;
+    }
+    .implementation h4 {
+      color: #dc2626;
+      margin-bottom: 0.5rem;
+      font-size: 0.95rem;
+    }
+    .implementation ul {
+      margin-left: 1.5rem;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    .implementation li {
+      margin: 0.4rem 0;
+    }
+
+    .progress {
+      margin-top: 2rem;
+      padding: 2rem;
+      background: #fff5f5;
+      border-radius: 8px;
+      border: 2px solid #ef4444;
+    }
+    .progress h3 {
+      color: #dc2626;
+      margin-bottom: 1rem;
+    }
+    .progress-item {
+      margin: 1rem 0;
+      padding: 0.8rem;
+      background: white;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+    .checkbox {
+      width: 24px;
+      height: 24px;
+      border: 2px solid #ef4444;
+      border-radius: 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .checkbox:checked {
+      background: #ef4444;
+    }
+    .timeline {
+      margin-top: 2rem;
+      padding: 2rem;
+      background: #f9fafb;
+      border-radius: 8px;
+    }
+    .timeline h3 {
+      color: #ef4444;
+      margin-bottom: 1.5rem;
+    }
+    .timeline-item {
+      display: flex;
+      gap: 2rem;
+      margin-bottom: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid #e5e7eb;
+    }
+    .timeline-item:last-child {
+      border-bottom: none;
+    }
+    .timeline-dot {
+      width: 40px;
+      height: 40px;
+      background: #ef4444;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .timeline-content h4 {
+      color: #1f2937;
+      margin-bottom: 0.3rem;
+    }
+    .timeline-content p {
+      color: #6b7280;
+      font-size: 0.95rem;
+    }
+    .footer {
+      background: #1f2937;
+      color: white;
+      padding: 2rem;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+    .cta-button {
+      display: inline-block;
+      background: #ef4444;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border-radius: 6px;
+      text-decoration: none;
+      margin-top: 1rem;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .cta-button:hover {
+      background: #dc2626;
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🔴 Prioridades Altas</h1>
+      <p>Features críticas para implementar na primeira semana</p>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-value">7</div>
+          <div class="stat-label">Tarefas críticas</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">1 semana</div>
+          <div class="stat-label">Tempo estimado</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value">P0</div>
+          <div class="stat-label">Sprint atual</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="content">
+      <!-- TAREFA 1 -->
+      <div class="section">
+        <div class="task-card">
+          <h3>1️⃣ Paginação e Limite de Registros</h3>
+          <div class="task-meta">
+            <span class="tag backend">Backend</span>
+            <span class="tag frontend">Frontend</span>
+            <span class="effort medium">Esforço Médio</span>
+          </div>
+
+          <div class="description">
+            <strong>Problema:</strong> Atualmente, todas as rotas carregam todos os registros sem limite. Com 10k+ itens, isso causará timeout e consumirá muita memória.
+          </div>
+
+          <div class="implementation">
+            <h4>📋 Implementação:</h4>
+            <ul>
+              <li><strong>Backend:</strong> Adicionar parâmetros <code>limit</code> e <code>offset</code> em:
+                <ul>
+                  <li><code>GET /api/inventory?limit=50&amp;offset=0</code></li>
+                  <li><code>GET /api/requests?limit=20&amp;offset=0</code></li>
+                  <li><code>GET /api/custody?limit=30&amp;offset=0</code></li>
+                  <li><code>GET /api/movements?limit=20&amp;offset=0</code></li>
+                  <li><code>GET /api/activity?limit=10&amp;offset=0</code></li>
+                </ul>
+              </li>
+              <li><strong>Frontend:</strong> Adicionar paginação visual (próximo/anterior) ou "carregar mais"</li>
+              <li><strong>Resposta:</strong> Incluir <code>total</code> e <code>hasMore</code> no JSON</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAREFA 2 -->
+      <div class="section">
+        <div class="task-card">
+          <h3>2️⃣ Índices no Banco de Dados</h3>
+          <div class="task-meta">
+            <span class="tag database">Database</span>
+            <span class="effort low">Esforço Baixo</span>
+          </div>
+
+          <div class="description">
+            <strong>Problema:</strong> Sem índices, buscas por email, status ou categoria ficam lentas (full table scan).
+          </div>
+
+          <div class="implementation">
+            <h4>📋 Implementação:</h4>
+            <ul>
+              <li>Criar índice simples: <code>CREATE INDEX idx_users_email ON users(email);</code></li>
+              <li>Criar índice simples: <code>CREATE INDEX idx_requests_status ON requests(status);</code></li>
+              <li>Criar índice simples: <code>CREATE INDEX idx_inventory_category ON inventory(category);</code></li>
+              <li>Criar índice composto: <code>CREATE INDEX idx_requests_user_date ON requests(requester_email, date);</code></li>
+              <li>Criar índice composto: <code>CREATE INDEX idx_custody_inventory_status ON custody(inventory_id, status);</code></li>
+              <li>Executar <code>npm run schema</code> após adicionar ao migrate.js</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAREFA 3 -->
+      <div class="section">
+        <div class="task-card">
+          <h3>3️⃣ Validação Robusta de Entrada</h3>
+          <div class="task-meta">
+            <span class="tag security">Segurança</span>
+            <span class="tag backend">Backend</span>
+            <span class="effort medium">Esforço Médio</span>
+          </div>
+
+          <div class="description">
+            <strong>Problema:</strong> APIs aceitam qualquer valor. Usuário pode enviar strings com 10MB, números negativos inválidos, tipos errados.
+          </div>
+
+          <div class="implementation">
+            <h4>📋 Implementação:</h4>
+            <ul>
+              <li><strong>Strings:</strong> Máximo 255 caracteres para name/code, 2000 para reason/notes</li>
+              <li><strong>Números:</strong> quantity e value devem ser >= 0</li>
+              <li><strong>Enums:</strong> Validar role, status, type contra lista pré-aprovada</li>
+              <li><strong>Email:</strong> Validar formato com regex simples</li>
+              <li><strong>Data:</strong> Validar formato YYYY-MM-DD</li>
+              <li><strong>Resposta de erro:</strong> Retornar 400 com mensagem clara se inválido</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAREFA 4 -->
+      <div class="section">
+        <div class="task-card">
+          <h3>4️⃣ Rate Limiting (Proteção contra Brute Force)</h3>
+          <div class="task-meta">
+            <span class="tag security">Segurança</span>
+            <span class="tag backend">Backend</span>
+            <span class="effort medium">Esforço Médio</span>
+          </div>
+
+          <div class="description">
+            <strong>Problema:</strong> Qualquer pessoa pode tentar senhas infinitas sem limite. Usar express-rate-limit.
+          </div>
+
+          <div class="implementation">
+            <h4>📋 Implementação:</h4>
+            <ul>
+              <li><strong>Instalar:</strong> <code>npm install express-rate-limit</code></li>
+              <li><strong>Login:</strong> 5 tentativas por minuto por IP</li>
+              <li><strong>API geral:</strong> 100 requisições por minuto por token/IP</li>
+              <li><strong>Exemplo:</strong> Retornar 429 (Too Many Requests) com retry-after header</li>
+              <li><strong>Mensagem:</strong> "Muitas tentativas. Tente novamente em 5 minutos"</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAREFA 5 -->
+      <div class="section">
+        <div class="task-card">
+          <h3>5️⃣ Tratamento de Erros Aprimorado (Frontend)</h3>
+          <div class="task-meta">
+            <span class="tag frontend">Frontend</span>
+            <span class="tag ux">UX</span>
+            <span class="effort medium">Esforço Médio</span>
+          </div>
+
+          <div class="description">
+            <strong>Problema:</strong> Erros silenciosos ou console.error. Usuário não sabe o que aconteceu.
+          </div>
+
+          <div class="implementation">
+            <h4>📋 Implementação:</h4>
+            <ul>
+              <li><strong>Loading state:</strong> Mostrar spinner enquanto carrega</li>
+              <li><strong>Mensagens visuais:</strong> Toast ou modal com erro em vermelho</li>
+              <li><strong>Retry automático:</strong> Para erros 5xx, tentar 2x após 1s</li>
+              <li><strong>Validação antes:</strong> Verificar campos antes de enviar</li>
+              <li><strong>Resposta clara:</strong> Ex: "Erro ao salvar. Tente novamente" em vez de código de erro</li>
+              <li><strong>Offline detection:</strong> Avisar se não há conexão</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAREFA 6 -->
+      <div class="section">
+        <div class="task-card">
+          <h3>6️⃣ Responsividade Mobile</h3>
+          <div class="task-meta">
+            <span class="tag frontend">Frontend</span>
+            <span class="tag ux">UX</span>
+            <span class="effort high">Esforço Alto</span>
+          </div>
+
+          <div class="description">
+            <strong>Problema:</strong> Layout não se adapta para telas pequenas. Tabelas saem da tela, botões ficam minúsculos.
+          </div>
+
+          <div class="implementation">
+            <h4>📋 Implementação:</h4>
+            <ul>
+              <li><strong>Viewport:</strong> Adicionar <code>&lt;meta name="viewport" content="width=device-width, initial-scale=1"&gt;</code> no HTML</li>
+              <li><strong>Media queries:</strong> Breakpoints em 768px, 1024px</li>
+              <li><strong>Tabelas:</strong> Converter para cards em mobile (<code>display: grid</code>)</li>
+              <li><strong>Navigation:</strong> Menu hambúrguer em telas pequenas</li>
+              <li><strong>Botões:</strong> Mínimo 44x44px (toque confortável)</li>
+              <li><strong>Fontes:</strong> Aumentar em mobile (mínimo 16px)</li>
+              <li><strong>Teste:</strong> Abrir em DevTools modo mobile (F12)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAREFA 7 -->
+      <div class="section">
+        <div class="task-card">
+          <h3>7️⃣ Confirmação em Ações Destrutivas</h3>
+          <div class="task-meta">
+            <span class="tag frontend">Frontend</span>
+            <span class="tag ux">UX</span>
+            <span class="effort low">Esforço Baixo</span>
+          </div>
+
+          <div class="description">
+            <strong>Problema:</strong> Um clique acidental em "Recusar solicitação" ou "Devolver equipamento" não pode ser desfeito.
+          </div>
+
+          <div class="implementation">
+            <h4>📋 Implementação:</h4>
+            <ul>
+              <li><strong>Modal de confirmação:</strong> "Tem certeza que deseja recusar esta solicitação?"</li>
+              <li><strong>Botões:</strong> Cancelar (cinza) vs Confirmar (vermelho)</li>
+              <li><strong>Ações a proteger:</strong>
+                <ul>
+                  <li>Aprovar/recusar solicitação</li>
+                  <li>Devolver equipamento</li>
+                  <li>Deletar item de inventário</li>
+                  <li>Deletar movimento</li>
+                </ul>
+              </li>
+              <li><strong>Mensagem:</strong> Explicar brevemente o que vai acontecer</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- TIMELINE -->
+      <div class="timeline">
+        <h3>⏱️ Timeline de Implementação (1 semana)</h3>
+
+        <div class="timeline-item">
+          <div class="timeline-dot">1</div>
+          <div class="timeline-content">
+            <h4>Dia 1: Índices + Validação</h4>
+            <p>Criar índices no DB (30 min) + adicionar validação em todos os endpoints (2 horas)</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot">2</div>
+          <div class="timeline-content">
+            <h4>Dia 2: Rate Limiting + Paginação Backend</h4>
+            <p>Instalar e configurar express-rate-limit (1 hora) + adicionar limit/offset em rotas (3 horas)</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot">3</div>
+          <div class="timeline-content">
+            <h4>Dia 3: Paginação Frontend + Confirmação</h4>
+            <p>Adicionar UI de paginação (2 horas) + modais de confirmação (2 horas)</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot">4</div>
+          <div class="timeline-content">
+            <h4>Dia 4: Tratamento de Erros + Loading States</h4>
+            <p>Melhorar feedback visual no frontend (3 horas) + testar todas as telas (2 horas)</p>
+          </div>
+        </div>
+
+        <div class="timeline-item">
+          <div class="timeline-dot">5</div>
+          <div class="timeline-content">
+            <h4>Dia 5: Responsividade Mobile</h4>
+            <p>Adicionar viewport meta tag (30 min) + media queries (3 horas) + testar em celular (1.5 horas)</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHECKLIST -->
+      <div class="progress">
+        <h3>✅ Checklist de Implementação</h3>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Criar índices em users(email), requests(status), inventory(category)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Adicionar validação de strings (max 255, 1000 chars)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Adicionar validação de números (>= 0)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Validar enums (role, status, type)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Instalar e configurar express-rate-limit</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Adicionar limite/offset em /api/inventory</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Adicionar limite/offset em /api/requests</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Adicionar limite/offset em /api/custody</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>UI de paginação/carregar mais no frontend</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Modais de confirmação para ações destrutivas</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Adicionar loading states (spinners)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Toast/modal para mensagens de erro</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Meta viewport no HTML</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Tabelas responsivas (converter para cards em mobile)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Menu hambúrguer para navegação mobile</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Testar em DevTools modo mobile</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox">
+          <label>Testar em celular real (iOS + Android)</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Gestão Patrimonial - Sprint P0 (Prioridades Altas)</p>
+      <p style="margin-top: 1rem; font-size: 0.8rem;">Gerado em 30 de junho de 2026</p>
+    </div>
+  </div>
+</body>
+</html>

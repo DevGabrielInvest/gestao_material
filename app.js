@@ -48,7 +48,16 @@ const permissionMap = {
 const can = (permission) => Boolean(currentUser && permissionMap[permission]?.includes(currentUser.role));
 const canOpenPage = (page) => currentUser?.role !== 'requester' || page === 'requests';
 
-let state = { inventory: [], requests: [], custody: [], movements: [], activity: [] };
+let state = {
+  inventory: [], requests: [], custody: [], movements: [], activity: [],
+  pagination: {
+    inventory: { offset: 0, limit: 100, total: 0, hasMore: false },
+    requests: { offset: 0, limit: 50, total: 0, hasMore: false },
+    custody: { offset: 0, limit: 50, total: 0, hasMore: false },
+    movements: { offset: 0, limit: 50, total: 0, hasMore: false },
+    activity: { offset: 0, limit: 20, total: 0, hasMore: false },
+  }
+};
 
 const sessionKey = 'dfa-session-v2';
 const tokenKey = 'dfa-token-v2';
@@ -73,19 +82,47 @@ const apiPut = (path, body) => api(path, { method: 'PUT', body: JSON.stringify(b
 async function loadState() {
   try {
     const results = await Promise.all([
-      apiGet('/inventory'),
-      apiGet('/requests'),
-      apiGet('/custody'),
-      apiGet('/movements'),
-      apiGet('/activity'),
+      apiGet('/inventory?limit=100&offset=0'),
+      apiGet('/requests?limit=50&offset=0'),
+      apiGet('/custody?limit=50&offset=0'),
+      apiGet('/movements?limit=50&offset=0'),
+      apiGet('/activity?limit=20&offset=0'),
     ]);
-    state.inventory = results[0];
-    state.requests = results[1];
-    state.custody = results[2];
-    state.movements = results[3];
-    state.activity = results[4];
+    state.inventory = results[0].data || results[0];
+    state.requests = results[1].data || results[1];
+    state.custody = results[2].data || results[2];
+    state.movements = results[3].data || results[3];
+    state.activity = results[4].data || results[4];
+    state.pagination = {
+      inventory: results[0].total ? { total: results[0].total, limit: results[0].limit, offset: results[0].offset, hasMore: results[0].hasMore } : null,
+      requests: results[1].total ? { total: results[1].total, limit: results[1].limit, offset: results[1].offset, hasMore: results[1].hasMore } : null,
+      custody: results[2].total ? { total: results[2].total, limit: results[2].limit, offset: results[2].offset, hasMore: results[2].hasMore } : null,
+      movements: results[3].total ? { total: results[3].total, limit: results[3].limit, offset: results[3].offset, hasMore: results[3].hasMore } : null,
+      activity: results[4].total ? { total: results[4].total, limit: results[4].limit, offset: results[4].offset, hasMore: results[4].hasMore } : null,
+    };
   } catch (err) {
     console.error('Erro ao carregar dados:', err);
+  }
+}
+
+async function loadMore(section) {
+  try {
+    const pagInfo = state.pagination[section];
+    if (!pagInfo || !pagInfo.hasMore) return;
+    const newOffset = pagInfo.offset + pagInfo.limit;
+    const response = await apiGet(`/api/${section}?limit=${pagInfo.limit}&offset=${newOffset}`);
+    const newData = response.data || response;
+    state[section].push(...newData);
+    pagInfo.offset = newOffset;
+    pagInfo.hasMore = response.hasMore;
+    if (section === 'inventory') renderInventory();
+    else if (section === 'requests') renderRequests();
+    else if (section === 'custody') renderCustody();
+    else if (section === 'movements') renderMovements();
+    else if (section === 'activity') renderDashboard();
+  } catch (err) {
+    console.error(`Erro ao carregar mais ${section}:`, err);
+    showToast(`Erro ao carregar mais dados de ${section}`);
   }
 }
 
@@ -173,6 +210,11 @@ function renderInventory() {
     const actions = can('manageInventory') ? `<button class="row-action edit-item" data-id="${item.id}" title="Editar item">${icons.edit}</button>` : '';
     return `<tr><td><div class="item-cell"><div class="item-thumb">${escapeHtml(item.name[0])}</div><div><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.code)} · ${money(item.value)}</small></div></div></td><td>${escapeHtml(item.category)}</td><td>${escapeHtml(item.location)}</td><td><span class="quantity ${low ? 'low' : ''}">${item.quantity}</span> <small>un.</small></td><td>${badge}</td><td><div class="row-actions">${actions}</div></td></tr>`;
   }).join('');
+  const pagInfo = state.pagination.inventory;
+  if (pagInfo && pagInfo.hasMore) {
+    $('#inventoryBody').innerHTML += `<tr><td colspan="6" style="text-align: center; padding: 1.5rem;"><button class="button secondary" id="loadMoreInventory">Carregar mais itens (${pagInfo.total - state.inventory.length} restantes)</button></td></tr>`;
+    setTimeout(() => $('#loadMoreInventory')?.addEventListener('click', () => loadMore('inventory')), 0);
+  }
   $('#inventoryEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.edit-item').forEach((button) => button.addEventListener('click', () => openItemModal(Number(button.dataset.id))));
 }
@@ -185,7 +227,7 @@ function renderRequests() {
   $('#requestNavCount').textContent = pending;
   $('#requestPermissionNote').textContent = can('approve') ? 'Você pode analisar pedidos. Toda aprovação ou recusa exige justificativa e fica registrada no histórico.' : currentUser?.role === 'requester' ? 'Você está visualizando apenas as solicitações criadas pela sua conta.' : 'Perfil de consulta: pedidos e históricos estão disponíveis somente para leitura.';
   const filtered = activeRequestFilter === 'all' ? visible : visible.filter((item) => item.status === activeRequestFilter);
-  $('#requestsGrid').innerHTML = filtered.map((item) => {
+  let requestsHtml = filtered.map((item) => {
     const decisionNote = item.decision_note;
     const decision = decisionNote ? `<div class="approval-record"><span>${escapeHtml(item.decided_by || 'Administração')} · ${dateLabel((item.decided_at || '').slice(0, 10))}</span><p>${escapeHtml(decisionNote)}</p></div>` : '';
     let actions = `<span class="asset-value">Solicitado em ${dateLabel(item.date)}</span>`;
@@ -194,6 +236,12 @@ function renderRequests() {
     const historyCount = Array.isArray(item.history) ? item.history.length : 0;
     return `<article class="request-card"><div class="request-card-top"><span class="code">SOL-${String(item.id).padStart(4, '0')}</span>${statusBadge(item.status)}</div><h3>${escapeHtml(item.item)}</h3><p>${escapeHtml(item.reason)}</p><div class="request-meta"><div><span>Solicitante</span><strong>${escapeHtml(item.requester)}</strong></div><div><span>Quantidade</span><strong>${item.quantity} unidade(s)</strong></div><div><span>Setor</span><strong>${escapeHtml(item.department)}</strong></div><div><span>Prioridade</span><strong>${escapeHtml(item.priority)}</strong></div></div>${decision}<div class="request-actions">${actions}<button class="history-button request-history" data-id="${item.id}">Histórico (${historyCount})</button></div></article>`;
   }).join('');
+  const pagInfo = state.pagination.requests;
+  if (pagInfo && pagInfo.hasMore && filtered.length > 0) {
+    requestsHtml += `<div style="text-align: center; padding: 2rem; grid-column: 1/-1;"><button class="button secondary" id="loadMoreRequests">Carregar mais solicitações (${pagInfo.total - state.requests.length} restantes)</button></div>`;
+    setTimeout(() => $('#loadMoreRequests')?.addEventListener('click', () => loadMore('requests')), 0);
+  }
+  $('#requestsGrid').innerHTML = requestsHtml;
   $('#requestsEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.request-approve').forEach((button) => button.addEventListener('click', () => openDecisionModal(Number(button.dataset.id), 'approved')));
   document.querySelectorAll('.request-reject').forEach((button) => button.addEventListener('click', () => openDecisionModal(Number(button.dataset.id), 'rejected')));
@@ -208,6 +256,11 @@ function renderCustody() {
   const activeValue = state.custody.filter((item) => item.status === 'active').reduce((sum, item) => sum + Number(item.value), 0);
   $('#custodyTotalValue').textContent = money(activeValue);
   $('#custodyCards').innerHTML = filtered.map((item) => `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div>${statusBadge(item.status === 'active' && isOverdue(item) ? 'overdue' : item.status, 'custody')}</div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>Retirada</span><strong>${dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span><div class="custody-actions"><button class="button small secondary custody-pdf" data-id="${item.id}">${icons.download} Gerar termo PDF</button>${item.status === 'active' && can('manageCustody') ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></div></article>`).join('');
+  const pagInfo = state.pagination.custody;
+  if (pagInfo && pagInfo.hasMore && filtered.length > 0) {
+    $('#custodyCards').innerHTML += `<div style="text-align: center; padding: 2rem; grid-column: 1/-1;"><button class="button secondary" id="loadMoreCustody">Carregar mais equipamentos (${pagInfo.total - state.custody.length} restantes)</button></div>`;
+    setTimeout(() => $('#loadMoreCustody')?.addEventListener('click', () => loadMore('custody')), 0);
+  }
   $('#custodyEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.return-item').forEach((button) => button.addEventListener('click', () => returnCustody(Number(button.dataset.id))));
   document.querySelectorAll('.custody-pdf').forEach((button) => button.addEventListener('click', () => generateCustodyPdf(Number(button.dataset.id))));
@@ -231,7 +284,13 @@ function renderMovements() {
   const hasPeriod = dateFrom || dateTo;
   const periodNote = hasPeriod ? `${dateFrom ? dateLabel(dateFrom) : '...'} a ${dateTo ? dateLabel(dateTo) : '...'}` : '';
   $('#movementStats').innerHTML = `<article><span>Unidades recebidas</span><strong>+${entries}</strong><small>${hasPeriod ? periodNote : 'Entradas documentadas'}</small></article><article><span>Unidades distribuídas</span><strong>-${exits}</strong><small>${hasPeriod ? periodNote : 'Saídas documentadas'}</small></article><article><span>Fornecedores registrados</span><strong>${suppliers}</strong><small>Com histórico de compra</small></article>`;
-  $('#movementBody').innerHTML = filtered.map((movement) => `<tr><td>${dateLabel(movement.date)}</td><td><span class="movement-type ${movement.type}">${movement.type === 'entry' ? 'Entrada' : 'Saída'}</span></td><td><div class="item-cell"><div class="item-thumb">${escapeHtml(movement.item[0])}</div><div><strong>${escapeHtml(movement.item)}</strong><small>${escapeHtml(movement.code)}</small></div></div></td><td><strong class="movement-quantity ${movement.type}">${movement.type === 'entry' ? '+' : '-'}${movement.quantity}</strong> un.</td><td>${escapeHtml(movement.supplier || '—')}</td><td>${escapeHtml(movement.document || '—')}</td><td>${escapeHtml(movement.responsible)}</td></tr>`).join('');
+  let movementHtml = filtered.map((movement) => `<tr><td>${dateLabel(movement.date)}</td><td><span class="movement-type ${movement.type}">${movement.type === 'entry' ? 'Entrada' : 'Saída'}</span></td><td><div class="item-cell"><div class="item-thumb">${escapeHtml(movement.item[0])}</div><div><strong>${escapeHtml(movement.item)}</strong><small>${escapeHtml(movement.code)}</small></div></div></td><td><strong class="movement-quantity ${movement.type}">${movement.type === 'entry' ? '+' : '-'}${movement.quantity}</strong> un.</td><td>${escapeHtml(movement.supplier || '—')}</td><td>${escapeHtml(movement.document || '—')}</td><td>${escapeHtml(movement.responsible)}</td></tr>`).join('');
+  const pagInfo = state.pagination.movements;
+  if (pagInfo && pagInfo.hasMore && filtered.length > 0) {
+    movementHtml += `<tr><td colspan="7" style="text-align: center; padding: 1.5rem;"><button class="button secondary" id="loadMoreMovements">Carregar mais movimentações (${pagInfo.total - state.movements.length} restantes)</button></td></tr>`;
+    setTimeout(() => $('#loadMoreMovements')?.addEventListener('click', () => loadMore('movements')), 0);
+  }
+  $('#movementBody').innerHTML = movementHtml;
   $('#movementEmpty').classList.toggle('show', !filtered.length);
 }
 

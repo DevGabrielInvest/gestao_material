@@ -71,8 +71,12 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
 
 app.get('/api/inventory', authMiddleware, async (req, res) => {
   try {
-    const items = await sql`SELECT * FROM inventory ORDER BY id`;
-    res.json(items);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 500);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const countResult = await sql`SELECT COUNT(*) as count FROM inventory`;
+    const total = Number(countResult[0].count);
+    const items = await sql`SELECT * FROM inventory ORDER BY id LIMIT ${limit} OFFSET ${offset}`;
+    res.json({ data: items, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -109,16 +113,23 @@ app.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager')
 
 app.get('/api/requests', authMiddleware, async (req, res) => {
   try {
-    let requests;
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 500);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    let countQuery, dataQuery;
     if (['admin', 'manager', 'viewer'].includes(req.user.role)) {
-      requests = await sql`SELECT * FROM requests ORDER BY id DESC`;
+      countQuery = sql`SELECT COUNT(*) as count FROM requests`;
+      dataQuery = sql`SELECT * FROM requests ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
     } else {
-      requests = await sql`SELECT * FROM requests WHERE requester_email = ${req.user.email} OR requester = ${req.user.name} ORDER BY id DESC`;
+      countQuery = sql`SELECT COUNT(*) as count FROM requests WHERE requester_email = ${req.user.email} OR requester = ${req.user.name}`;
+      dataQuery = sql`SELECT * FROM requests WHERE requester_email = ${req.user.email} OR requester = ${req.user.name} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
     }
+    const countResult = await countQuery;
+    const total = Number(countResult[0].count);
+    const requests = await dataQuery;
     for (const r of requests) {
       r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     }
-    res.json(requests);
+    res.json({ data: requests, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -214,8 +225,12 @@ app.get('/api/requests/:id/history', authMiddleware, async (req, res) => {
 
 app.get('/api/custody', authMiddleware, async (req, res) => {
   try {
-    const records = await sql`SELECT * FROM custody ORDER BY id DESC`;
-    res.json(records);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 30, 1), 500);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const countResult = await sql`SELECT COUNT(*) as count FROM custody`;
+    const total = Number(countResult[0].count);
+    const records = await sql`SELECT * FROM custody ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
+    res.json({ data: records, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -253,8 +268,12 @@ app.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'mana
 
 app.get('/api/movements', authMiddleware, async (req, res) => {
   try {
-    const movements = await sql`SELECT * FROM movements ORDER BY id DESC`;
-    res.json(movements);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 500);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const countResult = await sql`SELECT COUNT(*) as count FROM movements`;
+    const total = Number(countResult[0].count);
+    const movements = await sql`SELECT * FROM movements ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
+    res.json({ data: movements, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
@@ -280,8 +299,12 @@ app.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager'), a
 
 app.get('/api/activity', authMiddleware, async (req, res) => {
   try {
-    const activities = await sql`SELECT * FROM activity ORDER BY date DESC LIMIT 10`;
-    res.json(activities);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 500);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const countResult = await sql`SELECT COUNT(*) as count FROM activity`;
+    const total = Number(countResult[0].count);
+    const activities = await sql`SELECT * FROM activity ORDER BY date DESC LIMIT ${limit} OFFSET ${offset}`;
+    res.json({ data: activities, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
