@@ -99,6 +99,8 @@ button { cursor: pointer; }
 .modal-backdrop { position: fixed; inset: 0; z-index: 50; padding: 20px; background: rgba(10,25,21,.58); backdrop-filter: blur(4px); display: none; place-items: center; }.modal-backdrop.open { display: grid; animation: fadeIn .2s ease; }.modal { width: min(620px, 100%); max-height: calc(100vh - 40px); overflow: auto; border-radius: 18px; background: white; box-shadow: 0 24px 70px rgba(5,20,15,.25); animation: modalIn .25s ease; }.modal-header { padding: 22px 24px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }.modal-header h2 { margin: 4px 0 0; font: 800 20px Manrope; }.modal-body { padding: 22px 24px; }.modal-footer { padding: 15px 24px; border-top: 1px solid var(--line); background: #fafbf9; display: flex; justify-content: flex-end; gap: 8px; }.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }.field { display: grid; gap: 6px; }.field.full { grid-column: 1 / -1; }.field label { font-size: 11px; font-weight: 700; }.field input, .field select, .field textarea { width: 100%; padding: 11px 12px; border: 1px solid #d9dfdc; border-radius: 9px; outline: none; color: var(--ink); background: white; font-size: 12px; }.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--forest-2); box-shadow: 0 0 0 3px rgba(36,88,73,.1); }.field textarea { min-height: 75px; resize: vertical; }.field small { color: var(--muted); font-size: 10px; }
 .toast { position: fixed; z-index: 80; right: 24px; bottom: 24px; padding: 13px 17px; border-radius: 11px; color: white; background: var(--forest); box-shadow: var(--shadow); display: flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 700; opacity: 0; transform: translateY(15px); pointer-events: none; transition: .25s ease; }.toast.show { opacity: 1; transform: translateY(0); }.toast svg { width: 17px; color: var(--lime); }
 @keyframes fadeIn { from { opacity: 0; } }@keyframes modalIn { from { opacity: 0; transform: translateY(12px) scale(.98); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spin { animation: spin .8s linear infinite; }
 
 @media (max-width: 1100px) { .stats-grid { grid-template-columns: repeat(2, 1fr); }.dashboard-grid { grid-template-columns: 1fr; }.requests-grid { grid-template-columns: repeat(2, 1fr); }.inventory-layout { grid-template-columns: 1fr; }.inventory-summary { grid-template-columns: repeat(3, 1fr); } }
 @media (max-width: 780px) { .sidebar { transform: translateX(-100%); transition: .25s ease; box-shadow: 15px 0 40px rgba(0,0,0,.2); }.sidebar.open { transform: translateX(0); }.main-content { margin-left: 0; }.topbar { height: 66px; padding: 0 16px; }.menu-toggle { display: grid; }.breadcrumb span, .breadcrumb b { display: none; }.page { padding: 24px 16px; }.page-heading { align-items: flex-start; }.hero-heading .date-chip { display: none; }.stats-grid { grid-template-columns: 1fr 1fr; }.stat-card { padding: 15px; }.stat-card small { display: none; }.custody-preview { padding: 17px; }.toolbar { flex-wrap: wrap; }.toolbar select { flex: 1; }.requests-grid, .custody-cards { grid-template-columns: 1fr; }.custody-banner { align-items: flex-start; }.banner-value { display: none; } }
@@ -167,6 +169,8 @@ body::before {
 .button.primary:hover { color: #141414; background: #F5B458; }
 .button.secondary { color: #DBA451; border-color: rgba(219,164,81,.42); background: transparent; }
 .button.secondary:hover { background: rgba(219,164,81,.08); }
+.button.danger { color: #141414; background: #d8624e; }
+.button.danger:hover { background: #c74d3a; }
 .page { position: relative; }
 .page-heading { padding-bottom: 20px; border-bottom: 1px solid rgba(219,164,81,.18); }
 .page-heading h1 { color: #fff; font: 700 clamp(27px, 3vw, 38px)/1.12 "Playfair Display", serif; letter-spacing: -.5px; }
@@ -359,3 +363,27 @@ body { font-size: 14px; line-height: 1.5; }
 @media (max-width: 520px) {
   .login-logo { width: min(300px, 88%); }
 }
+
+.offline-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #d8624e;
+  color: white;
+  padding: 8px 16px;
+  display: none;
+  box-shadow: 0 4px 12px rgba(216, 98, 78, 0.3);
+}
+.offline-banner.show { display: flex; }
+.offline-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-size: 12px;
+  font-weight: 500;
+}
+.offline-content svg { width: 16px; height: 16px; flex-shrink: 0; }

@@ -271,6 +271,11 @@
           <div class="stat-label">Sprint atual</div>
         </div>
       </div>
+      <p style="margin-top: 1rem; font-size: 0.85rem; opacity: 0.9;">
+        ✅ <strong>Concluídas:</strong> 2 (Índices DB), 3 (Validação Backend), 4 (Rate Limiting), 5 (Erros/Loading), 7 (Confirmação)
+        | 🔄 <strong>Parcial:</strong> 1 (Paginação - já existia), 6 (Mobile - já existia)
+        | ⚠️ <strong>Segurança extra:</strong> Helmet, CORS, JWT validation, Offline banner
+      </p>
     </div>
 
     <div class="content">
@@ -529,88 +534,123 @@
         <h3>✅ Checklist de Implementação</h3>
 
         <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Criar índices em users(email), requests(status), inventory(category)</label>
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Criar índices em users(email), requests(status), inventory(category)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Adicionar validação de strings (max 255, 1000 chars)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Adicionar validação de números (>= 0)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Validar enums (role, status, type)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Instalar e configurar express-rate-limit</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Adicionar limite/offset em /api/inventory</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Adicionar limite/offset em /api/requests</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Adicionar limite/offset em /api/custody</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">UI de paginação/carregar mais no frontend</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Modais de confirmação para ações destrutivas</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Adicionar loading states (spinners)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Toast/modal para mensagens de erro</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Meta viewport no HTML</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Tabelas responsivas (converter para cards em mobile)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Menu hambúrguer para navegação mobile</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Testar em DevTools modo mobile</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Testar em celular real (iOS + Android)</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Instalar helmet e configurar CSP/headers</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Restringir CORS para origem específica</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Remover fallback JWT_SECRET e validar ao iniciar</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Aumentar tamanho mínimo de senha para 8 caracteres</label>
+        </div>
+
+        <div class="progress-item">
+          <input type="checkbox" class="checkbox" checked>
+          <label style="text-decoration: line-through;">Banner de detecção offline no frontend</label>
         </div>
 
         <div class="progress-item">
           <input type="checkbox" class="checkbox">
-          <label>Adicionar validação de strings (max 255, 1000 chars)</label>
+          <label>Validação frontend antes do submit (campos obrigatórios, email, números)</label>
         </div>
 
         <div class="progress-item">
           <input type="checkbox" class="checkbox">
-          <label>Adicionar validação de números (>= 0)</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Validar enums (role, status, type)</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Instalar e configurar express-rate-limit</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Adicionar limite/offset em /api/inventory</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Adicionar limite/offset em /api/requests</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Adicionar limite/offset em /api/custody</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>UI de paginação/carregar mais no frontend</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Modais de confirmação para ações destrutivas</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Adicionar loading states (spinners)</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Toast/modal para mensagens de erro</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Meta viewport no HTML</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Tabelas responsivas (converter para cards em mobile)</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Menu hambúrguer para navegação mobile</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Testar em DevTools modo mobile</label>
-        </div>
-
-        <div class="progress-item">
-          <input type="checkbox" class="checkbox">
-          <label>Testar em celular real (iOS + Android)</label>
+          <label>Mover assets estáticos para public/ (não serve server/)</label>
         </div>
       </div>
     </div>

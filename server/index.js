@@ -1,17 +1,69 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import sql from './db.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
 
+// Validate required environment variables
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is required');
+  process.exit(1);
+}
+const JWT_SECRET = process.env.JWT_SECRET;
+
+const loginLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas tentativas de login. Tente novamente em 1 minuto.' },
+});
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100000,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Muitas requisições. Tente novamente em 1 minuto.' },
+});
+
+// Security middleware
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "blob:"],
+      scriptSrc: ["'self'"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: true,
+  crossOriginOpenerPolicy: true,
+  crossOriginResourcePolicy: { sameOrigin: true },
+  dnsPrefetchControl: true,
+  frameguard: { action: 'deny' },
+  hidePoweredBy: true,
+  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
+  ieNoOpen: true,
+  noSniff: true,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xssFilter: true,
+}));
 app.use(cors());
 app.use(express.json());
 app.use(express.static('.', { index: 'index.html' }));
+app.use('/api', apiLimiter);
 
 function authMiddleware(req, res, next) {
   const header = req.headers.authorization;
@@ -31,11 +83,56 @@ function roleMiddleware(...roles) {
   };
 }
 
+const VALID_ROLES = ['admin', 'manager', 'requester', 'viewer'];
+const VALID_REQUEST_STATUS = ['pending', 'approved', 'delivered', 'rejected'];
+const VALID_CUSTODY_STATUS = ['active', 'returned'];
+const VALID_MOVEMENT_TYPES = ['entry', 'exit'];
+const VALID_PRIORITIES = ['Normal', 'Alta', 'Urgente'];
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+function validateString(value, maxLen = 255) {
+  if (typeof value !== 'string' || !value.trim()) return 'Campo obrigatório';
+  if (value.length > maxLen) return `Máximo de ${maxLen} caracteres`;
+  return null;
+}
+
+function validateNumber(value, min = 0) {
+  const num = Number(value);
+  if (isNaN(num)) return 'Deve ser um número';
+  if (num < min) return `Mínimo de ${min}`;
+  return null;
+}
+
+function validateEnum(value, allowed) {
+  if (!allowed.includes(value)) return `Valor inválido. Permitidos: ${allowed.join(', ')}`;
+  return null;
+}
+
+function validateEmail(value) {
+  if (!value || !EMAIL_REGEX.test(value)) return 'E-mail inválido';
+  return null;
+}
+
+function validateDate(value) {
+  if (!value || !DATE_REGEX.test(value)) return 'Data inválida (formato YYYY-MM-DD)';
+  const d = new Date(`${value}T12:00:00`);
+  if (isNaN(d.getTime())) return 'Data inválida';
+  return null;
+}
+
+function validationError(res, field, message) {
+  return res.status(400).json({ error: `${field}: ${message}` });
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {
     const { email, password } = req.body;
+    let err;
+    if ((err = validateEmail(email))) return validationError(res, 'email', err);
+    if (!password || typeof password !== 'string' || password.length < 8) return validationError(res, 'password', 'Senha deve ter pelo menos 8 caracteres');
     const users = await sql`SELECT * FROM users WHERE email = ${email}`;
     if (!users.length) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
     const user = users[0];
@@ -80,8 +177,23 @@ app.get('/api/inventory', authMiddleware, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+function validateInventoryBody(req, res) {
+  const { name, code, category, location, quantity, minimum, value } = req.body;
+  let err;
+  if ((err = validateString(name))) return validationError(res, 'name', err);
+  if ((err = validateString(code))) return validationError(res, 'code', err);
+  if ((err = validateString(category))) return validationError(res, 'category', err);
+  if ((err = validateString(location))) return validationError(res, 'location', err);
+  if (quantity !== undefined && (err = validateNumber(quantity))) return validationError(res, 'quantity', err);
+  if (minimum !== undefined && (err = validateNumber(minimum))) return validationError(res, 'minimum', err);
+  if (value !== undefined && (err = validateNumber(value))) return validationError(res, 'value', err);
+  return null;
+}
+
 app.post('/api/inventory', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
+    const validationErrorResult = validateInventoryBody(req, res);
+    if (validationErrorResult) return;
     const { name, code, category, location, quantity, minimum, value, valuable } = req.body;
     const items = await sql`
       INSERT INTO inventory (name, code, category, location, quantity, minimum, value, valuable)
@@ -95,6 +207,8 @@ app.post('/api/inventory', authMiddleware, roleMiddleware('admin', 'manager'), a
 
 app.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
+    const validationErrorResult = validateInventoryBody(req, res);
+    if (validationErrorResult) return;
     const { id } = req.params;
     const { name, code, category, location, quantity, minimum, value, valuable } = req.body;
     const items = await sql`
@@ -136,6 +250,13 @@ app.get('/api/requests', authMiddleware, async (req, res) => {
 app.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 'requester'), async (req, res) => {
   try {
     const { item, requester, department, quantity, priority, reason } = req.body;
+    let err;
+    if ((err = validateString(item))) return validationError(res, 'item', err);
+    if ((err = validateString(requester))) return validationError(res, 'requester', err);
+    if ((err = validateString(department))) return validationError(res, 'department', err);
+    if ((err = validateNumber(quantity, 1))) return validationError(res, 'quantity', err);
+    if ((err = validateString(reason, 2000))) return validationError(res, 'reason', err);
+    if (priority && (err = validateEnum(priority, VALID_PRIORITIES))) return validationError(res, 'priority', err);
     const now = new Date();
     const requests = await sql`
       INSERT INTO requests (item, requester, department, quantity, reason, priority, date, status, requester_email)
@@ -157,6 +278,8 @@ app.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 'ma
   try {
     const { id } = req.params;
     const { note } = req.body;
+    let err;
+    if ((err = validateString(note, 2000))) return validationError(res, 'note', err);
     const now = new Date();
     const requests = await sql`
       UPDATE requests SET status = 'approved', decided_by = ${req.user.name}, decided_at = ${now},
@@ -175,6 +298,8 @@ app.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', 'man
   try {
     const { id } = req.params;
     const { note } = req.body;
+    let err;
+    if ((err = validateString(note, 2000))) return validationError(res, 'note', err);
     const now = new Date();
     const requests = await sql`
       UPDATE requests SET status = 'rejected', decided_by = ${req.user.name}, decided_at = ${now},
@@ -237,6 +362,13 @@ app.get('/api/custody', authMiddleware, async (req, res) => {
 app.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
     const { inventoryId, holder, department, checkout, expected, notes } = req.body;
+    let err;
+    if ((err = validateNumber(inventoryId, 1))) return validationError(res, 'inventoryId', err);
+    if ((err = validateString(holder))) return validationError(res, 'holder', err);
+    if ((err = validateString(department))) return validationError(res, 'department', err);
+    if ((err = validateDate(checkout))) return validationError(res, 'checkout', err);
+    if ((err = validateDate(expected))) return validationError(res, 'expected', err);
+    if (notes && notes.length > 2000) return validationError(res, 'notes', 'Máximo de 2000 caracteres');
     const inv = await sql`SELECT * FROM inventory WHERE id = ${inventoryId}`;
     if (!inv.length) return res.status(404).json({ error: 'Item não encontrado' });
     const item = inv[0];
@@ -280,6 +412,13 @@ app.get('/api/movements', authMiddleware, async (req, res) => {
 app.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
     const { inventoryId, type, quantity, date, supplier, document, notes } = req.body;
+    let err;
+    if ((err = validateNumber(inventoryId, 1))) return validationError(res, 'inventoryId', err);
+    if ((err = validateEnum(type, VALID_MOVEMENT_TYPES))) return validationError(res, 'type', err);
+    if ((err = validateNumber(quantity, 1))) return validationError(res, 'quantity', err);
+    if ((err = validateDate(date))) return validationError(res, 'date', err);
+    if (supplier && supplier.length > 255) return validationError(res, 'supplier', 'Máximo de 255 caracteres');
+    if (document && document.length > 255) return validationError(res, 'document', 'Máximo de 255 caracteres');
     const inv = await sql`SELECT * FROM inventory WHERE id = ${inventoryId}`;
     if (!inv.length) return res.status(404).json({ error: 'Item não encontrado' });
     const item = inv[0];

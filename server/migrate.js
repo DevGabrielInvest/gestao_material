@@ -93,6 +93,14 @@ CREATE TABLE IF NOT EXISTS activity (
   detail TEXT DEFAULT '',
   date TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
+CREATE INDEX IF NOT EXISTS idx_requests_user_date ON requests(requester_email, date);
+CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category);
+CREATE INDEX IF NOT EXISTS idx_custody_inventory_status ON custody(inventory_id, status);
+CREATE INDEX IF NOT EXISTS idx_movements_type_date ON movements(type, date);
+CREATE INDEX IF NOT EXISTS idx_activity_date ON activity(date);
 `;
 
 try {

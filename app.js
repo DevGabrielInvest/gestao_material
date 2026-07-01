@@ -21,6 +21,7 @@ const icons = {
   swap: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h14l-3-3M20 17H6l3 3M18 7l-3 3M6 17l3-3"/></svg>',
   chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
+  spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
 };
 
 document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icons[el.dataset.icon] || icons.box; });
@@ -34,8 +35,89 @@ const $ = (selector) => document.querySelector(selector);
 const money = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateLabel = (value) => value ? new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR') : '—';
 const initials = (name) => name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase();
-const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[char]));
+const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({ '&': '&', '<': '<', '>': '>', "'": ''', '"': '"' }[char]));
 const isOverdue = (record) => record.status === 'active' && new Date(`${record.expected}T23:59:59`) < new Date();
+
+// Frontend validation
+const VALIDATION_RULES = {
+  name: { required: true, maxLen: 255, label: 'Nome' },
+  code: { required: true, maxLen: 255, label: 'Código' },
+  category: { required: true, maxLen: 255, label: 'Categoria' },
+  location: { required: true, maxLen: 255, label: 'Localização' },
+  item: { required: true, maxLen: 255, label: 'Item' },
+  requester: { required: true, maxLen: 255, label: 'Solicitante' },
+  department: { required: true, maxLen: 255, label: 'Setor' },
+  holder: { required: true, maxLen: 255, label: 'Responsável' },
+  holderDepartment: { required: true, maxLen: 255, label: 'Setor' },
+  reason: { required: true, maxLen: 2000, label: 'Motivo' },
+  note: { required: true, maxLen: 2000, label: 'Justificativa' },
+  notes: { required: false, maxLen: 2000, label: 'Observações' },
+  supplier: { required: true, maxLen: 255, label: 'Fornecedor/Destino' },
+  document: { required: false, maxLen: 255, label: 'Documento' },
+  responsible: { required: true, maxLen: 255, label: 'Responsável' },
+  email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, label: 'E-mail' },
+  password: { required: true, minLen: 8, label: 'Senha' },
+  quantity: { required: true, type: 'number', min: 1, label: 'Quantidade' },
+  minimum: { required: true, type: 'number', min: 0, label: 'Estoque mínimo' },
+  value: { required: false, type: 'number', min: 0, label: 'Valor' },
+  priority: { required: false, enum: ['Normal', 'Alta', 'Urgente'], label: 'Prioridade' },
+  type: { required: true, enum: ['entry', 'exit'], label: 'Tipo' },
+  date: { required: true, pattern: /^\d{4}-\d{2}-\d{2}$/, label: 'Data' },
+  checkout: { required: true, pattern: /^\d{4}-\d{2}-\d{2}$/, label: 'Data da retirada' },
+  expected: { required: true, pattern: /^\d{4}-\d{2}-\d{2}$/, label: 'Previsão de devolução' },
+  inventoryId: { required: true, type: 'number', min: 1, label: 'Equipamento' },
+};
+
+function validateField(name, value) {
+  const rule = VALIDATION_RULES[name];
+  if (!rule) return null;
+  const val = value === undefined || value === null ? '' : String(value).trim();
+
+  if (rule.required && !val) return `${rule.label} é obrigatório`;
+
+  if (rule.maxLen && val.length > rule.maxLen) return `${rule.label}: máximo ${rule.maxLen} caracteres`;
+
+  if (rule.minLen && val.length < rule.minLen) return `${rule.label}: mínimo ${rule.minLen} caracteres`;
+
+  if (rule.pattern && !rule.pattern.test(val)) return `${rule.label} inválido`;
+
+  if (rule.enum && !rule.enum.includes(val)) return `${rule.label} inválido. Permitidos: ${rule.enum.join(', ')}`;
+
+  if (rule.type === 'number') {
+    const num = Number(val);
+    if (isNaN(num)) return `${rule.label} deve ser um número`;
+    if (rule.min !== undefined && num < rule.min) return `${rule.label} deve ser >= ${rule.min}`;
+  }
+
+  return null;
+}
+
+function validateForm(form) {
+  const errors = [];
+  const fields = form.querySelectorAll('[name]');
+  fields.forEach((field) => {
+    const name = field.name;
+    const value = field.value;
+    const error = validateField(name, value);
+    if (error) {
+      errors.push({ field: name, message: error });
+      field.style.borderColor = 'var(--coral)';
+      field.setAttribute('data-error', error);
+    } else {
+      field.style.borderColor = '';
+      field.removeAttribute('data-error');
+    }
+  });
+  return errors;
+}
+
+function clearFormErrors(form) {
+  const fields = form.querySelectorAll('[name]');
+  fields.forEach((field) => {
+    field.style.borderColor = '';
+    field.removeAttribute('data-error');
+  });
+}
 
 const permissionMap = {
   approve: ['admin', 'manager'],
@@ -69,10 +151,24 @@ function clearToken() { sessionStorage.removeItem(tokenKey); sessionStorage.remo
 async function api(path, options = {}) {
   const token = getToken();
   const headers = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...options.headers };
-  const res = await fetch(`/api${path}`, { ...options, headers });
-  const data = await res.json();
-  if (!res.ok) throw new Error(data.error || 'Erro na requisição');
-  return data;
+  const maxRetries = options._retries ?? 0;
+  try {
+    const res = await fetch(`/api${path}`, { ...options, headers });
+    const data = await res.json();
+    if (!res.ok) {
+      if (res.status >= 500 && maxRetries < 2) {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        return api(path, { ...options, _retries: maxRetries + 1 });
+      }
+      throw new Error(data.error || 'Erro na requisição');
+    }
+    return data;
+  } catch (err) {
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      throw new Error('Sem conexão com o servidor. Verifique sua internet.');
+    }
+    throw err;
+  }
 }
 
 const apiGet = (path) => api(path);
@@ -352,6 +448,18 @@ function navigate(page) {
   if (page === 'dashboard') window.requestAnimationFrame(renderCharts);
 }
 
+function setLoading(loading) {
+  const btn = $('#submitModal');
+  if (loading) {
+    btn.disabled = true;
+    btn.dataset.originalText = btn.textContent;
+    btn.innerHTML = icons.spinner + ' Aguarde…';
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = btn.dataset.originalText || 'Salvar';
+  }
+}
+
 function showToast(message) {
   $('#toastMessage').textContent = message;
   $('#toast').classList.add('show');
@@ -376,8 +484,27 @@ function closeModal() {
   $('#modalBackdrop').setAttribute('aria-hidden', 'true');
   modalAction = null;
   $('#submitModal').hidden = false;
+  $('#submitModal').className = 'button primary';
+  $('#submitModal').textContent = 'Salvar';
   $('#cancelModal').textContent = 'Cancelar';
   $('#modalForm').reset();
+}
+
+function showConfirm({ title, message, confirmLabel = 'Confirmar', danger = false, onConfirm }) {
+  openModal({
+    eyebrow: 'CONFIRMAÇÃO',
+    title,
+    submitLabel: confirmLabel,
+    body: `<p style="color: var(--muted); font-size: 13px; line-height: 1.6;">${escapeHtml(message)}</p>`,
+    action: async () => {
+      closeModal();
+      if (onConfirm) await onConfirm();
+    }
+  });
+  if (danger) {
+    $('#submitModal').classList.add('danger');
+    $('#submitModal').classList.remove('primary');
+  }
 }
 
 function openAlerts() {
@@ -658,21 +785,29 @@ function openDecisionModal(id, status) {
 async function deliverRequest(id) {
   if (!can('approve')) { showToast('Seu perfil não pode registrar entregas.'); return; }
   const request = state.requests.find((item) => item.id === id);
-  if (!request || request.status !== 'approved' || !window.confirm(`Confirmar a entrega de ${request.item} para ${request.requester}?`)) return;
+  if (!request || request.status !== 'approved') return;
   const inventoryItem = state.inventory.find((item) => item.name.toLowerCase() === request.item.toLowerCase());
   if (inventoryItem && inventoryItem.quantity < request.quantity) { showToast(`Saldo insuficiente. Disponível: ${inventoryItem.quantity} unidade(s).`); return; }
-  try {
-    const updated = await apiPut(`/requests/${id}/deliver`);
-    Object.assign(request, updated);
-    if (inventoryItem) {
-      inventoryItem.quantity -= request.quantity;
-      const mov = await apiGet('/movements');
-      state.movements = mov;
+  showConfirm({
+    title: 'Confirmar entrega',
+    message: `Tem certeza que deseja marcar a entrega de ${request.item} para ${request.requester} como concluída? Esta ação dará baixa no estoque automaticamente.`,
+    confirmLabel: 'Confirmar entrega',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        const updated = await apiPut(`/requests/${id}/deliver`);
+        Object.assign(request, updated);
+        if (inventoryItem) {
+          inventoryItem.quantity -= request.quantity;
+          const mov = await apiGet('/movements');
+          state.movements = mov;
+        }
+        addActivity('Material entregue', `${request.item} entregue para ${request.requester}`);
+        renderAll();
+        showToast('Entrega registrada no histórico.');
+      } catch (err) { showToast(err.message); }
     }
-    addActivity('Material entregue', `${request.item} entregue para ${request.requester}`);
-    renderAll();
-    showToast('Entrega registrada no histórico.');
-  } catch (err) { showToast(err.message); }
+  });
 }
 
 async function openRequestHistory(id) {
@@ -692,15 +827,23 @@ async function openRequestHistory(id) {
 async function returnCustody(id) {
   if (!can('manageCustody')) { showToast('Seu perfil não pode registrar devoluções.'); return; }
   const record = state.custody.find((item) => item.id === id);
-  if (!record || !window.confirm(`Confirmar a devolução de ${record.item}?`)) return;
-  try {
-    const updated = await apiPut(`/custody/${id}/return`);
-    Object.assign(record, updated);
-    const item = state.inventory.find((entry) => entry.id === record.inventory_id);
-    if (item) item.location = 'Armário de equipamentos';
-    addActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`);
-    renderAll(); showToast('Devolução registrada no histórico.');
-  } catch (err) { showToast(err.message); }
+  if (!record) return;
+  showConfirm({
+    title: 'Registrar devolução',
+    message: `Tem certeza que deseja registrar a devolução de ${record.item} por ${record.holder}? O equipamento voltará ao inventário como disponível.`,
+    confirmLabel: 'Confirmar devolução',
+    danger: true,
+    onConfirm: async () => {
+      try {
+        const updated = await apiPut(`/custody/${id}/return`);
+        Object.assign(record, updated);
+        const item = state.inventory.find((entry) => entry.id === record.inventory_id);
+        if (item) item.location = 'Armário de equipamentos';
+        addActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`);
+        renderAll(); showToast('Devolução registrada no histórico.');
+      } catch (err) { showToast(err.message); }
+    }
+  });
 }
 
 async function startSession(user) {
@@ -1057,7 +1200,18 @@ $('#closeModal').addEventListener('click', closeModal);
 $('#cancelModal').addEventListener('click', closeModal);
 $('#modalBackdrop').addEventListener('click', (event) => { if (event.target === $('#modalBackdrop')) closeModal(); });
 document.addEventListener('keydown', (event) => { if (event.key === 'Escape') closeModal(); });
-$('#modalForm').addEventListener('submit', (event) => { event.preventDefault(); if (modalAction) modalAction(event.currentTarget); });
+$('#modalForm').addEventListener('submit', async (event) => {
+  event.preventDefault();
+  if (!modalAction) return;
+  setLoading(true);
+  try {
+    await modalAction(event.currentTarget);
+  } catch (err) {
+    showToast(err.message || 'Erro ao processar. Tente novamente.');
+  } finally {
+    setLoading(false);
+  }
+});
 ['inventorySearch', 'inventoryCategory', 'inventoryStatus'].forEach((id) => $(`#${id}`).addEventListener(id === 'inventorySearch' ? 'input' : 'change', renderInventory));
 ['movementSearch', 'movementType'].forEach((id) => $(`#${id}`).addEventListener(id === 'movementSearch' ? 'input' : 'change', renderMovements));
 ['movementDateFrom', 'movementDateTo'].forEach((id) => $(`#${id}`).addEventListener('change', renderMovements));
@@ -1087,6 +1241,19 @@ $('#loginForm').addEventListener('submit', async (event) => {
     $('#loginError').textContent = 'E-mail ou senha inválidos.';
   }
 });
+
+// Offline detection
+function updateOnlineStatus() {
+  const banner = $('#offlineBanner');
+  if (!navigator.onLine) {
+    banner.classList.add('show');
+  } else {
+    banner.classList.remove('show');
+  }
+}
+window.addEventListener('online', updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
 
 document.querySelectorAll('[data-demo]').forEach((button) => button.addEventListener('click', async () => {
   const email = button.dataset.demo === 'admin' ? 'admin@dfa.com'
