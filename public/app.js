@@ -985,7 +985,7 @@ function movementCostCenter(movement, request = null) {
   if (request?.department) return request.department;
   if (movement.type === 'entry') return 'Estoque / compras';
   const destination = String(movement.supplier || '').trim();
-  if (!destination) return 'Nao informado';
+  if (!destination) return 'Não informado';
   if (destination.includes('·')) return destination.split('·')[0].trim();
   return destination.replace(/^Setor\s+/i, '').trim();
 }
@@ -1000,14 +1000,14 @@ function exportMovementsCsv() {
   });
   exportCsv(
     `movimentacoes-${new Date().toISOString().slice(0, 10)}.csv`,
-    ['Data', 'Tipo', 'Centro de custo', 'Item', 'Codigo', 'Categoria', 'Quantidade', 'Valor unitario (R$)', 'Valor total estimado (R$)', 'Fornecedor / destino', 'Documento / NF', 'Responsavel', 'Solicitacao vinculada', 'Aprovador', 'Data da decisao', 'Status do pedido', 'Observacoes'],
+    ['Data', 'Tipo', 'Centro de custo', 'Item', 'Código', 'Categoria', 'Quantidade', 'Valor unitário (R$)', 'Valor total estimado (R$)', 'Fornecedor / destino', 'Documento / NF', 'Responsável', 'Solicitação vinculada', 'Aprovador', 'Data da decisão', 'Status do pedido', 'Observações'],
     rows.map((m) => {
       const request = requestFromMovement(m);
       const item = state.inventory.find((entry) => entry.id === m.inventory_id) || findInventoryByName(m.item) || {};
       const unitValue = Number(item.value || 0);
       return [
         dateLabel(m.date),
-        m.type === 'entry' ? 'Entrada' : 'Saida',
+        m.type === 'entry' ? 'Entrada' : 'Saída',
         movementCostCenter(m, request),
         m.item,
         m.code,
@@ -1057,7 +1057,7 @@ function exportFinancialCsv() {
     const linkedMovement = state.movements.find((movement) => movement.document === requestCode(request.id));
     const unitValue = Number(item.value || 0);
     return [
-      'Solicitacao',
+      'Solicitação',
       dateLabel(request.date),
       request.department,
       requestStatusLabels[request.status] || request.status,
@@ -1081,7 +1081,7 @@ function exportFinancialCsv() {
     const item = state.inventory.find((entry) => entry.id === movement.inventory_id) || findInventoryByName(movement.item) || {};
     const unitValue = Number(item.value || 0);
     return [
-      movement.type === 'entry' ? 'Entrada' : 'Saida',
+      movement.type === 'entry' ? 'Entrada' : 'Saída',
       dateLabel(movement.date),
       movementCostCenter(movement),
       'Registrada',
@@ -1103,7 +1103,7 @@ function exportFinancialCsv() {
   });
   exportCsv(
     `financeiro-${new Date().toISOString().slice(0, 10)}.csv`,
-    ['Tipo', 'Data', 'Centro de custo / setor', 'Status', 'Item', 'Codigo', 'Categoria', 'Quantidade', 'Valor unitario estimado (R$)', 'Valor total estimado (R$)', 'Fornecedor / destino', 'Documento / NF', 'Solicitante / responsavel', 'Aprovador', 'Data da aprovacao / decisao', 'Prioridade', 'Justificativa / observacoes', 'Observacao da decisao'],
+    ['Tipo', 'Data', 'Centro de custo / setor', 'Status', 'Item', 'Código', 'Categoria', 'Quantidade', 'Valor unitário estimado (R$)', 'Valor total estimado (R$)', 'Fornecedor / destino', 'Documento / NF', 'Solicitante / responsável', 'Aprovador', 'Data da aprovação / decisão', 'Prioridade', 'Justificativa / observações', 'Observação da decisão'],
     [...requestRows, ...movementRows],
     ';'
   );

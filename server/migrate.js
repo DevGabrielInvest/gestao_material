@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import sql from './db.js';
+import { logError, logInfo, serializeError } from './logger.js';
 
 const schema = `
 CREATE TABLE IF NOT EXISTS users (
@@ -104,13 +105,13 @@ CREATE INDEX IF NOT EXISTS idx_activity_date ON activity(date);
 `;
 
 try {
-  console.log('Executando migração do schema...');
+  logInfo('schema_migration_started');
   for (const statement of schema.split(';').filter(s => s.trim())) {
     await sql.unsafe(statement.trim() + ';');
   }
-  console.log('Schema criado com sucesso!');
+  logInfo('schema_migration_completed');
 } catch (err) {
-  console.error('Erro na migração:', err);
+  logError('schema_migration_failed', { error: serializeError(err) });
   process.exit(1);
 }
 

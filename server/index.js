@@ -6,13 +6,20 @@ import rateLimit from 'express-rate-limit';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import sql from './db.js';
+import {
+  handleRouteError,
+  logError,
+  logInfo,
+  requestIdMiddleware,
+  requestLoggingMiddleware,
+} from './logger.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Validate required environment variables
 if (!process.env.JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET environment variable is required');
+  logError('startup_missing_environment', { variable: 'JWT_SECRET' });
   process.exit(1);
 }
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -34,6 +41,7 @@ const apiLimiter = rateLimit({
 });
 
 // Security middleware
+app.use(requestIdMiddleware);
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -63,6 +71,7 @@ app.use(helmet({
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public', { index: 'index.html' }));
+app.use('/api', requestLoggingMiddleware);
 app.use('/api', apiLimiter);
 
 function authMiddleware(req, res, next) {
@@ -132,22 +141,6 @@ function parsePositiveId(req, res) {
     return null;
   }
   return id;
-}
-
-function handleRouteError(err, req, res) {
-  const requestId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-  console.error(JSON.stringify({
-    level: 'error',
-    requestId,
-    method: req.method,
-    path: req.originalUrl,
-    userId: req.user?.id || null,
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
-  }));
-  if (!res.headersSent) {
-    res.status(500).json({ error: 'Erro interno ao processar a requisição.', requestId });
-  }
 }
 
 app.get('/api/health', async (req, res) => {
@@ -573,6 +566,8 @@ async function logActivity(text, detail, req) {
 // ─── Start ────────────────────────────────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  logInfo('server_started', {
+    url: `http://localhost:${PORT}`,
+    environment: process.env.NODE_ENV || 'development',
+  });
 });

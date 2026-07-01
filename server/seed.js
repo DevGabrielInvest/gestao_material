@@ -1,13 +1,14 @@
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import sql from './db.js';
+import { logError, logInfo, serializeError } from './logger.js';
 
 async function seed() {
-  console.log('Populando banco de dados...');
+  logInfo('seed_started');
 
   const userCount = await sql`SELECT COUNT(*) FROM users`;
   if (userCount[0].count > 0) {
-    console.log('Banco já possui dados. Pulando seed.');
+    logInfo('seed_skipped_existing_data');
     await sql.end();
     return;
   }
@@ -68,8 +69,11 @@ async function seed() {
       ('Retirada registrada', 'Headset entregue para Bruno Tavares', ${new Date('2026-06-10T10:30:00')})
   `;
 
-  console.log('Dados iniciais inseridos com sucesso!');
+  logInfo('seed_completed');
   await sql.end();
 }
 
-seed().catch((err) => { console.error('Erro no seed:', err); process.exit(1); });
+seed().catch((err) => {
+  logError('seed_failed', { error: serializeError(err) });
+  process.exit(1);
+});
