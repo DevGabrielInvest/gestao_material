@@ -1,0 +1,86 @@
+import { Router } from 'express';
+import sql from '../db.js';
+import { handleRouteError } from '../logger.js';
+import { authMiddleware, roleMiddleware } from '../middleware.js';
+import { PAGINATION } from '../config.js';
+import { validateInventoryBody, parsePositiveId, logActivity } from '../validation.js';
+
+const router = Router();
+
+router.get('/api/inventory', authMiddleware, async (req, res) => {
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.inventory.defaultLimit, 1), PAGINATION.inventory.maxLimit);
+    const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+    const countResult = await sql`SELECT COUNT(*) as count FROM inventory`;
+    const total = Number(countResult[0].count);
+    const items = await sql`SELECT * FROM inventory ORDER BY id LIMIT ${limit} OFFSET ${offset}`;
+    res.json({ data: items, total, limit, offset, hasMore: offset + limit < total });
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+router.post('/api/inventory', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
+  try {
+    const validationErrorResult = validateInventoryBody(req, res);
+    if (validationErrorResult) return;
+    const { name, code, category, location, quantity, minimum, value, valuable } = req.body;
+    const items = await sql`
+      INSERT INTO inventory (name, code, category, location, quantity, minimum, value, valuable)
+      VALUES (${name}, ${code}, ${category}, ${location}, ${quantity ?? 1}, ${minimum ?? 1}, ${value ?? 0}, ${!!valuable})
+      RETURNING *
+    `;
+    await logActivity('Novo item cadastrado', `${name} · ${quantity} unidade(s)`, req);
+    res.status(201).json(items[0]);
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+router.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
+  try {
+    const validationErrorResult = validateInventoryBody(req, res);
+    if (validationErrorResult) return;
+    const { id } = req.params;
+    const { name, code, category, location, quantity, minimum, value, valuable } = req.body;
+    const items = await sql`
+      UPDATE inventory SET name = ${name}, code = ${code}, category = ${category},
+        location = ${location}, quantity = ${quantity ?? 1}, minimum = ${minimum ?? 1},
+        value = ${value ?? 0}, valuable = ${!!valuable}, updated_at = NOW()
+      WHERE id = ${id} RETURNING *
+    `;
+    if (!items.length) return res.status(404).json({ error: 'Item não encontrado' });
+    await logActivity('Cadastro atualizado', `${name} · ${quantity} unidade(s)`, req);
+    res.json(items[0]);
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+router.delete('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
+  try {
+    const id = parsePositiveId(req, res);
+    if (!id) return;
+
+    const result = await sql.begin(async (trx) => {
+      const items = await trx`SELECT * FROM inventory WHERE id = ${id} FOR UPDATE`;
+      if (!items.length) return { status: 404 };
+
+      const links = await trx`
+        SELECT
+          (SELECT COUNT(*)::int FROM custody WHERE inventory_id = ${id}) AS custody_count,
+          (SELECT COUNT(*)::int FROM movements WHERE inventory_id = ${id}) AS movement_count
+      `;
+      if (links[0].custody_count > 0 || links[0].movement_count > 0) {
+        return { status: 409 };
+      }
+
+      const deleted = await trx`DELETE FROM inventory WHERE id = ${id} RETURNING *`;
+      return { status: 200, item: deleted[0] };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: 'Item não encontrado' });
+    if (result.status === 409) {
+      return res.status(409).json({ error: 'Item possui movimentações ou termos vinculados. Preserve o histórico antes de excluir.' });
+    }
+
+    await logActivity('Item removido do inventário', `${result.item.name} · ${result.item.code}`, req);
+    res.json({ ok: true, deleted: result.item });
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+export default router;

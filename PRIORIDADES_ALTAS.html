@@ -655,9 +655,86 @@
       </div>
     </div>
 
+    <!-- MELHORIAS DE MÉDIO PORTE -->
+    <div class="section">
+      <div class="task-card" style="border-left-color: #2563eb;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+          <span style="background: #2563eb; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">NOVO</span>
+          <h3 style="margin: 0; color: #2563eb;">📦 Módulo de Configuração Centralizado</h3>
+        </div>
+        <div class="task-meta">
+          <span class="tag backend">Backend</span>
+          <span class="effort medium">Esforço Médio</span>
+        </div>
+        <div class="description">
+          <strong>O que foi feito:</strong> Criado <code>server/config.js</code> com todas as constantes, env vars, limites de validação, paginação, rate limiting, Helmet/CORS e config de BD centralizados.
+        </div>
+        <div class="implementation">
+          <h4>📋 Arquivos alterados:</h4>
+          <ul>
+            <li><strong>Criado:</strong> <code>server/config.js</code> (89 linhas)</li>
+            <li><strong>Refatorado:</strong> <code>server/index.js</code> passou a importar do config</li>
+            <li><strong>Refatorado:</strong> <code>server/db.js</code> usa <code>DATABASE_URL</code> e <code>DB_CONFIG</code> do config</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="task-card" style="border-left-color: #2563eb;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+          <span style="background: #2563eb; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">NOVO</span>
+          <h3 style="margin: 0; color: #2563eb;">🧩 Modularização do Backend (Rotas)</h3>
+        </div>
+        <div class="task-meta">
+          <span class="tag backend">Backend</span>
+          <span class="effort high">Esforço Alto</span>
+        </div>
+        <div class="description">
+          <strong>O que foi feito:</strong> O arquivo monolítico <code>server/index.js</code> (548 linhas) foi fatorado em módulos separados por domínio.
+        </div>
+        <div class="implementation">
+          <h4>📋 Novos arquivos:</h4>
+          <ul>
+            <li><code>server/middleware.js</code> — <code>authMiddleware</code> e <code>roleMiddleware</code></li>
+            <li><code>server/validation.js</code> — helpers de validação + <code>logActivity</code></li>
+            <li><code>server/routes/health.js</code> — health check</li>
+            <li><code>server/routes/auth.js</code> — login + /me</li>
+            <li><code>server/routes/dashboard.js</code> — dashboard + activity</li>
+            <li><code>server/routes/inventory.js</code> — CRUD inventário</li>
+            <li><code>server/routes/requests.js</code> — CRUD + workflow solicitações</li>
+            <li><code>server/routes/custody.js</code> — CRUD termos de posse</li>
+            <li><code>server/routes/movements.js</code> — CRUD movimentações</li>
+          </ul>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem;">
+            <code>server/index.js</code> agora tem ~60 linhas (orquestrador que monta middleware + rotas).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="task-card" style="border-left-color: #6b7280;">
+        <h3 style="color: #6b7280;">📋 Próximas melhorias de médio porte (pendentes)</h3>
+        <div class="description">
+          <strong>Sugestões para continuar:</strong>
+        </div>
+        <div class="implementation">
+          <ul>
+            <li><strong>Modularização do Frontend:</strong> Separar <code>public/app.js</code> (~1400 linhas) em módulos (api, components, pdf, utils)</li>
+            <li><strong>Busca e Filtros na API:</strong> Adicionar parâmetros <code>search</code>, <code>category</code>, <code>status</code>, <code>dateFrom</code>/<code>dateTo</code> nos endpoints</li>
+            <li><strong>Testes de Integração:</strong> Criar testes para os endpoints da API usando <code>node:test</code></li>
+            <li><strong>Refresh Token / Token Rotation:</strong> Melhorar segurança da autenticação</li>
+            <li><strong>WebSockets / SSE:</strong> Notificações em tempo real sem refresh</li>
+            <li><strong>Cache de Consultas:</strong> Reduzir latência em dashboards e relatórios</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <div class="footer">
-      <p>Gestão Patrimonial - Sprint P0 (Prioridades Altas)</p>
-      <p style="margin-top: 1rem; font-size: 0.8rem;">Gerado em 30 de junho de 2026</p>
+      <p>Gestão Patrimonial - Sprint P0 (Prioridades Altas) + Melhorias de Médio Porte</p>
+      <p style="margin-top: 1rem; font-size: 0.8rem;">Gerado em 30 de junho de 2026 · Última atualização: 02 de julho de 2026</p>
     </div>
   </div>
 </body>
