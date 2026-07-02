@@ -1,11 +1,6 @@
-import 'dotenv/config';
+import { DATABASE_URL, DB_CONFIG } from './config.js';
 import postgres from 'postgres';
 
-const sql = postgres(process.env.DATABASE_URL, {
-  ssl: 'require',
-  max: 10,
-  idle_timeout: 20,
-  connect_timeout: 15,
-});
+const sql = postgres(DATABASE_URL, DB_CONFIG);
 
 export default sql;

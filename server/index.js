@@ -1,4 +1,3 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -8,67 +7,51 @@ import jwt from 'jsonwebtoken';
 import sql from './db.js';
 import {
   handleRouteError,
-  logError,
   logInfo,
   requestIdMiddleware,
   requestLoggingMiddleware,
 } from './logger.js';
+import {
+  PORT,
+  JWT_SECRET,
+  VALID_ROLES,
+  VALID_REQUEST_STATUS,
+  VALID_CUSTODY_STATUS,
+  VALID_MOVEMENT_TYPES,
+  VALID_PRIORITIES,
+  EMAIL_REGEX,
+  DATE_REGEX,
+  PAGINATION,
+  RATE_LIMIT,
+  VALIDATION_LIMITS,
+  PASSWORD_MIN_LENGTH,
+  JWT_EXPIRY,
+  HELMET_CONFIG,
+  CORS_OPTIONS,
+} from './config.js';
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Validate required environment variables
-if (!process.env.JWT_SECRET) {
-  logError('startup_missing_environment', { variable: 'JWT_SECRET' });
-  process.exit(1);
-}
-const JWT_SECRET = process.env.JWT_SECRET;
 
 const loginLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 5,
+  windowMs: RATE_LIMIT.login.windowMs,
+  max: RATE_LIMIT.login.max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Muitas tentativas de login. Tente novamente em 1 minuto.' },
+  message: { error: RATE_LIMIT.login.message },
 });
 
 const apiLimiter = rateLimit({
-  windowMs: 60 * 1000,
-  max: 100000,
+  windowMs: RATE_LIMIT.api.windowMs,
+  max: RATE_LIMIT.api.max,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Muitas requisições. Tente novamente em 1 minuto.' },
+  message: { error: RATE_LIMIT.api.message },
 });
 
 // Security middleware
 app.use(requestIdMiddleware);
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "blob:"],
-      scriptSrc: ["'self'"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
-      objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
-    },
-  },
-  crossOriginEmbedderPolicy: true,
-  crossOriginOpenerPolicy: true,
-  crossOriginResourcePolicy: { sameOrigin: true },
-  dnsPrefetchControl: true,
-  frameguard: { action: 'deny' },
-  hidePoweredBy: true,
-  hsts: { maxAge: 31536000, includeSubDomains: true, preload: true },
-  ieNoOpen: true,
-  noSniff: true,
-  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
-  xssFilter: true,
-}));
-app.use(cors());
+app.use(helmet(HELMET_CONFIG));
+app.use(cors(CORS_OPTIONS));
 app.use(express.json());
 app.use(express.static('public', { index: 'index.html' }));
 app.use('/api', requestLoggingMiddleware);
@@ -92,21 +75,13 @@ function roleMiddleware(...roles) {
   };
 }
 
-const VALID_ROLES = ['admin', 'manager', 'requester', 'viewer'];
-const VALID_REQUEST_STATUS = ['pending', 'approved', 'delivered', 'rejected'];
-const VALID_CUSTODY_STATUS = ['active', 'returned'];
-const VALID_MOVEMENT_TYPES = ['entry', 'exit'];
-const VALID_PRIORITIES = ['Normal', 'Alta', 'Urgente'];
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
-
-function validateString(value, maxLen = 255) {
+function validateString(value, maxLen = VALIDATION_LIMITS.string.defaultMax) {
   if (typeof value !== 'string' || !value.trim()) return 'Campo obrigatório';
   if (value.length > maxLen) return `Máximo de ${maxLen} caracteres`;
   return null;
 }
 
-function validateNumber(value, min = 0) {
+function validateNumber(value, min = VALIDATION_LIMITS.number.min) {
   const num = Number(value);
   if (isNaN(num)) return 'Deve ser um número';
   if (num < min) return `Mínimo de ${min}`;
@@ -164,13 +139,13 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
     const { email, password } = req.body;
     let err;
     if ((err = validateEmail(email))) return validationError(res, 'email', err);
-    if (!password || typeof password !== 'string' || password.length < 8) return validationError(res, 'password', 'Senha deve ter pelo menos 8 caracteres');
+    if (!password || typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) return validationError(res, 'password', `Senha deve ter pelo menos ${PASSWORD_MIN_LENGTH} caracteres`);
     const users = await sql`SELECT * FROM users WHERE email = ${email}`;
     if (!users.length) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
     const user = users[0];
     if (!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
     const payload = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
-    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '24h' });
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
     res.json({ token, user: payload });
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -200,7 +175,7 @@ app.get('/api/dashboard', authMiddleware, async (req, res) => {
 
 app.get('/api/inventory', authMiddleware, async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 50, 1), 500);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.inventory.defaultLimit, 1), PAGINATION.inventory.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
     const countResult = await sql`SELECT COUNT(*) as count FROM inventory`;
     const total = Number(countResult[0].count);
@@ -291,7 +266,7 @@ app.delete('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manage
 
 app.get('/api/requests', authMiddleware, async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 500);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.requests.defaultLimit, 1), PAGINATION.requests.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
     let countQuery, dataQuery;
     if (['admin', 'manager', 'viewer'].includes(req.user.role)) {
@@ -319,7 +294,7 @@ app.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 're
     if ((err = validateString(requester))) return validationError(res, 'requester', err);
     if ((err = validateString(department))) return validationError(res, 'department', err);
     if ((err = validateNumber(quantity, 1))) return validationError(res, 'quantity', err);
-    if ((err = validateString(reason, 2000))) return validationError(res, 'reason', err);
+    if ((err = validateString(reason, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'reason', err);
     if (priority && (err = validateEnum(priority, VALID_PRIORITIES))) return validationError(res, 'priority', err);
     const now = new Date();
     const requests = await sql`
@@ -343,7 +318,7 @@ app.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 'ma
     const { id } = req.params;
     const { note } = req.body;
     let err;
-    if ((err = validateString(note, 2000))) return validationError(res, 'note', err);
+    if ((err = validateString(note, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'note', err);
     const now = new Date();
     const requests = await sql`
       UPDATE requests SET status = 'approved', decided_by = ${req.user.name}, decided_at = ${now},
@@ -363,7 +338,7 @@ app.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', 'man
     const { id } = req.params;
     const { note } = req.body;
     let err;
-    if ((err = validateString(note, 2000))) return validationError(res, 'note', err);
+    if ((err = validateString(note, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'note', err);
     const now = new Date();
     const requests = await sql`
       UPDATE requests SET status = 'rejected', decided_by = ${req.user.name}, decided_at = ${now},
@@ -414,7 +389,7 @@ app.get('/api/requests/:id/history', authMiddleware, async (req, res) => {
 
 app.get('/api/custody', authMiddleware, async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 30, 1), 500);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.custody.defaultLimit, 1), PAGINATION.custody.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
     const countResult = await sql`SELECT COUNT(*) as count FROM custody`;
     const total = Number(countResult[0].count);
@@ -432,7 +407,7 @@ app.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), asy
     if ((err = validateString(department))) return validationError(res, 'department', err);
     if ((err = validateDate(checkout))) return validationError(res, 'checkout', err);
     if ((err = validateDate(expected))) return validationError(res, 'expected', err);
-    if (notes && notes.length > 2000) return validationError(res, 'notes', 'Máximo de 2000 caracteres');
+    if (notes && notes.length > VALIDATION_LIMITS.string.notesMax) return validationError(res, 'notes', `Máximo de ${VALIDATION_LIMITS.string.notesMax} caracteres`);
     const inv = await sql`SELECT * FROM inventory WHERE id = ${inventoryId}`;
     if (!inv.length) return res.status(404).json({ error: 'Item não encontrado' });
     const item = inv[0];
@@ -464,7 +439,7 @@ app.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'mana
 
 app.get('/api/movements', authMiddleware, async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 500);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.movements.defaultLimit, 1), PAGINATION.movements.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
     const countResult = await sql`SELECT COUNT(*) as count FROM movements`;
     const total = Number(countResult[0].count);
@@ -481,8 +456,8 @@ app.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager'), a
     if ((err = validateEnum(type, VALID_MOVEMENT_TYPES))) return validationError(res, 'type', err);
     if ((err = validateNumber(quantity, 1))) return validationError(res, 'quantity', err);
     if ((err = validateDate(date))) return validationError(res, 'date', err);
-    if (supplier && supplier.length > 255) return validationError(res, 'supplier', 'Máximo de 255 caracteres');
-    if (document && document.length > 255) return validationError(res, 'document', 'Máximo de 255 caracteres');
+    if (supplier && supplier.length > VALIDATION_LIMITS.string.defaultMax) return validationError(res, 'supplier', `Máximo de ${VALIDATION_LIMITS.string.defaultMax} caracteres`);
+    if (document && document.length > VALIDATION_LIMITS.string.defaultMax) return validationError(res, 'document', `Máximo de ${VALIDATION_LIMITS.string.defaultMax} caracteres`);
     const inv = await sql`SELECT * FROM inventory WHERE id = ${inventoryId}`;
     if (!inv.length) return res.status(404).json({ error: 'Item não encontrado' });
     const item = inv[0];
@@ -550,7 +525,7 @@ app.delete('/api/movements/:id', authMiddleware, roleMiddleware('admin', 'manage
 
 app.get('/api/activity', authMiddleware, async (req, res) => {
   try {
-    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 500);
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.activity.defaultLimit, 1), PAGINATION.activity.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
     const countResult = await sql`SELECT COUNT(*) as count FROM activity`;
     const total = Number(countResult[0].count);
