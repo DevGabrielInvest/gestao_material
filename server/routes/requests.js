@@ -43,7 +43,7 @@ router.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 
     if (priority && (err = validateEnum(priority, VALID_PRIORITIES))) return validationError(res, 'priority', err);
     const now = new Date();
     const requests = await sql`
-      INSERT INTO requests (item, requester, department, quantity, reason, priority, date, status, requester_email)
+      INSERT INTO requests (item, requester, department, quantity, reason, priority, date, requester_email)
       VALUES (${item}, ${requester}, ${department}, ${quantity}, ${reason}, ${priority || 'Normal'}, ${now.toISOString().slice(0, 10)}, ${req.user.email})
       RETURNING *
     `;

@@ -4,19 +4,23 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
-import { JWT_SECRET, JWT_EXPIRY, PASSWORD_MIN_LENGTH, RATE_LIMIT } from '../config.js';
+import { JWT_SECRET, JWT_EXPIRY, PASSWORD_MIN_LENGTH, RATE_LIMIT, NODE_ENV } from '../config.js';
 import { authMiddleware } from '../middleware.js';
 import { validateEmail, validationError } from '../validation.js';
 
 const router = Router();
 
-const loginLimiter = rateLimit({
-  windowMs: RATE_LIMIT.login.windowMs,
-  max: RATE_LIMIT.login.max,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: RATE_LIMIT.login.message },
-});
+const noop = (req, res, next) => next();
+
+const loginLimiter = NODE_ENV === 'test'
+  ? noop
+  : rateLimit({
+    windowMs: RATE_LIMIT.login.windowMs,
+    max: RATE_LIMIT.login.max,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: RATE_LIMIT.login.message },
+  });
 
 router.post('/api/auth/login', loginLimiter, async (req, res) => {
   try {

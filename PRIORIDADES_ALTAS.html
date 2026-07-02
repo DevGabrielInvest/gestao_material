@@ -714,6 +714,45 @@
     </div>
 
     <div class="section">
+      <div class="task-card" style="border-left-color: #2563eb;">
+        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+          <span style="background: #2563eb; color: white; padding: 0.3rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600;">NOVO</span>
+          <h3 style="margin: 0; color: #2563eb;">🧪 Testes de Integração da API</h3>
+        </div>
+        <div class="task-meta">
+          <span class="tag backend">Backend</span>
+          <span class="tag security">Qualidade</span>
+          <span class="effort high">Esforço Alto</span>
+        </div>
+        <div class="description">
+          <strong>O que foi feito:</strong> Criados 43 testes de integração para todas as rotas da API, testando cenários de sucesso, validação, autenticação e autorização.
+        </div>
+        <div class="implementation">
+          <h4>📋 Novos arquivos:</h4>
+          <ul>
+            <li><code>test/integration/helper.js</code> — server start/stop, helpers de token, <code>api()</code> helper</li>
+            <li><code>test/integration/health.test.js</code> — health check (1 teste)</li>
+            <li><code>test/integration/auth.test.js</code> — login, /me, validação, auth (8 testes)</li>
+            <li><code>test/integration/dashboard.test.js</code> — dashboard stats, activity (3 testes)</li>
+            <li><code>test/integration/inventory.test.js</code> — CRUD, roles, validação (7 testes)</li>
+            <li><code>test/integration/requests.test.js</code> — CRUD, approve/reject, roles (8 testes)</li>
+            <li><code>test/integration/custody.test.js</code> — CRUD, return, roles (5 testes)</li>
+            <li><code>test/integration/movements.test.js</code> — CRUD, stock validation, roles (10 testes)</li>
+          </ul>
+          <h4 style="margin-top: 0.8rem;">🔧 Refatorações:</h4>
+          <ul>
+            <li><code>server/app.js</code> — novo arquivo que exporta o Express app configurado (sem listener)</li>
+            <li><code>server/index.js</code> — agora só importa app e chama <code>listen()</code></li>
+            <li>Rate limiters desativados em modo de teste (<code>NODE_ENV=test</code>)</li>
+          </ul>
+          <p style="margin-top: 0.5rem; font-size: 0.85rem; color: #166534;">
+            ✅ Bug encontrado e corrigido: INSERT de requests tinha 9 colunas mas só 8 valores (faltava <code>status</code>).
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
       <div class="task-card" style="border-left-color: #6b7280;">
         <h3 style="color: #6b7280;">📋 Próximas melhorias de médio porte (pendentes)</h3>
         <div class="description">
@@ -723,7 +762,7 @@
           <ul>
             <li><strong>Modularização do Frontend:</strong> Separar <code>public/app.js</code> (~1400 linhas) em módulos (api, components, pdf, utils)</li>
             <li><strong>Busca e Filtros na API:</strong> Adicionar parâmetros <code>search</code>, <code>category</code>, <code>status</code>, <code>dateFrom</code>/<code>dateTo</code> nos endpoints</li>
-            <li><strong>Testes de Integração:</strong> Criar testes para os endpoints da API usando <code>node:test</code></li>
+            <li><strike><strong>Testes de Integração:</strong> Criar testes para os endpoints da API usando <code>node:test</code></strike> (✅ concluído)</li>
             <li><strong>Refresh Token / Token Rotation:</strong> Melhorar segurança da autenticação</li>
             <li><strong>WebSockets / SSE:</strong> Notificações em tempo real sem refresh</li>
             <li><strong>Cache de Consultas:</strong> Reduzir latência em dashboards e relatórios</li>
