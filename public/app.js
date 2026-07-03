@@ -4,13 +4,15 @@ function renderDashboard() {
   const low = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id));
   const pending = state.requests.filter((item) => item.status === 'pending');
   const totalValue = activeCustody.reduce((sum, item) => sum + Number(item.value), 0);
-  $('#statItems').textContent = state.inventory.length;
-  $('#statCategories').textContent = `${new Set(state.inventory.map((item) => item.category)).size} categorias`;
-  $('#statLowStock').textContent = low.length;
-  $('#statCustody').textContent = activeCustody.length;
-  $('#statCustodyValue').textContent = `${money(totalValue)} sob responsabilidade`;
-  $('#statRequests').textContent = pending.length;
-  $('#requestNavCount').textContent = pending.length;
+  const dash = state.dashboard || {};
+  const custodyStats = state.stats.custody || {};
+  $('#statItems').textContent = dash.inventoryCount ?? state.inventory.length;
+  $('#statCategories').textContent = `${dash.categories ?? new Set(state.inventory.map((item) => item.category)).size} categorias`;
+  $('#statLowStock').textContent = dash.lowStock ?? low.length;
+  $('#statCustody').textContent = dash.activeCustody ?? custodyStats.activeCount ?? activeCustody.length;
+  $('#statCustodyValue').textContent = `${money(dash.custodyValue ?? custodyStats.activeValue ?? totalValue)} sob responsabilidade`;
+  $('#statRequests').textContent = dash.pendingRequests ?? pending.length;
+  $('#requestNavCount').textContent = dash.pendingRequests ?? pending.length;
   const allAlerts = getAlerts();
   $('#notificationDot').style.display = allAlerts.length ? 'block' : 'none';
   $('#notificationButton').setAttribute('aria-label', `Notificações: ${allAlerts.length} alerta(s)`);
@@ -27,26 +29,20 @@ function renderDashboard() {
 }
 
 function renderInventory() {
-  const categories = [...new Set(state.inventory.map((item) => item.category))].sort();
+  const categories = state.categories.length ? state.categories : [...new Set(state.inventory.map((item) => item.category))].sort();
   const current = $('#inventoryCategory').value;
   $('#inventoryCategory').innerHTML = '<option value="all">Todas as categorias</option>' + categories.map((category) => `<option value="${escapeHtml(category)}">${escapeHtml(category)}</option>`).join('');
   $('#inventoryCategory').value = categories.includes(current) ? current : 'all';
-  const term = $('#inventorySearch').value.toLowerCase();
-  const category = $('#inventoryCategory').value;
-  const status = $('#inventoryStatus').value;
   const custodyIds = new Set(state.custody.filter((item) => item.status === 'active').map((item) => item.inventory_id));
-  const filtered = state.inventory.filter((item) => {
-    const matchesTerm = [item.name, item.code, item.location].join(' ').toLowerCase().includes(term);
-    const matchesCategory = category === 'all' || item.category === category;
-    const itemStatus = custodyIds.has(item.id) ? 'custody' : item.quantity <= item.minimum ? 'low' : 'available';
-    return matchesTerm && matchesCategory && (status === 'all' || itemStatus === status);
-  });
+  const filtered = state.inventory;
 
-  const totalUnits = state.inventory.reduce((sum, item) => sum + Number(item.quantity), 0);
-  const value = state.inventory.reduce((sum, item) => sum + Number(item.quantity) * Number(item.value), 0);
-  $('#inventorySummary').innerHTML = `<div class="summary-card"><span>Tipos de item</span><strong>${state.inventory.length}</strong></div><div class="summary-card"><span>Unidades totais</span><strong>${totalUnits}</strong></div><div class="summary-card"><span>Valor estimado</span><strong>${money(value)}</strong></div>`;
+  const summary = state.summaries.inventory;
+  const totalTypes = summary?.count ?? state.pagination.inventory?.total ?? state.inventory.length;
+  const totalUnits = summary?.units ?? state.inventory.reduce((sum, item) => sum + Number(item.quantity), 0);
+  const value = summary?.value ?? state.inventory.reduce((sum, item) => sum + Number(item.quantity) * Number(item.value), 0);
+  $('#inventorySummary').innerHTML = `<div class="summary-card"><span>Tipos de item</span><strong>${totalTypes}</strong></div><div class="summary-card"><span>Unidades totais</span><strong>${totalUnits}</strong></div><div class="summary-card"><span>Valor estimado</span><strong>${money(value)}</strong></div>`;
   $('#inventoryBody').innerHTML = filtered.map((item) => {
-    const inCustody = custodyIds.has(item.id);
+    const inCustody = item.in_custody ?? custodyIds.has(item.id);
     const low = item.quantity <= item.minimum;
     const badge = inCustody ? statusBadge('active', 'custody') : low ? '<span class="status amber">Estoque baixo</span>' : '<span class="status green">Disponível</span>';
     const actions = can('manageInventory')
@@ -67,9 +63,10 @@ function renderInventory() {
 function renderRequests() {
   const visible = visibleRequests();
   const pending = visible.filter((item) => item.status === 'pending').length;
-  $('#allRequestCount').textContent = visible.length;
-  $('#pendingRequestCount').textContent = pending;
-  $('#requestNavCount').textContent = pending;
+  const pendingTotal = (can('viewAllRequests') && state.dashboard) ? state.dashboard.pendingRequests : pending;
+  $('#allRequestCount').textContent = state.pagination.requests?.total ?? visible.length;
+  $('#pendingRequestCount').textContent = pendingTotal;
+  $('#requestNavCount').textContent = pendingTotal;
   $('#requestPermissionNote').textContent = can('approve') ? 'Você pode analisar pedidos. Toda aprovação ou recusa exige justificativa e fica registrada no histórico.' : currentUser?.role === 'requester' ? 'Você está visualizando apenas as solicitações criadas pela sua conta.' : 'Perfil de consulta: pedidos e históricos estão disponíveis somente para leitura.';
   const filtered = activeRequestFilter === 'all' ? visible : visible.filter((item) => item.status === activeRequestFilter);
   let requestsHtml = filtered.map((item) => {
@@ -95,10 +92,8 @@ function renderRequests() {
 }
 
 function renderCustody() {
-  const search = $('#custodySearch').value.toLowerCase();
-  const filter = $('#custodyStatus').value;
-  const filtered = state.custody.filter((item) => [item.item, item.code, item.holder, item.department].join(' ').toLowerCase().includes(search) && (filter === 'all' || item.status === filter));
-  const activeValue = state.custody.filter((item) => item.status === 'active').reduce((sum, item) => sum + Number(item.value), 0);
+  const filtered = state.custody;
+  const activeValue = state.stats.custody?.activeValue ?? state.custody.filter((item) => item.status === 'active').reduce((sum, item) => sum + Number(item.value), 0);
   $('#custodyTotalValue').textContent = money(activeValue);
   $('#custodyCards').innerHTML = filtered.map((item) => `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div>${statusBadge(item.status === 'active' && isOverdue(item) ? 'overdue' : item.status, 'custody')}</div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>Retirada</span><strong>${dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span><div class="custody-actions"><button class="button small secondary custody-pdf" data-id="${item.id}">${icons.download} Gerar termo PDF</button>${item.status === 'active' && can('manageCustody') ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></div></article>`).join('');
   const pagInfo = state.pagination.custody;
@@ -112,20 +107,14 @@ function renderCustody() {
 }
 
 function renderMovements() {
-  const search = $('#movementSearch').value.toLowerCase();
-  const type = $('#movementType').value;
   const dateFrom = $('#movementDateFrom').value;
   const dateTo = $('#movementDateTo').value;
+  const filtered = state.movements;
 
-  const periodFiltered = state.movements.filter((m) => {
-    const d = (m.date || '').slice(0, 10);
-    return (type === 'all' || m.type === type) && (!dateFrom || d >= dateFrom) && (!dateTo || d <= dateTo);
-  });
-  const filtered = periodFiltered.filter((m) => [m.item, m.code, m.supplier, m.document, m.responsible].join(' ').toLowerCase().includes(search));
-
-  const entries = periodFiltered.filter((m) => m.type === 'entry').reduce((s, m) => s + Number(m.quantity), 0);
-  const exits = periodFiltered.filter((m) => m.type === 'exit').reduce((s, m) => s + Number(m.quantity), 0);
-  const suppliers = new Set(periodFiltered.filter((m) => m.type === 'entry' && m.supplier).map((m) => m.supplier)).size;
+  const stats = state.stats.movements;
+  const entries = stats?.entries ?? filtered.filter((m) => m.type === 'entry').reduce((s, m) => s + Number(m.quantity), 0);
+  const exits = stats?.exits ?? filtered.filter((m) => m.type === 'exit').reduce((s, m) => s + Number(m.quantity), 0);
+  const suppliers = stats?.suppliers ?? new Set(filtered.filter((m) => m.type === 'entry' && m.supplier).map((m) => m.supplier)).size;
   const hasPeriod = dateFrom || dateTo;
   const periodNote = hasPeriod ? `${dateFrom ? dateLabel(dateFrom) : '...'} a ${dateTo ? dateLabel(dateTo) : '...'}` : '';
   $('#movementStats').innerHTML = `<article><span>Unidades recebidas</span><strong>+${entries}</strong><small>${hasPeriod ? periodNote : 'Entradas documentadas'}</small></article><article><span>Unidades distribuídas</span><strong>-${exits}</strong><small>${hasPeriod ? periodNote : 'Saídas documentadas'}</small></article><article><span>Fornecedores registrados</span><strong>${suppliers}</strong><small>Com histórico de compra</small></article>`;
@@ -143,38 +132,42 @@ function renderMovements() {
   document.querySelectorAll('.delete-movement').forEach((button) => button.addEventListener('click', () => deleteMovement(Number(button.dataset.id))));
 }
 
-function renderReports() {
+let reportSeq = 0;
+
+async function renderReports() {
+  if (!can('viewReports')) return;
+  if (!$('#reportsPage').classList.contains('active')) return;
   const dateFrom = $('#reportDateFrom')?.value || '';
   const dateTo = $('#reportDateTo')?.value || '';
+  const seq = ++reportSeq;
+  let report;
+  try {
+    const params = new URLSearchParams();
+    if (dateFrom) params.set('dateFrom', dateFrom);
+    if (dateTo) params.set('dateTo', dateTo);
+    const query = params.toString();
+    report = await apiGet(`/reports/summary${query ? `?${query}` : ''}`);
+  } catch (err) {
+    console.error('Erro ao carregar relatórios:', err);
+    showToast(err.message || 'Não foi possível carregar os relatórios.');
+    return;
+  }
+  if (seq !== reportSeq) return;
 
-  const inventoryValue = state.inventory.reduce((sum, item) => sum + Number(item.quantity) * Number(item.value), 0);
-  const activeCustody = state.custody.filter((item) => item.status === 'active');
-  const custodyIds = new Set(activeCustody.map((item) => item.inventory_id));
-  const custodyValue = activeCustody.reduce((sum, item) => sum + Number(item.value), 0);
-  const periodMovements = state.movements.filter((m) => {
-    const d = (m.date || '').slice(0, 10);
-    return (!dateFrom || d >= dateFrom) && (!dateTo || d <= dateTo);
-  });
-  const consumed = periodMovements.filter((m) => m.type === 'exit').reduce((sum, m) => sum + Number(m.quantity), 0);
-  const low = state.inventory.filter((item) => item.quantity <= item.minimum && !custodyIds.has(item.id)).length;
+  const totals = report.totals;
   const periodNote = dateFrom || dateTo ? ` · ${dateFrom ? dateLabel(dateFrom) : '...'} a ${dateTo ? dateLabel(dateTo) : '...'}` : '';
-  $('#reportKpis').innerHTML = `<article><span>Valor em inventário</span><strong>${money(inventoryValue)}</strong></article><article><span>Patrimônio em posse</span><strong>${money(custodyValue)}</strong></article><article><span>Unidades consumidas${escapeHtml(periodNote)}</span><strong>${consumed}</strong></article><article><span>Itens para reposição</span><strong>${low}</strong></article>`;
+  $('#reportKpis').innerHTML = `<article><span>Valor em inventário</span><strong>${money(totals.inventoryValue)}</strong></article><article><span>Patrimônio em posse</span><strong>${money(totals.custodyValue)}</strong></article><article><span>Unidades consumidas${escapeHtml(periodNote)}</span><strong>${totals.consumed}</strong></article><article><span>Itens para reposição</span><strong>${totals.lowStock}</strong></article>`;
 
-  const consumption = consumptionSummary(dateFrom, dateTo);
+  const consumption = report.consumption;
   const maxConsumption = Math.max(...consumption.map((item) => item.quantity), 1);
   $('#consumptionReport').innerHTML = consumption.length ? consumption.map((item) => `<div class="report-row"><div><strong>${escapeHtml(item.item)}</strong><span>${item.quantity} unidade(s)</span></div><i><b style="width:${(item.quantity / maxConsumption) * 100}%"></b></i></div>`).join('') : `<div class="empty-state show"><p>Nenhuma saída${periodNote ? ' no período selecionado' : ' registrada'}.</p></div>`;
 
-  const holderGroups = new Map();
-  activeCustody.forEach((item) => {
-    const current = holderGroups.get(item.holder) || { quantity: 0, value: 0 };
-    current.quantity += 1; current.value += Number(item.value); holderGroups.set(item.holder, current);
-  });
-  const holders = [...holderGroups.entries()].sort((a, b) => b[1].value - a[1].value);
-  const maxHolderValue = Math.max(...holders.map(([, item]) => item.value), 1);
-  $('#holderReport').innerHTML = holders.length ? holders.map(([holder, data]) => `<div class="report-row"><div><strong>${escapeHtml(holder)}</strong><span>${data.quantity} bem(ns) · ${money(data.value)}</span></div><i><b style="width:${(data.value / maxHolderValue) * 100}%"></b></i></div>`).join('') : '<div class="empty-state show"><p>Nenhum patrimônio em posse.</p></div>';
+  const holders = report.holders;
+  const maxHolderValue = Math.max(...holders.map((item) => item.value), 1);
+  $('#holderReport').innerHTML = holders.length ? holders.map((data) => `<div class="report-row"><div><strong>${escapeHtml(data.holder)}</strong><span>${data.quantity} bem(ns) · ${money(data.value)}</span></div><i><b style="width:${(data.value / maxHolderValue) * 100}%"></b></i></div>`).join('') : '<div class="empty-state show"><p>Nenhum patrimônio em posse.</p></div>';
 
-  $('#reportInventoryBody').innerHTML = state.inventory.map((item) => {
-    const situation = custodyIds.has(item.id) ? '<span class="status blue">Em posse</span>' : item.quantity <= item.minimum ? '<span class="status amber">Repor</span>' : '<span class="status green">Regular</span>';
+  $('#reportInventoryBody').innerHTML = report.inventory.map((item) => {
+    const situation = item.in_custody ? '<span class="status blue">Em posse</span>' : item.quantity <= item.minimum ? '<span class="status amber">Repor</span>' : '<span class="status green">Regular</span>';
     return `<tr><td><strong>${escapeHtml(item.name)}</strong><small>${escapeHtml(item.code)}</small></td><td>${escapeHtml(item.category)}</td><td>${item.quantity} un.</td><td>${item.minimum} un.</td><td>${money(item.quantity * item.value)}</td><td>${situation}</td></tr>`;
   }).join('');
 }
@@ -338,11 +331,7 @@ async function deliverRequest(id) {
         Object.assign(request, updated);
         if (inventoryItem) {
           inventoryItem.quantity -= request.quantity;
-          const mov = await apiGet('/movements');
-          state.movements = mov.data || mov;
-          if (mov.total) {
-            state.pagination.movements = { total: mov.total, limit: mov.limit, offset: mov.offset, hasMore: mov.hasMore };
-          }
+          await reloadSection('movements');
         }
         addActivity('Material entregue', `${request.item} entregue para ${request.requester}`);
         renderAll();
@@ -404,7 +393,13 @@ async function startSession(user) {
 function endSession() {
   clearToken();
   currentUser = null;
-  state = { inventory: [], requests: [], custody: [], movements: [], activity: [] };
+  state = {
+    inventory: [], requests: [], custody: [], movements: [], activity: [],
+    dashboard: null, categories: [],
+    summaries: { inventory: null },
+    stats: { movements: null, custody: null },
+    pagination: {},
+  };
   $('#appShell').classList.add('auth-hidden');
   $('#loginScreen').classList.remove('hidden');
   $('#loginForm').reset();
@@ -456,10 +451,15 @@ $('#modalForm').addEventListener('submit', async (event) => {
     setLoading(false);
   }
 });
-['inventorySearch', 'inventoryCategory', 'inventoryStatus'].forEach((id) => $(`#${id}`).addEventListener(id === 'inventorySearch' ? 'input' : 'change', renderInventory));
-['movementSearch', 'movementType'].forEach((id) => $(`#${id}`).addEventListener(id === 'movementSearch' ? 'input' : 'change', renderMovements));
-['movementDateFrom', 'movementDateTo'].forEach((id) => $(`#${id}`).addEventListener('change', renderMovements));
-['custodySearch', 'custodyStatus'].forEach((id) => $(`#${id}`).addEventListener(id === 'custodySearch' ? 'input' : 'change', renderCustody));
+const searchInventory = debounce(() => reloadSection('inventory'));
+const searchMovements = debounce(() => reloadSection('movements'));
+const searchCustody = debounce(() => reloadSection('custody'));
+$('#inventorySearch').addEventListener('input', searchInventory);
+['inventoryCategory', 'inventoryStatus'].forEach((id) => $(`#${id}`).addEventListener('change', () => reloadSection('inventory')));
+$('#movementSearch').addEventListener('input', searchMovements);
+['movementType', 'movementDateFrom', 'movementDateTo'].forEach((id) => $(`#${id}`).addEventListener('change', () => reloadSection('movements')));
+$('#custodySearch').addEventListener('input', searchCustody);
+$('#custodyStatus').addEventListener('change', () => reloadSection('custody'));
 $('#exportMovementCsv').addEventListener('click', exportMovementsCsv);
 $('#exportInventoryCsv').addEventListener('click', exportInventoryCsv);
 $('#exportFinancialCsv').addEventListener('click', exportFinancialCsv);
@@ -511,15 +511,20 @@ $('#todayLabel').textContent = new Intl.DateTimeFormat('pt-BR', { weekday: 'long
 
 let eventSource = null;
 
+const refreshFromServer = debounce(async () => {
+  await loadState();
+  renderAll();
+  if ($('#dashboardPage').classList.contains('active')) window.requestAnimationFrame(renderCharts);
+}, 400);
+
 function connectSSE() {
   if (eventSource) eventSource.close();
   const token = getToken();
   if (!token) return;
   eventSource = new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
-  eventSource.addEventListener('inventory', () => { loadState(); });
-  eventSource.addEventListener('requests', () => { loadState(); });
-  eventSource.addEventListener('custody', () => { loadState(); });
-  eventSource.addEventListener('movements', () => { loadState(); });
+  ['inventory', 'requests', 'custody', 'movements'].forEach((event) => {
+    eventSource.addEventListener(event, refreshFromServer);
+  });
   eventSource.addEventListener('error', () => {
     eventSource.close();
     eventSource = null;

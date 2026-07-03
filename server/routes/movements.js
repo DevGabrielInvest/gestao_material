@@ -24,7 +24,22 @@ router.get('/api/movements', authMiddleware, async (req, res) => {
     const countResult = await sql`SELECT COUNT(*) as count FROM movements ${where}`;
     const total = Number(countResult[0].count);
     const movements = await sql`SELECT * FROM movements ${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
-    res.json({ data: movements, total, limit, offset, hasMore: offset + limit < total });
+    const statsWhere = (() => {
+      const fs = [];
+      if (typeFilter && ['entry', 'exit'].includes(typeFilter)) fs.push(sql`type = ${typeFilter}`);
+      if (dateFrom) fs.push(sql`date >= ${dateFrom}`);
+      if (dateTo) fs.push(sql`date <= ${dateTo}`);
+      return fs.length ? sql`WHERE ${fs.reduce((acc, f, i) => i === 0 ? f : sql`${acc} AND ${f}`)}` : sql``;
+    })();
+    const statsRow = (await sql`
+      SELECT
+        COALESCE(SUM(quantity) FILTER (WHERE type = 'entry'), 0) AS entries,
+        COALESCE(SUM(quantity) FILTER (WHERE type = 'exit'), 0) AS exits,
+        COUNT(DISTINCT supplier) FILTER (WHERE type = 'entry' AND supplier <> '') AS suppliers
+      FROM movements ${statsWhere}
+    `)[0];
+    const stats = { entries: Number(statsRow.entries), exits: Number(statsRow.exits), suppliers: Number(statsRow.suppliers) };
+    res.json({ data: movements, total, limit, offset, hasMore: offset + limit < total, stats });
   } catch (err) { handleRouteError(err, req, res); }
 });
 

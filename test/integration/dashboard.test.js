@@ -13,7 +13,11 @@ test('GET /api/dashboard returns stats', async () => {
   assert.equal(typeof data.categories, 'number');
   assert.equal(typeof data.lowStock, 'number');
   assert.equal(typeof data.activeCustody, 'number');
+  assert.equal(typeof data.custodyValue, 'number');
   assert.equal(typeof data.pendingRequests, 'number');
+  assert.equal(Array.isArray(data.charts.categoryDistribution), true);
+  assert.equal(Array.isArray(data.charts.movementsByMonth), true);
+  assert.equal(typeof data.charts.requestStatus, 'object');
 });
 
 test('GET /api/dashboard without auth returns 401', async () => {

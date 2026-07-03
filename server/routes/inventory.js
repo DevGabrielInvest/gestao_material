@@ -8,22 +8,41 @@ import { notifyChange } from '../events.js';
 
 const router = Router();
 
+router.get('/api/inventory/categories', authMiddleware, async (req, res) => {
+  try {
+    const rows = await sql`SELECT DISTINCT category FROM inventory ORDER BY category`;
+    res.json(rows.map((row) => row.category));
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
 router.get('/api/inventory', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.inventory.defaultLimit, 1), PAGINATION.inventory.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const { search, category: catFilter, lowStock } = req.query;
+    const { search, category: catFilter, lowStock, status } = req.query;
     const sort = ['name', 'code', 'category', 'location', 'quantity', 'minimum', 'value', 'id'].includes(req.query.sort) ? req.query.sort : 'id';
     const order = req.query.order === 'desc' ? sql`DESC` : sql`ASC`;
+    const inActiveCustody = sql`EXISTS (SELECT 1 FROM custody c WHERE c.inventory_id = inventory.id AND c.status = 'active')`;
     const filters = [];
     if (search) filters.push(sql`(name ILIKE ${'%' + search + '%'} OR code ILIKE ${'%' + search + '%'} OR category ILIKE ${'%' + search + '%'} OR location ILIKE ${'%' + search + '%'})`);
     if (catFilter) filters.push(sql`category = ${catFilter}`);
     if (lowStock === 'true' || lowStock === '1') filters.push(sql`quantity <= minimum`);
+    if (status === 'custody') filters.push(inActiveCustody);
+    if (status === 'low') filters.push(sql`(quantity <= minimum AND NOT ${inActiveCustody})`);
+    if (status === 'available') filters.push(sql`(quantity > minimum AND NOT ${inActiveCustody})`);
     const where = filters.length ? sql`WHERE ${filters.reduce((acc, f, i) => i === 0 ? f : sql`${acc} AND ${f}`)}` : sql``;
     const countResult = await sql`SELECT COUNT(*) as count FROM inventory ${where}`;
     const total = Number(countResult[0].count);
-    const items = await sql`SELECT * FROM inventory ${where} ORDER BY ${sql(sort)} ${order} LIMIT ${limit} OFFSET ${offset}`;
-    res.json({ data: items, total, limit, offset, hasMore: offset + limit < total });
+    const items = await sql`
+      SELECT *, ${inActiveCustody} AS in_custody
+      FROM inventory ${where} ORDER BY ${sql(sort)} ${order} LIMIT ${limit} OFFSET ${offset}
+    `;
+    const summaryRow = (await sql`
+      SELECT COUNT(*) AS count, COALESCE(SUM(quantity), 0) AS units, COALESCE(SUM(quantity * value), 0) AS total_value
+      FROM inventory
+    `)[0];
+    const summary = { count: Number(summaryRow.count), units: Number(summaryRow.units), value: Number(summaryRow.total_value) };
+    res.json({ data: items, total, limit, offset, hasMore: offset + limit < total, summary });
   } catch (err) { handleRouteError(err, req, res); }
 });
 

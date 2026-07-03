@@ -13,9 +13,15 @@ function renderCategoryChart() {
   const canvas = document.getElementById('categoryChart');
   const emptyEl = document.getElementById('categoryEmpty');
   if (!canvas || !canvas.offsetWidth) return;
-  const catMap = new Map();
-  state.inventory.forEach((item) => catMap.set(item.category, (catMap.get(item.category) || 0) + Number(item.quantity)));
-  const items = [...catMap.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 7);
+  const distribution = state.dashboard?.charts?.categoryDistribution;
+  let items;
+  if (distribution) {
+    items = distribution.map((row) => ({ label: row.category, value: Number(row.units) }));
+  } else {
+    const catMap = new Map();
+    state.inventory.forEach((item) => catMap.set(item.category, (catMap.get(item.category) || 0) + Number(item.quantity)));
+    items = [...catMap.entries()].map(([label, value]) => ({ label, value })).sort((a, b) => b.value - a.value).slice(0, 7);
+  }
   if (!items.length) {
     canvas.style.display = 'none';
     if (emptyEl) emptyEl.style.display = 'block';
@@ -57,10 +63,18 @@ function renderMovementChart() {
     const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1);
     return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '').slice(0, 3).toUpperCase(), entries: 0, exits: 0 };
   });
-  state.movements.forEach((m) => {
-    const month = months.find((mo) => mo.key === (m.date || '').slice(0, 7));
-    if (month) { if (m.type === 'entry') month.entries += Number(m.quantity); else month.exits += Number(m.quantity); }
-  });
+  const byMonth = state.dashboard?.charts?.movementsByMonth;
+  if (byMonth) {
+    byMonth.forEach((row) => {
+      const month = months.find((mo) => mo.key === row.month);
+      if (month) { month.entries = Number(row.entries); month.exits = Number(row.exits); }
+    });
+  } else {
+    state.movements.forEach((m) => {
+      const month = months.find((mo) => mo.key === (m.date || '').slice(0, 7));
+      if (month) { if (m.type === 'entry') month.entries += Number(m.quantity); else month.exits += Number(m.quantity); }
+    });
+  }
   const { ctx, w, h } = setupCanvas(canvas);
   const maxVal = Math.max(...months.flatMap((m) => [m.entries, m.exits]), 1);
   const padL = 30, padR = 10, padT = 10, padB = 28;
@@ -96,7 +110,12 @@ function renderRequestChart() {
     { label: 'Aprovadas', key: 'approved', color: '#4a9dcc' },
     { label: 'Entregues', key: 'delivered', color: '#3a9e74' },
     { label: 'Recusadas', key: 'rejected', color: '#d8624e' },
-  ].map((s) => ({ ...s, count: state.requests.filter((r) => r.status === s.key).length })).filter((s) => s.count > 0);
+  ].map((s) => ({
+    ...s,
+    count: state.dashboard?.charts?.requestStatus
+      ? Number(state.dashboard.charts.requestStatus[s.key] || 0)
+      : state.requests.filter((r) => r.status === s.key).length,
+  })).filter((s) => s.count > 0);
   const total = segments.reduce((sum, s) => sum + s.count, 0);
   const { ctx, w, h } = setupCanvas(canvas);
   if (!total) {

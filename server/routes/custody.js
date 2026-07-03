@@ -24,7 +24,9 @@ router.get('/api/custody', authMiddleware, async (req, res) => {
     const countResult = await sql`SELECT COUNT(*) as count FROM custody ${where}`;
     const total = Number(countResult[0].count);
     const records = await sql`SELECT * FROM custody ${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
-    res.json({ data: records, total, limit, offset, hasMore: offset + limit < total });
+    const statsRow = (await sql`SELECT COUNT(*) AS active_count, COALESCE(SUM(value), 0) AS active_value FROM custody WHERE status = 'active'`)[0];
+    const stats = { activeCount: Number(statsRow.active_count), activeValue: Number(statsRow.active_value) };
+    res.json({ data: records, total, limit, offset, hasMore: offset + limit < total, stats });
   } catch (err) { handleRouteError(err, req, res); }
 });
 

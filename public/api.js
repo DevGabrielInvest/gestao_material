@@ -70,30 +70,108 @@ const apiPost = (path, body) => api(path, { method: 'POST', body: JSON.stringify
 const apiPut = (path, body) => api(path, { method: 'PUT', body: JSON.stringify(body) });
 const apiDelete = (path) => api(path, { method: 'DELETE' });
 
+async function apiDownload(path, fallbackName) {
+  const token = getToken();
+  let res = await fetch(`/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+  if (res.status === 401 && token) {
+    const newToken = await refreshAuth();
+    res = await fetch(`/api${path}`, { headers: { Authorization: `Bearer ${newToken}` } });
+  }
+  if (!res.ok) {
+    let message = 'Erro ao exportar arquivo';
+    try { message = (await res.json()).error || message; } catch { /* resposta sem JSON */ }
+    throw new Error(message);
+  }
+  const match = /filename="?([^";]+)"?/.exec(res.headers.get('Content-Disposition') || '');
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = match ? match[1] : fallbackName;
+  document.body.appendChild(link); link.click(); link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+}
+
+function debounce(fn, delay = 300) {
+  let timer;
+  return (...args) => { window.clearTimeout(timer); timer = window.setTimeout(() => fn(...args), delay); };
+}
+
+function sectionQuery(section) {
+  const params = new URLSearchParams();
+  if (section === 'inventory') {
+    const term = $('#inventorySearch').value.trim();
+    const category = $('#inventoryCategory').value;
+    const status = $('#inventoryStatus').value;
+    if (term) params.set('search', term);
+    if (category && category !== 'all') params.set('category', category);
+    if (status && status !== 'all') params.set('status', status);
+  } else if (section === 'movements') {
+    const term = $('#movementSearch').value.trim();
+    const type = $('#movementType').value;
+    if (term) params.set('search', term);
+    if (type && type !== 'all') params.set('type', type);
+    if ($('#movementDateFrom').value) params.set('dateFrom', $('#movementDateFrom').value);
+    if ($('#movementDateTo').value) params.set('dateTo', $('#movementDateTo').value);
+  } else if (section === 'custody') {
+    const term = $('#custodySearch').value.trim();
+    const status = $('#custodyStatus').value;
+    if (term) params.set('search', term);
+    if (status && status !== 'all') params.set('status', status);
+  }
+  const query = params.toString();
+  return query ? `&${query}` : '';
+}
+
+function applyListResponse(section, response) {
+  state[section] = response.data || response;
+  state.pagination[section] = response.total !== undefined
+    ? { total: response.total, limit: response.limit, offset: response.offset, hasMore: response.hasMore }
+    : null;
+  if (response.summary) state.summaries[section] = response.summary;
+  if (response.stats) state.stats[section] = response.stats;
+}
+
 async function loadState() {
   try {
     const results = await Promise.all([
-      apiGet('/inventory?limit=100&offset=0'),
+      apiGet(`/inventory?limit=100&offset=0${sectionQuery('inventory')}`),
       apiGet('/requests?limit=50&offset=0'),
-      apiGet('/custody?limit=50&offset=0'),
-      apiGet('/movements?limit=50&offset=0'),
+      apiGet(`/custody?limit=50&offset=0${sectionQuery('custody')}`),
+      apiGet(`/movements?limit=50&offset=0${sectionQuery('movements')}`),
       apiGet('/activity?limit=20&offset=0'),
+      apiGet('/dashboard'),
+      apiGet('/inventory/categories'),
     ]);
-    state.inventory = results[0].data || results[0];
-    state.requests = results[1].data || results[1];
-    state.custody = results[2].data || results[2];
-    state.movements = results[3].data || results[3];
-    state.activity = results[4].data || results[4];
-    state.pagination = {
-      inventory: results[0].total ? { total: results[0].total, limit: results[0].limit, offset: results[0].offset, hasMore: results[0].hasMore } : null,
-      requests: results[1].total ? { total: results[1].total, limit: results[1].limit, offset: results[1].offset, hasMore: results[1].hasMore } : null,
-      custody: results[2].total ? { total: results[2].total, limit: results[2].limit, offset: results[2].offset, hasMore: results[2].hasMore } : null,
-      movements: results[3].total ? { total: results[3].total, limit: results[3].limit, offset: results[3].offset, hasMore: results[3].hasMore } : null,
-      activity: results[4].total ? { total: results[4].total, limit: results[4].limit, offset: results[4].offset, hasMore: results[4].hasMore } : null,
-    };
+    applyListResponse('inventory', results[0]);
+    applyListResponse('requests', results[1]);
+    applyListResponse('custody', results[2]);
+    applyListResponse('movements', results[3]);
+    applyListResponse('activity', results[4]);
+    state.dashboard = results[5];
+    state.categories = Array.isArray(results[6]) ? results[6] : [];
   } catch (err) {
     console.error('Erro ao carregar dados:', err);
     showToast(err.message || 'Não foi possível carregar os dados agora.');
+  }
+}
+
+const reloadSeq = {};
+
+async function reloadSection(section) {
+  const seq = (reloadSeq[section] || 0) + 1;
+  reloadSeq[section] = seq;
+  try {
+    const limit = state.pagination[section]?.limit || 50;
+    const response = await apiGet(`/${section}?limit=${limit}&offset=0${sectionQuery(section)}`);
+    if (reloadSeq[section] !== seq) return;
+    applyListResponse(section, response);
+    if (section === 'inventory') renderInventory();
+    else if (section === 'custody') renderCustody();
+    else if (section === 'movements') renderMovements();
+  } catch (err) {
+    console.error(`Erro ao filtrar ${section}:`, err);
+    showToast(err.message || 'Erro ao aplicar os filtros.');
   }
 }
 
@@ -102,7 +180,7 @@ async function loadMore(section) {
     const pagInfo = state.pagination[section];
     if (!pagInfo || !pagInfo.hasMore) return;
     const newOffset = pagInfo.offset + pagInfo.limit;
-    const response = await apiGet(`/${section}?limit=${pagInfo.limit}&offset=${newOffset}`);
+    const response = await apiGet(`/${section}?limit=${pagInfo.limit}&offset=${newOffset}${sectionQuery(section)}`);
     const newData = response.data || response;
     state[section].push(...newData);
     pagInfo.offset = newOffset;

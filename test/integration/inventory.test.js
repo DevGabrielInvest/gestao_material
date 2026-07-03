@@ -33,6 +33,35 @@ test('GET /api/inventory without auth returns 401', async () => {
   assert.equal(status, 401);
 });
 
+test('GET /api/inventory returns global summary and in_custody flag', async () => {
+  const token = await adminToken();
+  const { status, data } = await api('GET', '/api/inventory', { token });
+  assert.equal(status, 200);
+  assert.equal(typeof data.summary.count, 'number');
+  assert.equal(typeof data.summary.units, 'number');
+  assert.equal(typeof data.summary.value, 'number');
+  if (data.data.length) assert.equal(typeof data.data[0].in_custody, 'boolean');
+});
+
+test('GET /api/inventory filters by status', async () => {
+  const token = await adminToken();
+  for (const status of ['available', 'low', 'custody']) {
+    const { status: httpStatus, data } = await api('GET', `/api/inventory?status=${status}`, { token });
+    assert.equal(httpStatus, 200, status);
+    assert.equal(Array.isArray(data.data), true);
+    if (status === 'custody') data.data.forEach((item) => assert.equal(item.in_custody, true));
+    if (status === 'low') data.data.forEach((item) => assert.equal(item.quantity <= item.minimum && !item.in_custody, true));
+  }
+});
+
+test('GET /api/inventory/categories returns distinct list', async () => {
+  const token = await adminToken();
+  const { status, data } = await api('GET', '/api/inventory/categories', { token });
+  assert.equal(status, 200);
+  assert.equal(Array.isArray(data), true);
+  assert.equal(new Set(data).size, data.length);
+});
+
 test('POST /api/inventory creates item as admin', async () => {
   const token = await adminToken();
   const { status, data } = await api('POST', '/api/inventory', {

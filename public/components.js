@@ -4,6 +4,9 @@ let modalAction = null;
 
 let state = {
   inventory: [], requests: [], custody: [], movements: [], activity: [],
+  dashboard: null, categories: [],
+  summaries: { inventory: null },
+  stats: { movements: null, custody: null },
   pagination: {
     inventory: { offset: 0, limit: 100, total: 0, hasMore: false },
     requests: { offset: 0, limit: 50, total: 0, hasMore: false },
@@ -23,6 +26,7 @@ function navigate(page) {
   $('#sidebar').classList.remove('open');
   window.scrollTo({ top: 0, behavior: 'smooth' });
   if (page === 'dashboard') window.requestAnimationFrame(renderCharts);
+  if (page === 'reports') renderReports();
 }
 
 function setLoading(loading) {
