@@ -4,7 +4,7 @@ import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALID_PRIORITIES, VALIDATION_LIMITS } from '../config.js';
 import {
-  validateString, validateNumber, validateEnum, validationError, logActivity,
+  validateString, validateNumber, validateEnum, validationError, parsePositiveId, logActivity,
 } from '../validation.js';
 import { notifyChange } from '../events.js';
 
@@ -39,18 +39,21 @@ router.get('/api/requests', authMiddleware, async (req, res) => {
 
 router.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 'requester'), async (req, res) => {
   try {
-    const { item, requester, department, quantity, priority, reason } = req.body;
+    const { item, quantity, priority, reason } = req.body;
+    const requester = req.user.name;
+    const department = req.user.department;
     let err;
     if ((err = validateString(item))) return validationError(res, 'item', err);
-    if ((err = validateString(requester))) return validationError(res, 'requester', err);
     if ((err = validateString(department))) return validationError(res, 'department', err);
     if ((err = validateNumber(quantity, 1))) return validationError(res, 'quantity', err);
     if ((err = validateString(reason, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'reason', err);
     if (priority && (err = validateEnum(priority, VALID_PRIORITIES))) return validationError(res, 'priority', err);
     const now = new Date();
+    const inv = await sql`SELECT id FROM inventory WHERE LOWER(name) = ${item.toLowerCase()} LIMIT 1`;
+    const inventoryId = inv.length ? inv[0].id : null;
     const requests = await sql`
-      INSERT INTO requests (item, requester, department, quantity, reason, priority, date, requester_email)
-      VALUES (${item}, ${requester}, ${department}, ${quantity}, ${reason}, ${priority || 'Normal'}, ${now.toISOString().slice(0, 10)}, ${req.user.email})
+      INSERT INTO requests (item, inventory_id, requester, department, quantity, reason, priority, date, requester_email)
+      VALUES (${item}, ${inventoryId}, ${requester}, ${department}, ${quantity}, ${reason}, ${priority || 'Normal'}, ${now.toISOString().slice(0, 10)}, ${req.user.email})
       RETURNING *
     `;
     const created = requests[0];
@@ -67,7 +70,8 @@ router.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 
 
 router.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parsePositiveId(req, res);
+    if (!id) return;
     const { note } = req.body;
     let err;
     if ((err = validateString(note, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'note', err);
@@ -88,7 +92,8 @@ router.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 
 
 router.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parsePositiveId(req, res);
+    if (!id) return;
     const { note } = req.body;
     let err;
     if ((err = validateString(note, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'note', err);
@@ -109,23 +114,39 @@ router.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', '
 
 router.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parsePositiveId(req, res);
+    if (!id) return;
     const now = new Date();
-    const requests = await sql`
-      UPDATE requests SET status = 'delivered', updated_at = NOW() WHERE id = ${id} AND status = 'approved' RETURNING *
-    `;
-    if (!requests.length) return res.status(404).json({ error: 'Solicitação não encontrada ou não aprovada' });
-    const r = requests[0];
-    await sql`INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note) VALUES (${r.id}, 'delivered', 'Material entregue', ${req.user.name}, ${req.user.role}, ${now}, ${`Entrega confirmada por ${req.user.name}.`})`;
-    const inv = await sql`SELECT * FROM inventory WHERE LOWER(name) = ${r.item.toLowerCase()} LIMIT 1`;
-    if (inv.length && inv[0].quantity >= r.quantity) {
-      await sql`UPDATE inventory SET quantity = quantity - ${r.quantity}, updated_at = NOW() WHERE id = ${inv[0].id}`;
-      await sql`
-        INSERT INTO movements (inventory_id, item, code, type, quantity, date, supplier, document, responsible, notes)
-        VALUES (${inv[0].id}, ${inv[0].name}, ${inv[0].code}, 'exit', ${r.quantity}, ${now.toISOString().slice(0, 10)},
-          ${`${r.department} · ${r.requester}`}, ${`SOL-${String(r.id).padStart(4, '0')}`}, ${req.user.name}, 'Saída gerada automaticamente na entrega da solicitação.')
+    const result = await sql.begin(async (trx) => {
+      const requests = await trx`
+        UPDATE requests SET status = 'delivered', updated_at = NOW() WHERE id = ${id} AND status = 'approved' RETURNING *
       `;
+      if (!requests.length) return { status: 404 };
+      const r = requests[0];
+      const inv = r.inventory_id
+        ? await trx`SELECT * FROM inventory WHERE id = ${r.inventory_id} FOR UPDATE`
+        : await trx`SELECT * FROM inventory WHERE LOWER(name) = ${r.item.toLowerCase()} LIMIT 1 FOR UPDATE`;
+      if (inv.length) {
+        if (inv[0].quantity < r.quantity) {
+          return { status: 409, available: inv[0].quantity };
+        }
+        await trx`UPDATE inventory SET quantity = quantity - ${r.quantity}, updated_at = NOW() WHERE id = ${inv[0].id}`;
+        await trx`
+          INSERT INTO movements (inventory_id, item, code, type, quantity, date, supplier, document, responsible, notes)
+          VALUES (${inv[0].id}, ${inv[0].name}, ${inv[0].code}, 'exit', ${r.quantity}, ${now.toISOString().slice(0, 10)},
+            ${`${r.department} · ${r.requester}`}, ${`SOL-${String(r.id).padStart(4, '0')}`}, ${req.user.name}, 'Saída gerada automaticamente na entrega da solicitação.')
+        `;
+      }
+      await trx`INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note) VALUES (${r.id}, 'delivered', 'Material entregue', ${req.user.name}, ${req.user.role}, ${now}, ${`Entrega confirmada por ${req.user.name}.`})`;
+      return { status: 200, request: r };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: 'Solicitação não encontrada ou não aprovada' });
+    if (result.status === 409) {
+      return res.status(409).json({ error: `Saldo insuficiente para dar baixa no estoque. Disponível: ${result.available} unidade(s). Registre uma entrada antes de confirmar a entrega.` });
     }
+
+    const r = result.request;
     await logActivity('Material entregue', `${r.item} entregue para ${r.requester}`, req);
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     notifyChange('requests', 'delivered', { id: r.id });
@@ -135,7 +156,14 @@ router.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 
 
 router.get('/api/requests/:id/history', authMiddleware, async (req, res) => {
   try {
-    const history = await sql`SELECT * FROM request_history WHERE request_id = ${req.params.id} ORDER BY id DESC`;
+    const id = parsePositiveId(req, res);
+    if (!id) return;
+    const isGlobal = ['admin', 'manager', 'viewer'].includes(req.user.role);
+    if (!isGlobal) {
+      const owned = await sql`SELECT id FROM requests WHERE id = ${id} AND (requester_email = ${req.user.email} OR requester = ${req.user.name})`;
+      if (!owned.length) return res.status(403).json({ error: 'Permissão insuficiente' });
+    }
+    const history = await sql`SELECT * FROM request_history WHERE request_id = ${id} ORDER BY id DESC`;
     res.json(history);
   } catch (err) { handleRouteError(err, req, res); }
 });

@@ -505,20 +505,6 @@ window.addEventListener('online', updateOnlineStatus);
 window.addEventListener('offline', updateOnlineStatus);
 updateOnlineStatus();
 
-document.querySelectorAll('[data-demo]').forEach((button) => button.addEventListener('click', async () => {
-  const email = button.dataset.demo === 'admin' ? 'admin@dfa.com'
-    : button.dataset.demo === 'manager' ? 'gestor@dfa.com'
-    : button.dataset.demo === 'requester' ? 'colaborador@dfa.com'
-    : 'consulta@dfa.com';
-  $('#loginEmail').value = email;
-  $('#loginPassword').value = email === 'admin@dfa.com' ? 'admin123'
-    : email === 'gestor@dfa.com' ? 'gestor123'
-    : email === 'colaborador@dfa.com' ? 'solicitar123'
-    : 'consulta123';
-  $('#loginError').textContent = '';
-  $('#loginPassword').focus();
-}));
-
 $('#logoutButton').addEventListener('click', endSession);
 
 $('#todayLabel').textContent = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date());

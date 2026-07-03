@@ -38,19 +38,27 @@ router.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager')
     if ((err = validateDate(date))) return validationError(res, 'date', err);
     if (supplier && supplier.length > VALIDATION_LIMITS.string.defaultMax) return validationError(res, 'supplier', `Máximo de ${VALIDATION_LIMITS.string.defaultMax} caracteres`);
     if (document && document.length > VALIDATION_LIMITS.string.defaultMax) return validationError(res, 'document', `Máximo de ${VALIDATION_LIMITS.string.defaultMax} caracteres`);
-    const inv = await sql`SELECT * FROM inventory WHERE id = ${inventoryId}`;
-    if (!inv.length) return res.status(404).json({ error: 'Item não encontrado' });
-    const item = inv[0];
-    if (type === 'exit' && quantity > item.quantity) return res.status(400).json({ error: `Saldo insuficiente. Disponível: ${item.quantity}` });
-    await sql`UPDATE inventory SET quantity = quantity ${type === 'entry' ? sql`+` : sql`-`} ${quantity}, updated_at = NOW() WHERE id = ${inventoryId}`;
-    const movements = await sql`
-      INSERT INTO movements (inventory_id, item, code, type, quantity, date, supplier, document, responsible, notes)
-      VALUES (${item.id}, ${item.name}, ${item.code}, ${type}, ${quantity}, ${date}, ${supplier || ''}, ${document || ''}, ${req.user.name}, ${notes || ''})
-      RETURNING *
-    `;
-    await logActivity(type === 'entry' ? 'Entrada de estoque registrada' : 'Saída de estoque registrada', `${item.name} · ${quantity} unidade(s) · ${req.user.name}`, req);
-    notifyChange('movements', 'created', { id: movements[0].id });
-    res.status(201).json(movements[0]);
+    const result = await sql.begin(async (trx) => {
+      const inv = await trx`SELECT * FROM inventory WHERE id = ${inventoryId} FOR UPDATE`;
+      if (!inv.length) return { status: 404 };
+      const item = inv[0];
+      if (type === 'exit' && quantity > item.quantity) return { status: 400, available: item.quantity };
+      const operation = type === 'entry' ? trx`+` : trx`-`;
+      await trx`UPDATE inventory SET quantity = quantity ${operation} ${quantity}, updated_at = NOW() WHERE id = ${inventoryId}`;
+      const movements = await trx`
+        INSERT INTO movements (inventory_id, item, code, type, quantity, date, supplier, document, responsible, notes)
+        VALUES (${item.id}, ${item.name}, ${item.code}, ${type}, ${quantity}, ${date}, ${supplier || ''}, ${document || ''}, ${req.user.name}, ${notes || ''})
+        RETURNING *
+      `;
+      return { status: 201, movement: movements[0], item };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: 'Item não encontrado' });
+    if (result.status === 400) return res.status(400).json({ error: `Saldo insuficiente. Disponível: ${result.available}` });
+
+    await logActivity(type === 'entry' ? 'Entrada de estoque registrada' : 'Saída de estoque registrada', `${result.item.name} · ${quantity} unidade(s) · ${req.user.name}`, req);
+    notifyChange('movements', 'created', { id: result.movement.id });
+    res.status(201).json(result.movement);
   } catch (err) { handleRouteError(err, req, res); }
 });
 

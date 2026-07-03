@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS inventory (
 CREATE TABLE IF NOT EXISTS requests (
   id SERIAL PRIMARY KEY,
   item TEXT NOT NULL,
+  inventory_id INTEGER REFERENCES inventory(id),
   requester TEXT NOT NULL,
   department TEXT NOT NULL,
   quantity INTEGER NOT NULL,
@@ -44,6 +45,8 @@ CREATE TABLE IF NOT EXISTS requests (
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE requests ADD COLUMN IF NOT EXISTS inventory_id INTEGER REFERENCES inventory(id);
 
 CREATE TABLE IF NOT EXISTS request_history (
   id SERIAL PRIMARY KEY,
@@ -98,6 +101,7 @@ CREATE TABLE IF NOT EXISTS activity (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_requests_status ON requests(status);
 CREATE INDEX IF NOT EXISTS idx_requests_user_date ON requests(requester_email, date);
+CREATE INDEX IF NOT EXISTS idx_requests_inventory_id ON requests(inventory_id);
 CREATE INDEX IF NOT EXISTS idx_inventory_category ON inventory(category);
 CREATE INDEX IF NOT EXISTS idx_custody_inventory_status ON custody(inventory_id, status);
 CREATE INDEX IF NOT EXISTS idx_movements_type_date ON movements(type, date);

@@ -3,7 +3,7 @@ import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALIDATION_LIMITS } from '../config.js';
-import { validateString, validateNumber, validateDate, validationError, logActivity } from '../validation.js';
+import { validateString, validateNumber, validateDate, validationError, parsePositiveId, logActivity } from '../validation.js';
 import { notifyChange } from '../events.js';
 
 const router = Router();
@@ -38,24 +38,35 @@ router.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), 
     if ((err = validateDate(checkout))) return validationError(res, 'checkout', err);
     if ((err = validateDate(expected))) return validationError(res, 'expected', err);
     if (notes && notes.length > VALIDATION_LIMITS.string.notesMax) return validationError(res, 'notes', `Máximo de ${VALIDATION_LIMITS.string.notesMax} caracteres`);
-    const inv = await sql`SELECT * FROM inventory WHERE id = ${inventoryId}`;
-    if (!inv.length) return res.status(404).json({ error: 'Item não encontrado' });
-    const item = inv[0];
-    const records = await sql`
-      INSERT INTO custody (inventory_id, item, code, holder, department, checkout, expected, value, notes, status)
-      VALUES (${item.id}, ${item.name}, ${item.code}, ${holder}, ${department}, ${checkout}, ${expected}, ${item.value}, ${notes || ''}, 'active')
-      RETURNING *
-    `;
-    await sql`UPDATE inventory SET location = 'Em posse', updated_at = NOW() WHERE id = ${item.id}`;
-    await logActivity('Retirada registrada', `${item.name} entregue para ${holder}`, req);
-    notifyChange('custody', 'created', { id: records[0].id });
-    res.status(201).json(records[0]);
+    if (expected < checkout) return validationError(res, 'expected', 'Previsão de devolução deve ser igual ou posterior à data da retirada');
+    const result = await sql.begin(async (trx) => {
+      const inv = await trx`SELECT * FROM inventory WHERE id = ${inventoryId} FOR UPDATE`;
+      if (!inv.length) return { status: 404 };
+      const item = inv[0];
+      const active = await trx`SELECT id FROM custody WHERE inventory_id = ${item.id} AND status = 'active' LIMIT 1`;
+      if (active.length) return { status: 409 };
+      const records = await trx`
+        INSERT INTO custody (inventory_id, item, code, holder, department, checkout, expected, value, notes, status)
+        VALUES (${item.id}, ${item.name}, ${item.code}, ${holder}, ${department}, ${checkout}, ${expected}, ${item.value}, ${notes || ''}, 'active')
+        RETURNING *
+      `;
+      await trx`UPDATE inventory SET location = 'Em posse', updated_at = NOW() WHERE id = ${item.id}`;
+      return { status: 201, record: records[0], item };
+    });
+
+    if (result.status === 404) return res.status(404).json({ error: 'Item não encontrado' });
+    if (result.status === 409) return res.status(409).json({ error: 'Este item já possui um termo de posse ativo. Registre a devolução antes de uma nova retirada.' });
+
+    await logActivity('Retirada registrada', `${result.item.name} entregue para ${holder}`, req);
+    notifyChange('custody', 'created', { id: result.record.id });
+    res.status(201).json(result.record);
   } catch (err) { handleRouteError(err, req, res); }
 });
 
 router.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parsePositiveId(req, res);
+    if (!id) return;
     const now = new Date().toISOString().slice(0, 10);
     const records = await sql`UPDATE custody SET status = 'returned', returned = ${now}, updated_at = NOW() WHERE id = ${id} AND status = 'active' RETURNING *`;
     if (!records.length) return res.status(404).json({ error: 'Termo não encontrado ou já devolvido' });

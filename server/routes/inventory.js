@@ -45,9 +45,10 @@ router.post('/api/inventory', authMiddleware, roleMiddleware('admin', 'manager')
 
 router.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
+    const id = parsePositiveId(req, res);
+    if (!id) return;
     const validationErrorResult = validateInventoryBody(req, res);
     if (validationErrorResult) return;
-    const { id } = req.params;
     const { name, code, category, location, quantity, minimum, value, valuable } = req.body;
     const items = await sql`
       UPDATE inventory SET name = ${name}, code = ${code}, category = ${category},

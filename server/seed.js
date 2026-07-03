@@ -3,6 +3,13 @@ import bcrypt from 'bcryptjs';
 import sql from './db.js';
 import { logError, logInfo, serializeError } from './logger.js';
 
+const DEFAULT_PASSWORDS = {
+  admin: 'admin123',
+  manager: 'gestor123',
+  requester: 'solicitar123',
+  viewer: 'consulta123',
+};
+
 async function seed() {
   logInfo('seed_started');
 
@@ -13,15 +20,32 @@ async function seed() {
     return;
   }
 
+  const passwords = {
+    admin: process.env.SEED_ADMIN_PASSWORD || DEFAULT_PASSWORDS.admin,
+    manager: process.env.SEED_MANAGER_PASSWORD || DEFAULT_PASSWORDS.manager,
+    requester: process.env.SEED_REQUESTER_PASSWORD || DEFAULT_PASSWORDS.requester,
+    viewer: process.env.SEED_VIEWER_PASSWORD || DEFAULT_PASSWORDS.viewer,
+  };
+  if (process.env.NODE_ENV === 'production') {
+    const usingDefaults = Object.keys(DEFAULT_PASSWORDS).filter((role) => passwords[role] === DEFAULT_PASSWORDS[role]);
+    if (usingDefaults.length) {
+      logError('seed_blocked_default_passwords', {
+        roles: usingDefaults,
+        hint: 'Defina SEED_ADMIN_PASSWORD, SEED_MANAGER_PASSWORD, SEED_REQUESTER_PASSWORD e SEED_VIEWER_PASSWORD para rodar o seed em produção.',
+      });
+      process.exit(1);
+    }
+  }
+
   const hash = (pwd) => bcrypt.hashSync(pwd, 10);
   const now = new Date();
 
   await sql`
     INSERT INTO users (name, email, password_hash, role, department) VALUES
-      ('Administração DFA', 'admin@dfa.com', ${hash('admin123')}, 'admin', 'Administração'),
-      ('Marina Gestora', 'gestor@dfa.com', ${hash('gestor123')}, 'manager', 'Administrativo'),
-      ('Lucas Colaborador', 'colaborador@dfa.com', ${hash('solicitar123')}, 'requester', 'Jurídico'),
-      ('Consulta Interna', 'consulta@dfa.com', ${hash('consulta123')}, 'viewer', 'Diretoria')
+      ('Administração DFA', 'admin@dfa.com', ${hash(passwords.admin)}, 'admin', 'Administração'),
+      ('Marina Gestora', 'gestor@dfa.com', ${hash(passwords.manager)}, 'manager', 'Administrativo'),
+      ('Lucas Colaborador', 'colaborador@dfa.com', ${hash(passwords.requester)}, 'requester', 'Jurídico'),
+      ('Consulta Interna', 'consulta@dfa.com', ${hash(passwords.viewer)}, 'viewer', 'Diretoria')
   `;
 
   await sql`

@@ -1,4 +1,5 @@
 import sql from './db.js';
+import { logError, serializeError } from './logger.js';
 import {
   EMAIL_REGEX,
   DATE_REGEX,
@@ -62,5 +63,9 @@ export function validateInventoryBody(req, res) {
 }
 
 export async function logActivity(text, detail, req) {
-  await sql`INSERT INTO activity (text, detail, date) VALUES (${text}, ${detail}, NOW())`;
+  try {
+    await sql`INSERT INTO activity (text, detail, date) VALUES (${text}, ${detail}, NOW())`;
+  } catch (err) {
+    logError('activity_log_failed', { requestId: req?.requestId, error: serializeError(err) });
+  }
 }
