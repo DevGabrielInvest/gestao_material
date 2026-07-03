@@ -6,6 +6,7 @@ import { PAGINATION, VALID_PRIORITIES, VALIDATION_LIMITS } from '../config.js';
 import {
   validateString, validateNumber, validateEnum, validationError, logActivity,
 } from '../validation.js';
+import { notifyChange } from '../events.js';
 
 const router = Router();
 
@@ -13,17 +14,22 @@ router.get('/api/requests', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.requests.defaultLimit, 1), PAGINATION.requests.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    let countQuery, dataQuery;
-    if (['admin', 'manager', 'viewer'].includes(req.user.role)) {
-      countQuery = sql`SELECT COUNT(*) as count FROM requests`;
-      dataQuery = sql`SELECT * FROM requests ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
-    } else {
-      countQuery = sql`SELECT COUNT(*) as count FROM requests WHERE requester_email = ${req.user.email} OR requester = ${req.user.name}`;
-      dataQuery = sql`SELECT * FROM requests WHERE requester_email = ${req.user.email} OR requester = ${req.user.name} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
+    const { search, status: statusFilter, dateFrom, dateTo } = req.query;
+    const filters = [];
+    const isGlobal = ['admin', 'manager', 'viewer'].includes(req.user.role);
+    if (!isGlobal) {
+      filters.push(sql`(requester_email = ${req.user.email} OR requester = ${req.user.name})`);
     }
-    const countResult = await countQuery;
+    if (search) filters.push(sql`(item ILIKE ${'%' + search + '%'} OR requester ILIKE ${'%' + search + '%'} OR department ILIKE ${'%' + search + '%'})`);
+    if (statusFilter && ['pending', 'approved', 'delivered', 'rejected'].includes(statusFilter)) {
+      filters.push(sql`status = ${statusFilter}`);
+    }
+    if (dateFrom) filters.push(sql`date >= ${dateFrom}`);
+    if (dateTo) filters.push(sql`date <= ${dateTo}`);
+    const where = filters.length ? sql`WHERE ${filters.reduce((acc, f, i) => i === 0 ? f : sql`${acc} AND ${f}`)}` : sql``;
+    const countResult = await sql`SELECT COUNT(*) as count FROM requests ${where}`;
     const total = Number(countResult[0].count);
-    const requests = await dataQuery;
+    const requests = await sql`SELECT * FROM requests ${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
     for (const r of requests) {
       r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     }
@@ -54,6 +60,7 @@ router.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 
     `;
     created.history = await sql`SELECT * FROM request_history WHERE request_id = ${created.id} ORDER BY id ASC`;
     await logActivity('Nova solicitação criada', `${requester} pediu ${quantity} unidade(s) de ${item}`, req);
+    notifyChange('requests', 'created', { id: created.id });
     res.status(201).json(created);
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -74,6 +81,7 @@ router.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 
     await logActivity('Solicitação aprovada', `${requests[0].item} · ${requests[0].requester}`, req);
     const r = requests[0];
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
+    notifyChange('requests', 'approved', { id: r.id });
     res.json(r);
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -94,6 +102,7 @@ router.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', '
     await logActivity('Solicitação recusada', `${requests[0].item} · ${requests[0].requester}`, req);
     const r = requests[0];
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
+    notifyChange('requests', 'rejected', { id: r.id });
     res.json(r);
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -119,6 +128,7 @@ router.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 
     }
     await logActivity('Material entregue', `${r.item} entregue para ${r.requester}`, req);
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
+    notifyChange('requests', 'delivered', { id: r.id });
     res.json(r);
   } catch (err) { handleRouteError(err, req, res); }
 });

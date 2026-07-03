@@ -4,6 +4,7 @@ import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION } from '../config.js';
 import { validateInventoryBody, parsePositiveId, logActivity } from '../validation.js';
+import { notifyChange } from '../events.js';
 
 const router = Router();
 
@@ -11,9 +12,17 @@ router.get('/api/inventory', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.inventory.defaultLimit, 1), PAGINATION.inventory.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const countResult = await sql`SELECT COUNT(*) as count FROM inventory`;
+    const { search, category: catFilter, lowStock } = req.query;
+    const sort = ['name', 'code', 'category', 'location', 'quantity', 'minimum', 'value', 'id'].includes(req.query.sort) ? req.query.sort : 'id';
+    const order = req.query.order === 'desc' ? sql`DESC` : sql`ASC`;
+    const filters = [];
+    if (search) filters.push(sql`(name ILIKE ${'%' + search + '%'} OR code ILIKE ${'%' + search + '%'} OR category ILIKE ${'%' + search + '%'} OR location ILIKE ${'%' + search + '%'})`);
+    if (catFilter) filters.push(sql`category = ${catFilter}`);
+    if (lowStock === 'true' || lowStock === '1') filters.push(sql`quantity <= minimum`);
+    const where = filters.length ? sql`WHERE ${filters.reduce((acc, f, i) => i === 0 ? f : sql`${acc} AND ${f}`)}` : sql``;
+    const countResult = await sql`SELECT COUNT(*) as count FROM inventory ${where}`;
     const total = Number(countResult[0].count);
-    const items = await sql`SELECT * FROM inventory ORDER BY id LIMIT ${limit} OFFSET ${offset}`;
+    const items = await sql`SELECT * FROM inventory ${where} ORDER BY ${sql(sort)} ${order} LIMIT ${limit} OFFSET ${offset}`;
     res.json({ data: items, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -29,6 +38,7 @@ router.post('/api/inventory', authMiddleware, roleMiddleware('admin', 'manager')
       RETURNING *
     `;
     await logActivity('Novo item cadastrado', `${name} · ${quantity} unidade(s)`, req);
+    notifyChange('inventory', 'created', { id: items[0].id });
     res.status(201).json(items[0]);
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -47,6 +57,7 @@ router.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manage
     `;
     if (!items.length) return res.status(404).json({ error: 'Item não encontrado' });
     await logActivity('Cadastro atualizado', `${name} · ${quantity} unidade(s)`, req);
+    notifyChange('inventory', 'updated', { id: items[0].id });
     res.json(items[0]);
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -79,6 +90,7 @@ router.delete('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'man
     }
 
     await logActivity('Item removido do inventário', `${result.item.name} · ${result.item.code}`, req);
+    notifyChange('inventory', 'deleted', { id: result.item.id });
     res.json({ ok: true, deleted: result.item });
   } catch (err) { handleRouteError(err, req, res); }
 });

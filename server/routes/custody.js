@@ -4,6 +4,7 @@ import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALIDATION_LIMITS } from '../config.js';
 import { validateString, validateNumber, validateDate, validationError, logActivity } from '../validation.js';
+import { notifyChange } from '../events.js';
 
 const router = Router();
 
@@ -11,9 +12,18 @@ router.get('/api/custody', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.custody.defaultLimit, 1), PAGINATION.custody.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const countResult = await sql`SELECT COUNT(*) as count FROM custody`;
+    const { search, status: statusFilter, dateFrom, dateTo } = req.query;
+    const filters = [];
+    if (search) filters.push(sql`(item ILIKE ${'%' + search + '%'} OR holder ILIKE ${'%' + search + '%'} OR department ILIKE ${'%' + search + '%'})`);
+    if (statusFilter && ['active', 'returned'].includes(statusFilter)) {
+      filters.push(sql`status = ${statusFilter}`);
+    }
+    if (dateFrom) filters.push(sql`checkout >= ${dateFrom}`);
+    if (dateTo) filters.push(sql`checkout <= ${dateTo}`);
+    const where = filters.length ? sql`WHERE ${filters.reduce((acc, f, i) => i === 0 ? f : sql`${acc} AND ${f}`)}` : sql``;
+    const countResult = await sql`SELECT COUNT(*) as count FROM custody ${where}`;
     const total = Number(countResult[0].count);
-    const records = await sql`SELECT * FROM custody ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
+    const records = await sql`SELECT * FROM custody ${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
     res.json({ data: records, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -38,6 +48,7 @@ router.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), 
     `;
     await sql`UPDATE inventory SET location = 'Em posse', updated_at = NOW() WHERE id = ${item.id}`;
     await logActivity('Retirada registrada', `${item.name} entregue para ${holder}`, req);
+    notifyChange('custody', 'created', { id: records[0].id });
     res.status(201).json(records[0]);
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -51,6 +62,7 @@ router.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'm
     const record = records[0];
     await sql`UPDATE inventory SET location = 'Armário de equipamentos', updated_at = NOW() WHERE id = ${record.inventory_id}`;
     await logActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`, req);
+    notifyChange('custody', 'returned', { id: record.id });
     res.json(record);
   } catch (err) { handleRouteError(err, req, res); }
 });

@@ -20,6 +20,7 @@ import inventoryRoutes from './routes/inventory.js';
 import requestsRoutes from './routes/requests.js';
 import custodyRoutes from './routes/custody.js';
 import movementsRoutes from './routes/movements.js';
+import eventsRoutes from './routes/events.js';
 
 const noop = (req, res, next) => next();
 
@@ -49,5 +50,6 @@ app.use(inventoryRoutes);
 app.use(requestsRoutes);
 app.use(custodyRoutes);
 app.use(movementsRoutes);
+app.use(eventsRoutes);
 
 export default app;

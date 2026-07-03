@@ -56,6 +56,7 @@ export const VALIDATION_LIMITS = {
 };
 
 export const JWT_EXPIRY = '24h';
+export const REFRESH_TOKEN_EXPIRY = '7d';
 
 export const HELMET_CONFIG = {
   contentSecurityPolicy: {

@@ -4,6 +4,7 @@ import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALID_MOVEMENT_TYPES, VALIDATION_LIMITS } from '../config.js';
 import { validateNumber, validateEnum, validateDate, validationError, parsePositiveId, logActivity } from '../validation.js';
+import { notifyChange } from '../events.js';
 
 const router = Router();
 
@@ -11,9 +12,18 @@ router.get('/api/movements', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.movements.defaultLimit, 1), PAGINATION.movements.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const countResult = await sql`SELECT COUNT(*) as count FROM movements`;
+    const { search, type: typeFilter, dateFrom, dateTo } = req.query;
+    const filters = [];
+    if (search) filters.push(sql`(item ILIKE ${'%' + search + '%'} OR supplier ILIKE ${'%' + search + '%'} OR document ILIKE ${'%' + search + '%'} OR responsible ILIKE ${'%' + search + '%'})`);
+    if (typeFilter && ['entry', 'exit'].includes(typeFilter)) {
+      filters.push(sql`type = ${typeFilter}`);
+    }
+    if (dateFrom) filters.push(sql`date >= ${dateFrom}`);
+    if (dateTo) filters.push(sql`date <= ${dateTo}`);
+    const where = filters.length ? sql`WHERE ${filters.reduce((acc, f, i) => i === 0 ? f : sql`${acc} AND ${f}`)}` : sql``;
+    const countResult = await sql`SELECT COUNT(*) as count FROM movements ${where}`;
     const total = Number(countResult[0].count);
-    const movements = await sql`SELECT * FROM movements ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
+    const movements = await sql`SELECT * FROM movements ${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
     res.json({ data: movements, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -39,6 +49,7 @@ router.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager')
       RETURNING *
     `;
     await logActivity(type === 'entry' ? 'Entrada de estoque registrada' : 'Saída de estoque registrada', `${item.name} · ${quantity} unidade(s) · ${req.user.name}`, req);
+    notifyChange('movements', 'created', { id: movements[0].id });
     res.status(201).json(movements[0]);
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -87,6 +98,7 @@ router.delete('/api/movements/:id', authMiddleware, roleMiddleware('admin', 'man
     }
 
     await logActivity('Movimentação removida', `${result.movement.item} · ${result.movement.quantity} unidade(s)`, req);
+    notifyChange('movements', 'deleted', { id: result.movement.id });
     res.json({ ok: true, deleted: result.movement });
   } catch (err) { handleRouteError(err, req, res); }
 });

@@ -1,0 +1,32 @@
+import { EventEmitter } from 'node:events';
+import { invalidateCache } from './cache.js';
+
+const emitter = new EventEmitter();
+emitter.setMaxListeners(100);
+
+const clients = new Set();
+
+export function addClient(res) {
+  clients.add(res);
+  res.on('close', () => {
+    clients.delete(res);
+  });
+}
+
+export function broadcast(event, data) {
+  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  clients.forEach((client) => {
+    try {
+      client.write(message);
+    } catch {
+      clients.delete(client);
+    }
+  });
+}
+
+export function notifyChange(resource, action, data = {}) {
+  invalidateCache('dashboard');
+  broadcast(resource, { action, timestamp: new Date().toISOString(), ...data });
+}
+
+export default emitter;
