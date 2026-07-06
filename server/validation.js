@@ -37,13 +37,22 @@ export function validateEmail(value) {
 
 export function validateDate(value) {
   if (!value || !DATE_REGEX.test(value)) return 'Data inválida (formato YYYY-MM-DD)';
-  const d = new Date(`${value}T12:00:00`);
-  if (isNaN(d.getTime())) return 'Data inválida';
+  const [year, month, day] = value.split('-').map(Number);
+  const d = new Date(year, month - 1, day);
+  // O construtor Date faz rollover em datas impossíveis (2026-02-31 vira 3 de março),
+  // então é preciso conferir se o resultado bate com a entrada.
+  if (d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day) return 'Data inválida';
   return null;
 }
 
 export function validationError(res, field, message) {
   return res.status(400).json({ error: `${field}: ${message}` });
+}
+
+// Data corrente no fuso do escritório (não UTC): a partir das 21h BRT,
+// toISOString() já devolve o dia seguinte.
+export function todayLocal() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo' }).format(new Date());
 }
 
 export function parsePositiveId(req, res) {

@@ -3,7 +3,7 @@ import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALIDATION_LIMITS } from '../config.js';
-import { validateString, validateNumber, validateDate, validationError, parsePositiveId, logActivity } from '../validation.js';
+import { validateString, validateNumber, validateDate, validationError, parsePositiveId, logActivity, todayLocal } from '../validation.js';
 import { notifyChange } from '../events.js';
 import { streamLetterheadPdf } from '../pdf.js';
 
@@ -66,8 +66,8 @@ router.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), 
       const active = await trx`SELECT id FROM custody WHERE inventory_id = ${item.id} AND status = 'active' LIMIT 1`;
       if (active.length) return { status: 409 };
       const records = await trx`
-        INSERT INTO custody (inventory_id, item, code, holder, department, checkout, expected, value, notes, status)
-        VALUES (${item.id}, ${item.name}, ${item.code}, ${holder}, ${department}, ${checkout}, ${expected}, ${item.value}, ${notes || ''}, 'active')
+        INSERT INTO custody (inventory_id, item, code, holder, department, checkout, expected, value, notes, status, previous_location)
+        VALUES (${item.id}, ${item.name}, ${item.code}, ${holder}, ${department}, ${checkout}, ${expected}, ${item.value}, ${notes || ''}, 'active', ${item.location})
         RETURNING *
       `;
       await trx`UPDATE inventory SET location = 'Em posse', updated_at = NOW() WHERE id = ${item.id}`;
@@ -87,11 +87,15 @@ router.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'm
   try {
     const id = parsePositiveId(req, res);
     if (!id) return;
-    const now = new Date().toISOString().slice(0, 10);
-    const records = await sql`UPDATE custody SET status = 'returned', returned = ${now}, updated_at = NOW() WHERE id = ${id} AND status = 'active' RETURNING *`;
-    if (!records.length) return res.status(404).json({ error: 'Termo não encontrado ou já devolvido' });
-    const record = records[0];
-    await sql`UPDATE inventory SET location = 'Armário de equipamentos', updated_at = NOW() WHERE id = ${record.inventory_id}`;
+    const now = todayLocal();
+    const record = await sql.begin(async (trx) => {
+      const records = await trx`UPDATE custody SET status = 'returned', returned = ${now}, updated_at = NOW() WHERE id = ${id} AND status = 'active' RETURNING *`;
+      if (!records.length) return null;
+      const restoredLocation = records[0].previous_location || 'Armário de equipamentos';
+      await trx`UPDATE inventory SET location = ${restoredLocation}, updated_at = NOW() WHERE id = ${records[0].inventory_id}`;
+      return records[0];
+    });
+    if (!record) return res.status(404).json({ error: 'Termo não encontrado ou já devolvido' });
     await logActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`, req);
     notifyChange('custody', 'returned', { id: record.id });
     res.json(record);

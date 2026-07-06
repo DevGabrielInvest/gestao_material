@@ -31,16 +31,19 @@ router.get('/api/inventory', authMiddleware, async (req, res) => {
     if (status === 'low') filters.push(sql`(quantity <= minimum AND NOT ${inActiveCustody})`);
     if (status === 'available') filters.push(sql`(quantity > minimum AND NOT ${inActiveCustody})`);
     const where = filters.length ? sql`WHERE ${filters.reduce((acc, f, i) => i === 0 ? f : sql`${acc} AND ${f}`)}` : sql``;
-    const countResult = await sql`SELECT COUNT(*) as count FROM inventory ${where}`;
+    const [countResult, items, summaryResult] = await Promise.all([
+      sql`SELECT COUNT(*) as count FROM inventory ${where}`,
+      sql`
+        SELECT *, ${inActiveCustody} AS in_custody
+        FROM inventory ${where} ORDER BY ${sql(sort)} ${order} LIMIT ${limit} OFFSET ${offset}
+      `,
+      sql`
+        SELECT COUNT(*) AS count, COALESCE(SUM(quantity), 0) AS units, COALESCE(SUM(quantity * value), 0) AS total_value
+        FROM inventory
+      `,
+    ]);
     const total = Number(countResult[0].count);
-    const items = await sql`
-      SELECT *, ${inActiveCustody} AS in_custody
-      FROM inventory ${where} ORDER BY ${sql(sort)} ${order} LIMIT ${limit} OFFSET ${offset}
-    `;
-    const summaryRow = (await sql`
-      SELECT COUNT(*) AS count, COALESCE(SUM(quantity), 0) AS units, COALESCE(SUM(quantity * value), 0) AS total_value
-      FROM inventory
-    `)[0];
+    const summaryRow = summaryResult[0];
     const summary = { count: Number(summaryRow.count), units: Number(summaryRow.units), value: Number(summaryRow.total_value) };
     res.json({ data: items, total, limit, offset, hasMore: offset + limit < total, summary });
   } catch (err) { handleRouteError(err, req, res); }

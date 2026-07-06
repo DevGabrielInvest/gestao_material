@@ -23,6 +23,11 @@ const loginLimiter = NODE_ENV === 'test'
     message: { error: RATE_LIMIT.login.message },
   });
 
+// Hash de senha aleatória usado quando o e-mail não existe, para que a resposta
+// demore o mesmo tempo de um login real — sem isso, o tempo de resposta revela
+// quais e-mails têm conta.
+const DUMMY_HASH = bcrypt.hashSync(crypto.randomBytes(32).toString('hex'), 10);
+
 function signToken(payload) {
   return jwt.sign(payload, JWT_SECRET, { expiresIn: JWT_EXPIRY });
 }
@@ -38,9 +43,9 @@ router.post('/api/auth/login', loginLimiter, async (req, res) => {
     if ((err = validateEmail(email))) return validationError(res, 'email', err);
     if (!password || typeof password !== 'string' || password.length < PASSWORD_MIN_LENGTH) return validationError(res, 'password', `Senha deve ter pelo menos ${PASSWORD_MIN_LENGTH} caracteres`);
     const users = await sql`SELECT * FROM users WHERE email = ${email}`;
-    if (!users.length) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
     const user = users[0];
-    if (!(await bcrypt.compare(password, user.password_hash))) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
+    const passwordMatches = await bcrypt.compare(password, user ? user.password_hash : DUMMY_HASH);
+    if (!user || !passwordMatches) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
     const payload = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
     const token = signToken(payload);
     const refreshToken = signRefreshToken(payload);
@@ -63,7 +68,14 @@ router.post('/api/auth/refresh', async (req, res) => {
     if (decoded.type !== 'refresh') {
       return res.status(401).json({ error: 'Tipo de token inválido' });
     }
-    const payload = { id: decoded.id, name: decoded.name, email: decoded.email, role: decoded.role, department: decoded.department };
+    // Re-assina com os dados atuais do banco: usuário removido não renova a
+    // sessão, e mudanças de papel/setor passam a valer no próximo refresh.
+    const users = await sql`SELECT * FROM users WHERE id = ${decoded.id}`;
+    if (!users.length) {
+      return res.status(401).json({ error: 'Usuário não encontrado. Faça login novamente.' });
+    }
+    const user = users[0];
+    const payload = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
     const newToken = signToken(payload);
     const newRefreshToken = signRefreshToken(payload);
     res.json({ token: newToken, refreshToken: newRefreshToken, user: payload });
@@ -74,6 +86,12 @@ router.post('/api/auth/logout', (req, res) => {
   res.json({ ok: true });
 });
 
-router.get('/api/auth/me', authMiddleware, (req, res) => res.json(req.user));
+router.get('/api/auth/me', authMiddleware, async (req, res) => {
+  try {
+    const users = await sql`SELECT id, name, email, role, department FROM users WHERE id = ${req.user.id}`;
+    if (!users.length) return res.status(401).json({ error: 'Usuário não encontrado' });
+    res.json(users[0]);
+  } catch (err) { handleRouteError(err, req, res); }
+});
 
 export default router;

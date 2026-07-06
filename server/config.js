@@ -58,7 +58,7 @@ export const PAGINATION = {
 
 export const RATE_LIMIT = {
   login: { windowMs: 60 * 1000, max: 5, message: 'Muitas tentativas de login. Tente novamente em 1 minuto.' },
-  api: { windowMs: 60 * 1000, max: 100000, message: 'Muitas requisições. Tente novamente em 1 minuto.' },
+  api: { windowMs: 60 * 1000, max: 300, message: 'Muitas requisições. Tente novamente em 1 minuto.' },
 };
 
 export const VALIDATION_LIMITS = {
@@ -98,6 +98,4 @@ export const HELMET_CONFIG = {
   xssFilter: true,
 };
 
-export const CORS_OPTIONS = {
-  origin: '*',
-};
+export const STATIC_MAX_AGE_MS = 5 * 60 * 1000;

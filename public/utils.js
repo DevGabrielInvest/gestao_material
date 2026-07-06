@@ -31,6 +31,10 @@ const roleLabels = { admin: 'Administrador', manager: 'Gestor', requester: 'Soli
 const $ = (selector) => document.querySelector(selector);
 const money = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 const dateOnly = (value) => String(value ?? '').slice(0, 10);
+const todayLocal = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+};
 const dateLabel = (value) => value ? new Date(`${dateOnly(value)}T12:00:00`).toLocaleDateString('pt-BR') : '—';
 const initials = (name) => name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({

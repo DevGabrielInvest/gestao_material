@@ -1,13 +1,13 @@
 import express from 'express';
-import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   RATE_LIMIT,
   HELMET_CONFIG,
-  CORS_OPTIONS,
+  STATIC_MAX_AGE_MS,
   NODE_ENV,
 } from './config.js';
 import {
@@ -43,9 +43,10 @@ const app = express();
 app.set('trust proxy', 1);
 app.use(requestIdMiddleware);
 app.use(helmet(HELMET_CONFIG));
-app.use(cors(CORS_OPTIONS));
+// SSE precisa de flush imediato — não pode passar pelo buffer do gzip.
+app.use(compression({ filter: (req, res) => req.path !== '/api/events' && compression.filter(req, res) }));
 app.use(express.json());
-app.use(express.static(publicDir, { index: 'index.html' }));
+app.use(express.static(publicDir, { index: 'index.html', maxAge: STATIC_MAX_AGE_MS }));
 app.use('/api', requestLoggingMiddleware);
 app.use('/api', apiLimiter);
 

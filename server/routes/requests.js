@@ -4,7 +4,7 @@ import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALID_PRIORITIES, VALIDATION_LIMITS } from '../config.js';
 import {
-  validateString, validateNumber, validateEnum, validationError, parsePositiveId, logActivity,
+  validateString, validateNumber, validateEnum, validationError, parsePositiveId, logActivity, todayLocal,
 } from '../validation.js';
 import { notifyChange } from '../events.js';
 
@@ -62,7 +62,7 @@ router.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 
     const inventoryId = inv.length ? inv[0].id : null;
     const requests = await sql`
       INSERT INTO requests (item, inventory_id, requester, department, quantity, reason, priority, date, requester_email)
-      VALUES (${item}, ${inventoryId}, ${requester}, ${department}, ${quantity}, ${reason}, ${priority || 'Normal'}, ${now.toISOString().slice(0, 10)}, ${req.user.email})
+      VALUES (${item}, ${inventoryId}, ${requester}, ${department}, ${quantity}, ${reason}, ${priority || 'Normal'}, ${todayLocal()}, ${req.user.email})
       RETURNING *
     `;
     const created = requests[0];
@@ -142,7 +142,7 @@ router.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 
         await trx`UPDATE inventory SET quantity = quantity - ${r.quantity}, updated_at = NOW() WHERE id = ${inv[0].id}`;
         await trx`
           INSERT INTO movements (inventory_id, item, code, type, quantity, date, supplier, document, responsible, notes)
-          VALUES (${inv[0].id}, ${inv[0].name}, ${inv[0].code}, 'exit', ${r.quantity}, ${now.toISOString().slice(0, 10)},
+          VALUES (${inv[0].id}, ${inv[0].name}, ${inv[0].code}, 'exit', ${r.quantity}, ${todayLocal()},
             ${`${r.department} · ${r.requester}`}, ${`SOL-${String(r.id).padStart(4, '0')}`}, ${req.user.name}, 'Saída gerada automaticamente na entrega da solicitação.')
         `;
       }

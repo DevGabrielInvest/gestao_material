@@ -14,8 +14,9 @@ router.get('/api/events', (req, res) => {
     return res.status(401).json({ error: 'Token de autenticação obrigatório' });
   }
 
+  let decoded;
   try {
-    jwt.verify(token, JWT_SECRET);
+    decoded = jwt.verify(token, JWT_SECRET);
   } catch {
     return res.status(401).json({ error: 'Token inválido ou expirado' });
   }
@@ -38,8 +39,20 @@ router.get('/api/events', (req, res) => {
     }
   }, 30000);
 
+  // A conexão não pode sobreviver ao token que a autenticou: ao expirar,
+  // encerra o stream e o cliente reconecta com um token renovado.
+  const msUntilExpiry = decoded.exp * 1000 - Date.now();
+  const expiryTimer = setTimeout(() => {
+    try {
+      res.end();
+    } catch {
+      /* conexão já encerrada */
+    }
+  }, Math.max(msUntilExpiry, 1000));
+
   req.on('close', () => {
     clearInterval(keepalive);
+    clearTimeout(expiryTimer);
   });
 });
 
