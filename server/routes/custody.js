@@ -5,8 +5,26 @@ import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALIDATION_LIMITS } from '../config.js';
 import { validateString, validateNumber, validateDate, validationError, parsePositiveId, logActivity } from '../validation.js';
 import { notifyChange } from '../events.js';
+import { streamLetterheadPdf } from '../pdf.js';
 
 const router = Router();
+
+function moneyLabel(value) {
+  return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function dateOnly(value) {
+  if (!value) return '';
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  return String(value).slice(0, 10);
+}
+
+function dateLabel(value) {
+  const day = dateOnly(value);
+  if (!day) return '—';
+  const [y, m, d] = day.split('-');
+  return `${d}/${m}/${y}`;
+}
 
 router.get('/api/custody', authMiddleware, async (req, res) => {
   try {
@@ -34,7 +52,7 @@ router.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), 
   try {
     const { inventoryId, holder, department, checkout, expected, notes } = req.body;
     let err;
-    if ((err = validateNumber(inventoryId, 1))) return validationError(res, 'inventoryId', err);
+    if ((err = validateNumber(inventoryId, 1, { integer: true }))) return validationError(res, 'inventoryId', err);
     if ((err = validateString(holder))) return validationError(res, 'holder', err);
     if ((err = validateString(department))) return validationError(res, 'department', err);
     if ((err = validateDate(checkout))) return validationError(res, 'checkout', err);
@@ -77,6 +95,37 @@ router.put('/api/custody/:id/return', authMiddleware, roleMiddleware('admin', 'm
     await logActivity('Equipamento devolvido', `${record.item} devolvido por ${record.holder}`, req);
     notifyChange('custody', 'returned', { id: record.id });
     res.json(record);
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+router.get('/api/custody/:id/pdf', authMiddleware, roleMiddleware('admin', 'manager', 'viewer'), async (req, res) => {
+  try {
+    const id = parsePositiveId(req, res);
+    if (!id) return;
+    const records = await sql`SELECT * FROM custody WHERE id = ${id}`;
+    if (!records.length) return res.status(404).json({ error: 'Termo não encontrado' });
+    const record = records[0];
+    const rows = [
+      { heading: true, text: 'TERMO DE RESPONSABILIDADE E GUARDA DE EQUIPAMENTO' },
+      { text: `Termo: TER-${record.code}-${record.id}`, bold: true },
+      { text: `Emitido em: ${new Date().toLocaleString('pt-BR')} por ${req.user.name}` }, { spacer: true },
+      { heading: true, text: 'IDENTIFICAÇÃO DO BEM' },
+      { text: `Equipamento: ${record.item}` }, { text: `Código patrimonial: ${record.code}` }, { text: `Valor registrado: ${moneyLabel(record.value)}` }, { spacer: true },
+      { heading: true, text: 'RESPONSÁVEL PELA POSSE' },
+      { text: `Nome: ${record.holder}` }, { text: `Setor: ${record.department}` }, { text: `Data da retirada: ${dateLabel(record.checkout)}` }, { text: `Devolução prevista: ${dateLabel(record.expected)}` }, { text: `Situação: ${record.status === 'active' ? 'Em posse' : `Devolvido em ${dateLabel(record.returned)}`}` }, { spacer: true },
+      { heading: true, text: 'DECLARAÇÃO DE RESPONSABILIDADE' },
+      { text: 'Declaro que recebi o bem acima identificado nas condições registradas neste termo, comprometendo-me a utilizá-lo exclusivamente para atividades profissionais, zelar por sua conservação e comunicar imediatamente qualquer dano, perda ou incidente.' },
+      { text: 'Comprometo-me ainda a devolver o equipamento e seus acessórios na data acordada ou quando solicitado pelo escritório, no mesmo estado de conservação em que foram entregues, ressalvado o desgaste natural de uso.' },
+      { text: `Observações de entrega: ${record.notes || 'Nenhuma observação registrada.'}` },
+      { spacer: true, height: 24 }, { text: '________________________________________        ________________________________________' },
+      { text: `Responsável pela posse: ${record.holder}    |    Administração DFA` },
+    ];
+    streamLetterheadPdf(res, {
+      filename: `termo-${record.code.toLowerCase()}-${record.id}.pdf`,
+      title: 'TERMO DE RESPONSABILIDADE',
+      subtitle: 'GESTÃO PATRIMONIAL - DANIEL FREDERIGHI ADVOGADOS ASSOCIADOS',
+      rows,
+    });
   } catch (err) { handleRouteError(err, req, res); }
 });
 

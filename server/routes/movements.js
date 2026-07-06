@@ -7,6 +7,7 @@ import { validateNumber, validateEnum, validateDate, validationError, parsePosit
 import { notifyChange } from '../events.js';
 
 const router = Router();
+const { maxInteger } = VALIDATION_LIMITS.number;
 
 router.get('/api/movements', authMiddleware, async (req, res) => {
   try {
@@ -47,9 +48,9 @@ router.post('/api/movements', authMiddleware, roleMiddleware('admin', 'manager')
   try {
     const { inventoryId, type, quantity, date, supplier, document, notes } = req.body;
     let err;
-    if ((err = validateNumber(inventoryId, 1))) return validationError(res, 'inventoryId', err);
+    if ((err = validateNumber(inventoryId, 1, { integer: true }))) return validationError(res, 'inventoryId', err);
     if ((err = validateEnum(type, VALID_MOVEMENT_TYPES))) return validationError(res, 'type', err);
-    if ((err = validateNumber(quantity, 1))) return validationError(res, 'quantity', err);
+    if ((err = validateNumber(quantity, 1, { integer: true, max: maxInteger }))) return validationError(res, 'quantity', err);
     if ((err = validateDate(date))) return validationError(res, 'date', err);
     if (supplier && supplier.length > VALIDATION_LIMITS.string.defaultMax) return validationError(res, 'supplier', `Máximo de ${VALIDATION_LIMITS.string.defaultMax} caracteres`);
     if (document && document.length > VALIDATION_LIMITS.string.defaultMax) return validationError(res, 'document', `Máximo de ${VALIDATION_LIMITS.string.defaultMax} caracteres`);

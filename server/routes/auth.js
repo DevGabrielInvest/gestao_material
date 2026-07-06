@@ -40,7 +40,7 @@ router.post('/api/auth/login', loginLimiter, async (req, res) => {
     const users = await sql`SELECT * FROM users WHERE email = ${email}`;
     if (!users.length) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
     const user = users[0];
-    if (!bcrypt.compareSync(password, user.password_hash)) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
+    if (!(await bcrypt.compare(password, user.password_hash))) return res.status(401).json({ error: 'E-mail ou senha inválidos' });
     const payload = { id: user.id, name: user.name, email: user.email, role: user.role, department: user.department };
     const token = signToken(payload);
     const refreshToken = signRefreshToken(payload);

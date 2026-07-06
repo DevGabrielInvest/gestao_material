@@ -4,6 +4,7 @@ import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { DATE_REGEX } from '../config.js';
 import { validationError } from '../validation.js';
+import { streamLetterheadPdf } from '../pdf.js';
 
 const router = Router();
 
@@ -69,58 +70,100 @@ function parsePeriod(req, res) {
 
 const reportRoles = roleMiddleware('admin', 'manager', 'viewer');
 
+async function loadSummary({ dateFrom, dateTo }) {
+  const periodFilter = sql`${dateFrom ? sql`AND date >= ${dateFrom}` : sql``} ${dateTo ? sql`AND date <= ${dateTo}` : sql``}`;
+
+  // Os totais de inventário e custódia são derivados das próprias listas abaixo
+  // (em vez de queries agregadas separadas) para evitar divergência sob escrita concorrente.
+  const pendingRequestsRow = (await sql`SELECT COUNT(*) AS count FROM requests WHERE status = 'pending'`)[0];
+  const consumption = await sql`
+    SELECT item, COALESCE(SUM(quantity), 0) AS quantity
+    FROM movements WHERE type = 'exit' ${periodFilter}
+    GROUP BY item ORDER BY quantity DESC
+  `;
+  const activeCustody = await sql`
+    SELECT id, holder, item, code, value, expected FROM custody WHERE status = 'active' ORDER BY id DESC
+  `;
+  const inventory = await sql`
+    SELECT id, name, code, category, quantity, minimum, value,
+      EXISTS (SELECT 1 FROM custody c WHERE c.inventory_id = inventory.id AND c.status = 'active') AS in_custody
+    FROM inventory ORDER BY name ASC
+  `;
+
+  const consumptionRows = consumption.map((row) => ({ item: row.item, quantity: Number(row.quantity) }));
+
+  const holderGroups = new Map();
+  activeCustody.forEach((item) => {
+    const current = holderGroups.get(item.holder) || { quantity: 0, value: 0 };
+    current.quantity += 1;
+    current.value += Number(item.value);
+    holderGroups.set(item.holder, current);
+  });
+  const holders = [...holderGroups.entries()]
+    .map(([holder, data]) => ({ holder, quantity: data.quantity, value: data.value }))
+    .sort((a, b) => b.value - a.value);
+
+  return {
+    totals: {
+      inventoryCount: inventory.length,
+      inventoryUnits: inventory.reduce((sum, item) => sum + Number(item.quantity), 0),
+      inventoryValue: inventory.reduce((sum, item) => sum + Number(item.quantity) * Number(item.value), 0),
+      custodyCount: activeCustody.length,
+      custodyValue: activeCustody.reduce((sum, item) => sum + Number(item.value), 0),
+      pendingRequests: Number(pendingRequestsRow.count),
+      lowStock: inventory.filter((item) => Number(item.quantity) <= Number(item.minimum) && !item.in_custody).length,
+      consumed: consumptionRows.reduce((sum, item) => sum + item.quantity, 0),
+    },
+    consumption: consumptionRows,
+    holders,
+    activeCustody,
+    inventory,
+  };
+}
+
+function moneyLabel(value) {
+  return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
+
+function buildManagementReportRows(report, userName) {
+  const { totals, consumption, activeCustody, inventory } = report;
+  return [
+    { heading: true, text: 'RELATÓRIO GERENCIAL DE MATERIAIS E PATRIMÔNIO' },
+    { text: `Emitido em: ${new Date().toLocaleString('pt-BR')} por ${userName}` }, { spacer: true },
+    { heading: true, text: 'RESUMO EXECUTIVO' },
+    { text: `Itens cadastrados: ${totals.inventoryCount}` },
+    { text: `Valor estimado do inventário: ${moneyLabel(totals.inventoryValue)}` },
+    { text: `Bens atualmente em posse: ${totals.custodyCount}` },
+    { text: `Solicitações pendentes: ${totals.pendingRequests}` }, { spacer: true },
+    { heading: true, text: 'CONSUMO POR ITEM' },
+    ...consumption.map((item) => ({ text: `${item.item}: ${item.quantity} unidade(s)` })), { spacer: true },
+    { heading: true, text: 'PATRIMÔNIO SOB RESPONSABILIDADE' },
+    ...activeCustody.map((item) => ({ text: `${item.holder} - ${item.item} (${item.code}) - ${moneyLabel(item.value)} - devolver até ${dateLabel(item.expected)}` })), { spacer: true },
+    { heading: true, text: 'POSIÇÃO DO INVENTÁRIO' },
+    ...inventory.map((item) => ({ text: `${item.code} - ${item.name} - ${item.quantity} un. - mínimo ${item.minimum} - total ${moneyLabel(item.quantity * item.value)}${item.in_custody ? ' - EM POSSE' : item.quantity <= item.minimum ? ' - REPOSIÇÃO NECESSÁRIA' : ''}` })),
+  ];
+}
+
 router.get('/api/reports/summary', authMiddleware, reportRoles, async (req, res) => {
   try {
     const period = parsePeriod(req, res);
     if (period.invalid) return;
-    const { dateFrom, dateTo } = period;
-    const periodFilter = sql`${dateFrom ? sql`AND date >= ${dateFrom}` : sql``} ${dateTo ? sql`AND date <= ${dateTo}` : sql``}`;
-    const totals = (await sql`
-      SELECT
-        (SELECT COUNT(*) FROM inventory) AS inventory_count,
-        (SELECT COALESCE(SUM(quantity), 0) FROM inventory) AS inventory_units,
-        (SELECT COALESCE(SUM(quantity * value), 0) FROM inventory) AS inventory_value,
-        (SELECT COUNT(*) FROM custody WHERE status = 'active') AS custody_count,
-        (SELECT COALESCE(SUM(value), 0) FROM custody WHERE status = 'active') AS custody_value,
-        (SELECT COUNT(*) FROM requests WHERE status = 'pending') AS pending_requests,
-        (SELECT COUNT(*) FROM inventory i
-          WHERE i.quantity <= i.minimum
-            AND NOT EXISTS (SELECT 1 FROM custody c WHERE c.inventory_id = i.id AND c.status = 'active')) AS low_stock,
-        (SELECT COALESCE(SUM(quantity), 0) FROM movements WHERE type = 'exit' ${periodFilter}) AS consumed
-    `)[0];
-    const consumption = await sql`
-      SELECT item, COALESCE(SUM(quantity), 0) AS quantity
-      FROM movements WHERE type = 'exit' ${periodFilter}
-      GROUP BY item ORDER BY quantity DESC
-    `;
-    const holders = await sql`
-      SELECT holder, COUNT(*) AS quantity, COALESCE(SUM(value), 0) AS value
-      FROM custody WHERE status = 'active'
-      GROUP BY holder ORDER BY value DESC
-    `;
-    const activeCustody = await sql`
-      SELECT id, holder, item, code, value, expected FROM custody WHERE status = 'active' ORDER BY id DESC
-    `;
-    const inventory = await sql`
-      SELECT id, name, code, category, quantity, minimum, value,
-        EXISTS (SELECT 1 FROM custody c WHERE c.inventory_id = inventory.id AND c.status = 'active') AS in_custody
-      FROM inventory ORDER BY name ASC
-    `;
-    res.json({
-      totals: {
-        inventoryCount: Number(totals.inventory_count),
-        inventoryUnits: Number(totals.inventory_units),
-        inventoryValue: Number(totals.inventory_value),
-        custodyCount: Number(totals.custody_count),
-        custodyValue: Number(totals.custody_value),
-        pendingRequests: Number(totals.pending_requests),
-        lowStock: Number(totals.low_stock),
-        consumed: Number(totals.consumed),
-      },
-      consumption: consumption.map((row) => ({ item: row.item, quantity: Number(row.quantity) })),
-      holders: holders.map((row) => ({ holder: row.holder, quantity: Number(row.quantity), value: Number(row.value) })),
-      activeCustody,
-      inventory,
+    const data = await loadSummary(period);
+    res.json(data);
+  } catch (err) { handleRouteError(err, req, res); }
+});
+
+router.get('/api/reports/pdf', authMiddleware, reportRoles, async (req, res) => {
+  try {
+    const period = parsePeriod(req, res);
+    if (period.invalid) return;
+    const report = await loadSummary(period);
+    const rows = buildManagementReportRows(report, req.user.name);
+    streamLetterheadPdf(res, {
+      filename: `relatorio-patrimonial-${new Date().toISOString().slice(0, 10)}.pdf`,
+      title: 'RELATÓRIO GERENCIAL',
+      subtitle: 'MATERIAIS E PATRIMÔNIO - DANIEL FREDERIGHI ADVOGADOS ASSOCIADOS',
+      rows,
     });
   } catch (err) { handleRouteError(err, req, res); }
 });

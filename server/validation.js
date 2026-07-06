@@ -4,7 +4,10 @@ import {
   EMAIL_REGEX,
   DATE_REGEX,
   VALIDATION_LIMITS,
+  ACTIVITY_RETENTION_DAYS,
 } from './config.js';
+
+const ACTIVITY_CLEANUP_PROBABILITY = 0.01;
 
 export function validateString(value, maxLen = VALIDATION_LIMITS.string.defaultMax) {
   if (typeof value !== 'string' || !value.trim()) return 'Campo obrigatório';
@@ -12,10 +15,13 @@ export function validateString(value, maxLen = VALIDATION_LIMITS.string.defaultM
   return null;
 }
 
-export function validateNumber(value, min = VALIDATION_LIMITS.number.min) {
+export function validateNumber(value, min = VALIDATION_LIMITS.number.min, options = {}) {
+  const { integer = false, max } = options;
   const num = Number(value);
-  if (isNaN(num)) return 'Deve ser um número';
+  if (value === '' || value === null || !isFinite(num)) return 'Deve ser um número';
+  if (integer && !Number.isInteger(num)) return 'Deve ser um número inteiro';
   if (num < min) return `Mínimo de ${min}`;
+  if (max !== undefined && num > max) return `Máximo de ${max}`;
   return null;
 }
 
@@ -56,9 +62,9 @@ export function validateInventoryBody(req, res) {
   if ((err = validateString(code))) return validationError(res, 'code', err);
   if ((err = validateString(category))) return validationError(res, 'category', err);
   if ((err = validateString(location))) return validationError(res, 'location', err);
-  if (quantity !== undefined && (err = validateNumber(quantity))) return validationError(res, 'quantity', err);
-  if (minimum !== undefined && (err = validateNumber(minimum))) return validationError(res, 'minimum', err);
-  if (value !== undefined && (err = validateNumber(value))) return validationError(res, 'value', err);
+  if (quantity !== undefined && (err = validateNumber(quantity, 0, { integer: true, max: VALIDATION_LIMITS.number.maxInteger }))) return validationError(res, 'quantity', err);
+  if (minimum !== undefined && (err = validateNumber(minimum, 0, { integer: true, max: VALIDATION_LIMITS.number.maxInteger }))) return validationError(res, 'minimum', err);
+  if (value !== undefined && (err = validateNumber(value, 0, { max: VALIDATION_LIMITS.number.maxCurrency }))) return validationError(res, 'value', err);
   return null;
 }
 
@@ -67,5 +73,14 @@ export async function logActivity(text, detail, req) {
     await sql`INSERT INTO activity (text, detail, date) VALUES (${text}, ${detail}, NOW())`;
   } catch (err) {
     logError('activity_log_failed', { requestId: req?.requestId, error: serializeError(err) });
+    return;
+  }
+
+  if (Math.random() < ACTIVITY_CLEANUP_PROBABILITY) {
+    try {
+      await sql`DELETE FROM activity WHERE date < NOW() - (${ACTIVITY_RETENTION_DAYS} * INTERVAL '1 day')`;
+    } catch (err) {
+      logError('activity_retention_cleanup_failed', { error: serializeError(err) });
+    }
   }
 }

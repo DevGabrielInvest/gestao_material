@@ -8,6 +8,7 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "test": "NODE_ENV=test node --test",
+    "test:cleanup": "node server/testCleanup.js",
     "seed": "node server/seed.js",
     "schema": "node server/migrate.js"
   },
@@ -19,6 +20,7 @@
     "express-rate-limit": "^8.5.2",
     "helmet": "^8.2.0",
     "jsonwebtoken": "^9.0.2",
+    "pdfkit": "^0.19.1",
     "postgres": "^3.4.5"
   }
 }

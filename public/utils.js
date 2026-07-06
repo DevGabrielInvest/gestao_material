@@ -30,7 +30,8 @@ document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icons[
 const roleLabels = { admin: 'Administrador', manager: 'Gestor', requester: 'Solicitante', viewer: 'Somente consulta' };
 const $ = (selector) => document.querySelector(selector);
 const money = (value) => Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-const dateLabel = (value) => value ? new Date(`${value}T12:00:00`).toLocaleDateString('pt-BR') : '—';
+const dateOnly = (value) => String(value ?? '').slice(0, 10);
+const dateLabel = (value) => value ? new Date(`${dateOnly(value)}T12:00:00`).toLocaleDateString('pt-BR') : '—';
 const initials = (name) => name.split(' ').slice(0, 2).map((part) => part[0]).join('').toUpperCase();
 const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => ({
   '&': '&amp;',
@@ -39,7 +40,7 @@ const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (char) => (
   "'": '&#39;',
   '"': '&quot;',
 }[char]));
-const isOverdue = (record) => record.status === 'active' && new Date(`${record.expected}T23:59:59`) < new Date();
+const isOverdue = (record) => record.status === 'active' && new Date(`${dateOnly(record.expected)}T23:59:59`) < new Date();
 
 const VALIDATION_RULES = {
   name: { required: true, maxLen: 255, label: 'Nome' },
@@ -59,9 +60,9 @@ const VALIDATION_RULES = {
   responsible: { required: true, maxLen: 255, label: 'Responsável' },
   email: { required: true, pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, label: 'E-mail' },
   password: { required: true, minLen: 8, label: 'Senha' },
-  quantity: { required: true, type: 'number', min: 1, label: 'Quantidade' },
-  minimum: { required: true, type: 'number', min: 0, label: 'Estoque mínimo' },
-  value: { required: false, type: 'number', min: 0, label: 'Valor' },
+  quantity: { required: true, type: 'number', min: 1, max: 1_000_000, integer: true, label: 'Quantidade' },
+  minimum: { required: true, type: 'number', min: 0, max: 1_000_000, integer: true, label: 'Estoque mínimo' },
+  value: { required: false, type: 'number', min: 0, max: 99_999_999.99, label: 'Valor' },
   priority: { required: false, enum: ['Normal', 'Alta', 'Urgente'], label: 'Prioridade' },
   type: { required: true, enum: ['entry', 'exit'], label: 'Tipo' },
   date: { required: true, pattern: /^\d{4}-\d{2}-\d{2}$/, label: 'Data' },
@@ -82,7 +83,9 @@ function validateField(name, value) {
   if (rule.type === 'number') {
     const num = Number(val);
     if (isNaN(num)) return `${rule.label} deve ser um número`;
+    if (rule.integer && !Number.isInteger(num)) return `${rule.label} deve ser um número inteiro`;
     if (rule.min !== undefined && num < rule.min) return `${rule.label} deve ser >= ${rule.min}`;
+    if (rule.max !== undefined && num > rule.max) return `${rule.label} deve ser <= ${rule.max}`;
   }
   return null;
 }
@@ -193,173 +196,16 @@ async function exportFinancialCsv() {
   } catch (err) { showToast(err.message); }
 }
 
-function pdfSafe(value) {
-  return String(value ?? '').replace(/[–—•·]/g, '-').replace(/[^ -ÿ]/g, '');
-}
-
-function pdfEscape(value) {
-  return pdfSafe(value).replace(/([\\()])/g, '\\$1');
-}
-
-function wrapPdfText(value, max = 88) {
-  const words = pdfSafe(value).split(/\s+/);
-  const lines = [];
-  let line = '';
-  words.forEach((word) => {
-    if (`${line} ${word}`.trim().length > max && line) { lines.push(line); line = word; } else line = `${line} ${word}`.trim();
-  });
-  if (line) lines.push(line);
-  return lines;
-}
-
-function byteString(value) {
-  const bytes = new Uint8Array(value.length);
-  for (let index = 0; index < value.length; index += 1) bytes[index] = value.charCodeAt(index) & 0xff;
-  return bytes;
-}
-
-function joinBytes(parts) {
-  const result = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
-  let offset = 0;
-  parts.forEach((part) => { result.set(part, offset); offset += part.length; });
-  return result;
-}
-
-function loadLetterheadLogo() {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 1189; canvas.height = 305;
-      const context = canvas.getContext('2d');
-      context.fillStyle = '#111111'; context.fillRect(0, 0, canvas.width, canvas.height);
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      const binary = atob(canvas.toDataURL('image/jpeg', 0.92).split(',')[1]);
-      resolve(byteString(binary));
-    };
-    image.onerror = reject;
-    image.src = 'logo DF nova.png';
-  });
-}
-
-async function downloadPdf(filename, title, subtitle, rows) {
-  const normalized = [];
-  rows.forEach((row) => {
-    if (row.spacer) { normalized.push({ spacer: true, height: row.height || 8 }); return; }
-    wrapPdfText(row.text, row.heading ? 72 : 92).forEach((text) => normalized.push({ ...row, text }));
-  });
-  const pages = [[]];
-  let used = 0;
-  normalized.forEach((row) => {
-    const height = row.spacer ? row.height : row.heading ? 23 : 14;
-    if (used + height > 560) { pages.push([]); used = 0; }
-    pages.at(-1).push(row); used += height;
-  });
-
-  const logoBytes = await loadLetterheadLogo();
-  const objects = [];
-  const pageRefs = pages.map((_, index) => `${6 + index * 2} 0 R`).join(' ');
-  objects[1] = '<< /Type /Catalog /Pages 2 0 R >>';
-  objects[2] = `<< /Type /Pages /Kids [${pageRefs}] /Count ${pages.length} >>`;
-  objects[3] = '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>';
-  objects[4] = '<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>';
-  objects[5] = { dictionary: `<< /Type /XObject /Subtype /Image /Width 1189 /Height 305 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logoBytes.length} >>`, stream: logoBytes };
-
-  pages.forEach((page, index) => {
-    const pageObject = 6 + index * 2;
-    const contentObject = pageObject + 1;
-    let y = 696;
-    const commands = [
-      'q 0.067 0.067 0.067 rg 0 754 595 88 re f Q',
-      'q 0.78 0.59 0.25 rg 0 749 595 5 re f Q',
-      'q 280 0 0 72 38 762 cm /Logo Do Q',
-      `BT /F2 16 Tf 0.10 0.10 0.10 rg 48 724 Td (${pdfEscape(title)}) Tj ET`,
-      `BT /F1 8 Tf 0.42 0.42 0.42 rg 48 709 Td (${pdfEscape(subtitle)}) Tj ET`,
-    ];
-    page.forEach((row) => {
-      if (row.spacer) { y -= row.height; return; }
-      const font = row.heading || row.bold ? 'F2' : 'F1';
-      const size = row.heading ? 12 : row.bold ? 9.5 : 9;
-      const color = row.heading ? '0.72 0.46 0.15' : '0.15 0.15 0.15';
-      commands.push(`BT /${font} ${size} Tf ${color} rg 48 ${y} Td (${pdfEscape(row.text)}) Tj ET`);
-      y -= row.heading ? 23 : 14;
-    });
-    commands.push('q 0.78 0.59 0.25 rg 0 90 595 2 re f Q');
-    commands.push('BT /F2 7 Tf 0.12 0.12 0.12 rg 48 71 Td (BELO HORIZONTE - MG) Tj ET');
-    commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 48 59 Td (+55 31 3201-2151 | R. Felipe dos Santos, 521 - Lourdes) Tj ET');
-    commands.push('BT /F2 7 Tf 0.12 0.12 0.12 rg 225 71 Td (SÃO PAULO - SP) Tj ET');
-    commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 225 59 Td (+55 11 2770-1304 | Av. Cidade Jardim, 377 - Itaim Bibi) Tj ET');
-    commands.push('BT /F2 7 Tf 0.12 0.12 0.12 rg 432 71 Td (BRASÍLIA - DF) Tj ET');
-    commands.push('BT /F1 6.5 Tf 0.34 0.34 0.34 rg 432 59 Td (+55 61 3550-7517 | SHN, Quadra 02) Tj ET');
-    commands.push('BT /F1 6 Tf 0.5 0.5 0.5 rg 48 38 Td (Documento gerado pelo sistema de gestão patrimonial) Tj ET');
-    commands.push(`BT /F1 6 Tf 0.5 0.5 0.5 rg 500 38 Td (Página ${index + 1} de ${pages.length}) Tj ET`);
-    const stream = commands.join('\n');
-    objects[pageObject] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> /XObject << /Logo 5 0 R >> >> /Contents ${contentObject} 0 R >>`;
-    objects[contentObject] = { dictionary: `<< /Length ${stream.length} >>`, stream: byteString(stream) };
-  });
-
-  const parts = [byteString('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')];
-  const offsets = [0];
-  let pdfLength = parts[0].length;
-  for (let index = 1; index < objects.length; index += 1) {
-    offsets[index] = pdfLength;
-    const object = objects[index];
-    const bytes = typeof object === 'string'
-      ? byteString(`${index} 0 obj\n${object}\nendobj\n`)
-      : joinBytes([byteString(`${index} 0 obj\n${object.dictionary}\nstream\n`), object.stream, byteString('\nendstream\nendobj\n')]);
-    parts.push(bytes); pdfLength += bytes.length;
-  }
-  let trailer = `xref\n0 ${objects.length}\n0000000000 65535 f \n`;
-  for (let index = 1; index < objects.length; index += 1) trailer += `${String(offsets[index]).padStart(10, '0')} 00000 n \n`;
-  trailer += `trailer\n<< /Size ${objects.length} /Root 1 0 R >>\nstartxref\n${pdfLength}\n%%EOF`;
-  parts.push(byteString(trailer));
-  const bytes = joinBytes(parts);
-  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
-  const link = document.createElement('a');
-  link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1500);
-}
-
 async function generateCustodyPdf(id) {
-  const record = state.custody.find((item) => item.id === id);
-  if (!record) return;
-  const rows = [
-    { heading: true, text: 'TERMO DE RESPONSABILIDADE E GUARDA DE EQUIPAMENTO' },
-    { text: `Termo: TER-${record.code}-${record.id}`, bold: true },
-    { text: `Emitido em: ${new Date().toLocaleString('pt-BR')} por ${currentUser.name}` }, { spacer: true },
-    { heading: true, text: 'IDENTIFICAÇÃO DO BEM' },
-    { text: `Equipamento: ${record.item}` }, { text: `Código patrimonial: ${record.code}` }, { text: `Valor registrado: ${money(record.value)}` }, { spacer: true },
-    { heading: true, text: 'RESPONSÁVEL PELA POSSE' },
-    { text: `Nome: ${record.holder}` }, { text: `Setor: ${record.department}` }, { text: `Data da retirada: ${dateLabel(record.checkout)}` }, { text: `Devolução prevista: ${dateLabel(record.expected)}` }, { text: `Situação: ${record.status === 'active' ? 'Em posse' : `Devolvido em ${dateLabel(record.returned)}`}` }, { spacer: true },
-    { heading: true, text: 'DECLARAÇÃO DE RESPONSABILIDADE' },
-    { text: 'Declaro que recebi o bem acima identificado nas condições registradas neste termo, comprometendo-me a utilizá-lo exclusivamente para atividades profissionais, zelar por sua conservação e comunicar imediatamente qualquer dano, perda ou incidente.' },
-    { text: 'Comprometo-me ainda a devolver o equipamento e seus acessórios na data acordada ou quando solicitado pelo escritório, no mesmo estado de conservação em que foram entregues, ressalvado o desgaste natural de uso.' },
-    { text: `Observações de entrega: ${record.notes || 'Nenhuma observação registrada.'}` },
-    { spacer: true, height: 24 }, { text: '________________________________________        ________________________________________' },
-    { text: `Responsável pela posse: ${record.holder}    |    Administração DFA` },
-  ];
-  await downloadPdf(`termo-${record.code.toLowerCase()}-${record.id}.pdf`, 'TERMO DE RESPONSABILIDADE', 'GESTÃO PATRIMONIAL - DANIEL FREDERIGHI ADVOGADOS ASSOCIADOS', rows);
-  showToast('Termo de responsabilidade gerado em PDF.');
+  try {
+    await apiDownload(`/custody/${id}/pdf`, `termo-${id}.pdf`);
+    showToast('Termo de responsabilidade gerado em PDF.');
+  } catch (err) { showToast(err.message); }
 }
 
 async function exportReportsPdf() {
-  let report;
   try {
-    report = await apiGet('/reports/summary');
-  } catch (err) { showToast(err.message); return; }
-  const totals = report.totals;
-  const rows = [
-    { heading: true, text: 'RELATÓRIO GERENCIAL DE MATERIAIS E PATRIMÔNIO' },
-    { text: `Emitido em: ${new Date().toLocaleString('pt-BR')} por ${currentUser.name}` }, { spacer: true },
-    { heading: true, text: 'RESUMO EXECUTIVO' },
-    { text: `Itens cadastrados: ${totals.inventoryCount}` }, { text: `Valor estimado do inventário: ${money(totals.inventoryValue)}` }, { text: `Bens atualmente em posse: ${totals.custodyCount}` }, { text: `Solicitações pendentes: ${totals.pendingRequests}` }, { spacer: true },
-    { heading: true, text: 'CONSUMO POR ITEM' },
-    ...report.consumption.map((item) => ({ text: `${item.item}: ${item.quantity} unidade(s)` })), { spacer: true },
-    { heading: true, text: 'PATRIMÔNIO SOB RESPONSABILIDADE' },
-    ...report.activeCustody.map((item) => ({ text: `${item.holder} - ${item.item} (${item.code}) - ${money(item.value)} - devolver até ${dateLabel(String(item.expected).slice(0, 10))}` })), { spacer: true },
-    { heading: true, text: 'POSIÇÃO DO INVENTÁRIO' },
-    ...report.inventory.map((item) => ({ text: `${item.code} - ${item.name} - ${item.quantity} un. - mínimo ${item.minimum} - total ${money(item.quantity * item.value)}${item.in_custody ? ' - EM POSSE' : item.quantity <= item.minimum ? ' - REPOSIÇÃO NECESSÁRIA' : ''}` })),
-  ];
-  await downloadPdf(`relatorio-patrimonial-${new Date().toISOString().slice(0, 10)}.pdf`, 'RELATÓRIO GERENCIAL', 'MATERIAIS E PATRIMÔNIO - DANIEL FREDERIGHI ADVOGADOS ASSOCIADOS', rows);
-  showToast('Relatório gerencial exportado em PDF.');
+    await apiDownload('/reports/pdf', `relatorio-patrimonial-${new Date().toISOString().slice(0, 10)}.pdf`);
+    showToast('Relatório gerencial exportado em PDF.');
+  } catch (err) { showToast(err.message); }
 }

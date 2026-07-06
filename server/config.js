@@ -17,7 +17,18 @@ function requireEnv(name) {
 export const PORT = parseInt(process.env.PORT || '3000', 10);
 export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const JWT_SECRET = requireEnv('JWT_SECRET');
-export const DATABASE_URL = requireEnv('DATABASE_URL');
+
+export const DATABASE_URL = (() => {
+  if (NODE_ENV !== 'test') return requireEnv('DATABASE_URL');
+  if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
+  console.warn(JSON.stringify({
+    timestamp: new Date().toISOString(),
+    level: 'warn',
+    event: 'tests_using_shared_database',
+    message: 'TEST_DATABASE_URL não definida — os testes de integração vão gravar e apagar dados em DATABASE_URL (o mesmo banco usado pela aplicação). Configure TEST_DATABASE_URL (ex.: um branch separado no Neon) para isolar os testes.',
+  }));
+  return requireEnv('DATABASE_URL');
+})();
 
 export const DB_CONFIG = {
   ssl: 'require',
@@ -52,8 +63,10 @@ export const RATE_LIMIT = {
 
 export const VALIDATION_LIMITS = {
   string: { defaultMax: 255, reasonMax: 2000, notesMax: 2000 },
-  number: { min: 0 },
+  number: { min: 0, maxInteger: 1_000_000, maxCurrency: 99_999_999.99 },
 };
+
+export const ACTIVITY_RETENTION_DAYS = 180;
 
 export const JWT_EXPIRY = '24h';
 export const REFRESH_TOKEN_EXPIRY = '7d';

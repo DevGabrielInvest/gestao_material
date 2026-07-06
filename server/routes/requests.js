@@ -9,6 +9,7 @@ import {
 import { notifyChange } from '../events.js';
 
 const router = Router();
+const { maxInteger } = VALIDATION_LIMITS.number;
 
 router.get('/api/requests', authMiddleware, async (req, res) => {
   try {
@@ -30,9 +31,17 @@ router.get('/api/requests', authMiddleware, async (req, res) => {
     const countResult = await sql`SELECT COUNT(*) as count FROM requests ${where}`;
     const total = Number(countResult[0].count);
     const requests = await sql`SELECT * FROM requests ${where} ORDER BY id DESC LIMIT ${limit} OFFSET ${offset}`;
-    for (const r of requests) {
-      r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
-    }
+    const ids = requests.map((r) => r.id);
+    const historyRows = ids.length
+      ? await sql`SELECT * FROM request_history WHERE request_id IN ${sql(ids)} ORDER BY id ASC`
+      : [];
+    const historyByRequest = new Map();
+    historyRows.forEach((row) => {
+      const list = historyByRequest.get(row.request_id) || [];
+      list.push(row);
+      historyByRequest.set(row.request_id, list);
+    });
+    requests.forEach((r) => { r.history = historyByRequest.get(r.id) || []; });
     res.json({ data: requests, total, limit, offset, hasMore: offset + limit < total });
   } catch (err) { handleRouteError(err, req, res); }
 });
@@ -45,7 +54,7 @@ router.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 
     let err;
     if ((err = validateString(item))) return validationError(res, 'item', err);
     if ((err = validateString(department))) return validationError(res, 'department', err);
-    if ((err = validateNumber(quantity, 1))) return validationError(res, 'quantity', err);
+    if ((err = validateNumber(quantity, 1, { integer: true, max: maxInteger }))) return validationError(res, 'quantity', err);
     if ((err = validateString(reason, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'reason', err);
     if (priority && (err = validateEnum(priority, VALID_PRIORITIES))) return validationError(res, 'priority', err);
     const now = new Date();

@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   RATE_LIMIT,
   HELMET_CONFIG,
@@ -35,12 +37,15 @@ const apiLimiter = NODE_ENV === 'test'
     message: { error: RATE_LIMIT.api.message },
   });
 
+const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
+
 const app = express();
+app.set('trust proxy', 1);
 app.use(requestIdMiddleware);
 app.use(helmet(HELMET_CONFIG));
 app.use(cors(CORS_OPTIONS));
 app.use(express.json());
-app.use(express.static('public', { index: 'index.html' }));
+app.use(express.static(publicDir, { index: 'index.html' }));
 app.use('/api', requestLoggingMiddleware);
 app.use('/api', apiLimiter);
 

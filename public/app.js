@@ -391,6 +391,7 @@ async function startSession(user) {
 }
 
 function endSession() {
+  disconnectSSE();
   clearToken();
   currentUser = null;
   state = {
@@ -510,6 +511,9 @@ $('#logoutButton').addEventListener('click', endSession);
 $('#todayLabel').textContent = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' }).format(new Date());
 
 let eventSource = null;
+let sseReconnectTimer = null;
+let sseReconnectAttempts = 0;
+let sseIntentionalDisconnect = false;
 
 const refreshFromServer = debounce(async () => {
   await loadState();
@@ -517,18 +521,36 @@ const refreshFromServer = debounce(async () => {
   if ($('#dashboardPage').classList.contains('active')) window.requestAnimationFrame(renderCharts);
 }, 400);
 
+function scheduleSSEReconnect() {
+  if (sseIntentionalDisconnect) return;
+  clearTimeout(sseReconnectTimer);
+  sseReconnectAttempts += 1;
+  const delay = Math.min(1000 * 2 ** (sseReconnectAttempts - 1), 30000);
+  sseReconnectTimer = window.setTimeout(connectSSE, delay);
+}
+
 function connectSSE() {
+  clearTimeout(sseReconnectTimer);
+  sseIntentionalDisconnect = false;
   if (eventSource) eventSource.close();
   const token = getToken();
   if (!token) return;
   eventSource = new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
+  eventSource.addEventListener('open', () => { sseReconnectAttempts = 0; });
   ['inventory', 'requests', 'custody', 'movements'].forEach((event) => {
     eventSource.addEventListener(event, refreshFromServer);
   });
   eventSource.addEventListener('error', () => {
-    eventSource.close();
+    if (eventSource) eventSource.close();
     eventSource = null;
+    scheduleSSEReconnect();
   });
+}
+
+function disconnectSSE() {
+  sseIntentionalDisconnect = true;
+  clearTimeout(sseReconnectTimer);
+  if (eventSource) { eventSource.close(); eventSource = null; }
 }
 
 const savedUser = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
