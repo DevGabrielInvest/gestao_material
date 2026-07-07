@@ -4,3 +4,4 @@ output/pdf/
 output/playwright/
 .playwright-cli/
 tmp/
+vulnerabilidades achadas codex.md
