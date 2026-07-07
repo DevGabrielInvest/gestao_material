@@ -16,18 +16,37 @@ function requireEnv(name) {
 
 export const PORT = parseInt(process.env.PORT || '3000', 10);
 export const NODE_ENV = process.env.NODE_ENV || 'development';
-export const JWT_SECRET = requireEnv('JWT_SECRET');
+export const JWT_SECRET = (() => {
+  const value = requireEnv('JWT_SECRET');
+  const obviousPlaceholders = new Set([
+    'uma-chave-segura-aqui',
+    'changeme',
+    'change-me',
+    'secret',
+    'jwt-secret',
+  ]);
+  if (Buffer.byteLength(value, 'utf8') < 32 || obviousPlaceholders.has(value.toLowerCase())) {
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      event: 'startup_weak_jwt_secret',
+      message: 'JWT_SECRET deve ter pelo menos 32 bytes aleatórios e não pode ser placeholder.',
+    }));
+    process.exit(1);
+  }
+  return value;
+})();
 
 export const DATABASE_URL = (() => {
   if (NODE_ENV !== 'test') return requireEnv('DATABASE_URL');
   if (process.env.TEST_DATABASE_URL) return process.env.TEST_DATABASE_URL;
-  console.warn(JSON.stringify({
+  console.error(JSON.stringify({
     timestamp: new Date().toISOString(),
-    level: 'warn',
-    event: 'tests_using_shared_database',
-    message: 'TEST_DATABASE_URL não definida — os testes de integração vão gravar e apagar dados em DATABASE_URL (o mesmo banco usado pela aplicação). Configure TEST_DATABASE_URL (ex.: um branch separado no Neon) para isolar os testes.',
+    level: 'error',
+    event: 'test_database_url_required',
+    message: 'TEST_DATABASE_URL é obrigatória em NODE_ENV=test para impedir escrita no banco da aplicação.',
   }));
-  return requireEnv('DATABASE_URL');
+  process.exit(1);
 })();
 
 export const DB_CONFIG = {
@@ -70,6 +89,15 @@ export const ACTIVITY_RETENTION_DAYS = 180;
 
 export const JWT_EXPIRY = '24h';
 export const REFRESH_TOKEN_EXPIRY = '7d';
+export const REFRESH_TOKEN_TTL_DAYS = 7;
+export const SSE_TOKEN_EXPIRY = '60s';
+export const JWT_ISSUER = 'gestao-patrimonial';
+export const JWT_AUDIENCE = {
+  access: 'gestao-patrimonial:access',
+  refresh: 'gestao-patrimonial:refresh',
+  sse: 'gestao-patrimonial:sse',
+};
+export const JWT_ALGORITHMS = ['HS256'];
 
 export const HELMET_CONFIG = {
   contentSecurityPolicy: {

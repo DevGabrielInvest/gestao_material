@@ -27,6 +27,12 @@ test('GET /api/custody without auth returns 401', async () => {
   assert.equal(status, 401);
 });
 
+test('GET /api/custody rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('GET', '/api/custody', { token });
+  assert.equal(status, 403);
+});
+
 test('POST /api/custody creates custody term as admin', async () => {
   const token = await adminToken();
   const inv = await api('GET', '/api/inventory?limit=1', { token });

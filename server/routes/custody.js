@@ -3,11 +3,24 @@ import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALIDATION_LIMITS } from '../config.js';
-import { validateString, validateNumber, validateDate, validationError, parsePositiveId, logActivity, todayLocal } from '../validation.js';
+import {
+  INVALID_QUERY,
+  validateString,
+  validateNumber,
+  validateDate,
+  validationError,
+  optionalQueryDate,
+  optionalQueryEnum,
+  optionalQueryString,
+  parsePositiveId,
+  logActivity,
+  todayLocal,
+} from '../validation.js';
 import { notifyChange } from '../events.js';
 import { streamLetterheadPdf } from '../pdf.js';
 
 const router = Router();
+const readRoles = roleMiddleware('admin', 'manager', 'viewer');
 
 function moneyLabel(value) {
   return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -26,11 +39,15 @@ function dateLabel(value) {
   return `${d}/${m}/${y}`;
 }
 
-router.get('/api/custody', authMiddleware, async (req, res) => {
+router.get('/api/custody', authMiddleware, readRoles, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.custody.defaultLimit, 1), PAGINATION.custody.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const { search, status: statusFilter, dateFrom, dateTo } = req.query;
+    const search = optionalQueryString(req, res, 'search');
+    const statusFilter = optionalQueryEnum(req, res, 'status', ['active', 'returned']);
+    const dateFrom = optionalQueryDate(req, res, 'dateFrom');
+    const dateTo = optionalQueryDate(req, res, 'dateTo');
+    if ([search, statusFilter, dateFrom, dateTo].includes(INVALID_QUERY)) return;
     const filters = [];
     if (search) filters.push(sql`(item ILIKE ${'%' + search + '%'} OR holder ILIKE ${'%' + search + '%'} OR department ILIKE ${'%' + search + '%'})`);
     if (statusFilter && ['active', 'returned'].includes(statusFilter)) {

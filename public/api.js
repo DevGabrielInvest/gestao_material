@@ -70,6 +70,11 @@ const apiPost = (path, body) => api(path, { method: 'POST', body: JSON.stringify
 const apiPut = (path, body) => api(path, { method: 'PUT', body: JSON.stringify(body) });
 const apiDelete = (path) => api(path, { method: 'DELETE' });
 
+async function fetchSseToken() {
+  const data = await apiPost('/events/token', {});
+  return data.token;
+}
+
 async function apiDownload(path, fallbackName) {
   const token = getToken();
   let res = await fetch(`/api${path}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
@@ -134,15 +139,19 @@ function applyListResponse(section, response) {
 
 async function loadState() {
   try {
-    const results = await Promise.all([
-      apiGet(`/inventory?limit=100&offset=0${sectionQuery('inventory')}`),
-      apiGet('/requests?limit=50&offset=0'),
-      apiGet(`/custody?limit=50&offset=0${sectionQuery('custody')}`),
-      apiGet(`/movements?limit=50&offset=0${sectionQuery('movements')}`),
-      apiGet('/activity?limit=20&offset=0'),
-      apiGet('/dashboard'),
-      apiGet('/inventory/categories'),
-    ]);
+    const requesterOnly = currentUser?.role === 'requester';
+    const emptyList = { data: [], total: 0, limit: 0, offset: 0, hasMore: false };
+    const results = requesterOnly
+      ? [emptyList, await apiGet('/requests?limit=50&offset=0'), emptyList, emptyList, emptyList, null, []]
+      : await Promise.all([
+        apiGet(`/inventory?limit=100&offset=0${sectionQuery('inventory')}`),
+        apiGet('/requests?limit=50&offset=0'),
+        apiGet(`/custody?limit=50&offset=0${sectionQuery('custody')}`),
+        apiGet(`/movements?limit=50&offset=0${sectionQuery('movements')}`),
+        apiGet('/activity?limit=20&offset=0'),
+        apiGet('/dashboard'),
+        apiGet('/inventory/categories'),
+      ]);
     applyListResponse('inventory', results[0]);
     applyListResponse('requests', results[1]);
     applyListResponse('custody', results[2]);
@@ -159,6 +168,7 @@ async function loadState() {
 const reloadSeq = {};
 
 async function reloadSection(section) {
+  if (currentUser?.role === 'requester' && section !== 'requests') return;
   const seq = (reloadSeq[section] || 0) + 1;
   reloadSeq[section] = seq;
   try {
@@ -176,6 +186,7 @@ async function reloadSection(section) {
 }
 
 async function loadMore(section) {
+  if (currentUser?.role === 'requester' && section !== 'requests') return;
   try {
     const pagInfo = state.pagination[section];
     if (!pagInfo || !pagInfo.hasMore) return;

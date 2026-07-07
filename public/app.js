@@ -391,6 +391,14 @@ async function startSession(user) {
 }
 
 function endSession() {
+  const refreshToken = getRefreshToken();
+  if (refreshToken) {
+    fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    }).catch(() => {});
+  }
   disconnectSSE();
   clearToken();
   currentUser = null;
@@ -545,7 +553,9 @@ async function connectSSE() {
   if (tokenExpiresSoon(token)) {
     try { token = await refreshAuth(); } catch { return; }
   }
-  eventSource = new EventSource(`/api/events?token=${encodeURIComponent(token)}`);
+  let sseToken;
+  try { sseToken = await fetchSseToken(); } catch { scheduleSSEReconnect(); return; }
+  eventSource = new EventSource(`/api/events?sid=${encodeURIComponent(sseToken)}`);
   eventSource.addEventListener('open', () => { sseReconnectAttempts = 0; });
   ['inventory', 'requests', 'custody', 'movements'].forEach((event) => {
     eventSource.addEventListener(event, refreshFromServer);

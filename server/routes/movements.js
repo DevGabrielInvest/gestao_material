@@ -3,17 +3,33 @@ import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION, VALID_MOVEMENT_TYPES, VALIDATION_LIMITS } from '../config.js';
-import { validateNumber, validateEnum, validateDate, validationError, parsePositiveId, logActivity } from '../validation.js';
+import {
+  INVALID_QUERY,
+  validateNumber,
+  validateEnum,
+  validateDate,
+  validationError,
+  optionalQueryDate,
+  optionalQueryEnum,
+  optionalQueryString,
+  parsePositiveId,
+  logActivity,
+} from '../validation.js';
 import { notifyChange } from '../events.js';
 
 const router = Router();
 const { maxInteger } = VALIDATION_LIMITS.number;
+const readRoles = roleMiddleware('admin', 'manager', 'viewer');
 
-router.get('/api/movements', authMiddleware, async (req, res) => {
+router.get('/api/movements', authMiddleware, readRoles, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.movements.defaultLimit, 1), PAGINATION.movements.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const { search, type: typeFilter, dateFrom, dateTo } = req.query;
+    const search = optionalQueryString(req, res, 'search');
+    const typeFilter = optionalQueryEnum(req, res, 'type', ['entry', 'exit']);
+    const dateFrom = optionalQueryDate(req, res, 'dateFrom');
+    const dateTo = optionalQueryDate(req, res, 'dateTo');
+    if ([search, typeFilter, dateFrom, dateTo].includes(INVALID_QUERY)) return;
     const filters = [];
     if (search) filters.push(sql`(item ILIKE ${'%' + search + '%'} OR supplier ILIKE ${'%' + search + '%'} OR document ILIKE ${'%' + search + '%'} OR responsible ILIKE ${'%' + search + '%'})`);
     if (typeFilter && ['entry', 'exit'].includes(typeFilter)) {

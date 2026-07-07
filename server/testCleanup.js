@@ -2,16 +2,12 @@ import 'dotenv/config';
 import postgres from 'postgres';
 import { logInfo, logError, serializeError } from './logger.js';
 
-const databaseUrl = process.env.TEST_DATABASE_URL || process.env.DATABASE_URL;
+const databaseUrl = process.env.TEST_DATABASE_URL;
 if (!databaseUrl) {
-  logError('test_cleanup_missing_database_url');
-  process.exit(1);
-}
-
-if (!process.env.TEST_DATABASE_URL) {
-  logInfo('test_cleanup_using_shared_database', {
-    message: 'TEST_DATABASE_URL não definida — limpando diretamente em DATABASE_URL.',
+  logError('test_cleanup_missing_test_database_url', {
+    message: 'TEST_DATABASE_URL é obrigatória para impedir limpeza no banco da aplicação.',
   });
+  process.exit(1);
 }
 
 const sql = postgres(databaseUrl, { ssl: 'require' });

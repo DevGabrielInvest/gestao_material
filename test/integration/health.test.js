@@ -9,7 +9,5 @@ test('GET /api/health returns healthy status', async () => {
   const { status, data } = await api('GET', '/api/health');
   assert.equal(status, 200);
   assert.equal(data.ok, true);
-  assert.equal(data.status, 'healthy');
-  assert.match(data.timestamp, /^\d{4}-\d{2}-\d{2}T/);
-  assert.equal(typeof data.uptime, 'number');
+  assert.deepEqual(Object.keys(data), ['ok']);
 });

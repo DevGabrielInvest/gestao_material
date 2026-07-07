@@ -3,23 +3,35 @@ import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION } from '../config.js';
-import { validateInventoryBody, parsePositiveId, logActivity } from '../validation.js';
+import {
+  INVALID_QUERY,
+  validateInventoryBody,
+  optionalQueryEnum,
+  optionalQueryString,
+  parsePositiveId,
+  logActivity,
+} from '../validation.js';
 import { notifyChange } from '../events.js';
 
 const router = Router();
+const readRoles = roleMiddleware('admin', 'manager', 'viewer');
 
-router.get('/api/inventory/categories', authMiddleware, async (req, res) => {
+router.get('/api/inventory/categories', authMiddleware, readRoles, async (req, res) => {
   try {
     const rows = await sql`SELECT DISTINCT category FROM inventory ORDER BY category`;
     res.json(rows.map((row) => row.category));
   } catch (err) { handleRouteError(err, req, res); }
 });
 
-router.get('/api/inventory', authMiddleware, async (req, res) => {
+router.get('/api/inventory', authMiddleware, readRoles, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.inventory.defaultLimit, 1), PAGINATION.inventory.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const { search, category: catFilter, lowStock, status } = req.query;
+    const search = optionalQueryString(req, res, 'search');
+    const catFilter = optionalQueryString(req, res, 'category', 80);
+    const lowStock = optionalQueryEnum(req, res, 'lowStock', ['true', '1', 'false', '0']);
+    const status = optionalQueryEnum(req, res, 'status', ['custody', 'low', 'available']);
+    if ([search, catFilter, lowStock, status].includes(INVALID_QUERY)) return;
     const sort = ['name', 'code', 'category', 'location', 'quantity', 'minimum', 'value', 'id'].includes(req.query.sort) ? req.query.sort : 'id';
     const order = req.query.order === 'desc' ? sql`DESC` : sql`ASC`;
     const inActiveCustody = sql`EXISTS (SELECT 1 FROM custody c WHERE c.inventory_id = inventory.id AND c.status = 'active')`;

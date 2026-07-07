@@ -2,8 +2,14 @@ import { Router } from 'express';
 import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
-import { DATE_REGEX } from '../config.js';
-import { validationError } from '../validation.js';
+import { VALID_MOVEMENT_TYPES } from '../config.js';
+import {
+  INVALID_QUERY,
+  optionalQueryEnum,
+  optionalQueryString,
+  validateDate,
+  validationError,
+} from '../validation.js';
 import { streamLetterheadPdf } from '../pdf.js';
 
 const router = Router();
@@ -48,7 +54,10 @@ function movementCostCenter(movement, request = null) {
 function buildCsv(headers, rows, delimiter = ',') {
   const esc = (v) => {
     const s = String(v ?? '');
-    return (s.includes(delimiter) || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g, '""')}"` : s;
+    const neutralized = /^[\s]*[=+\-@]/.test(s) || /^[\t\r]/.test(s) ? `'${s}` : s;
+    return (neutralized.includes(delimiter) || neutralized.includes('"') || neutralized.includes('\n') || neutralized.includes('\r'))
+      ? `"${neutralized.replace(/"/g, '""')}"`
+      : neutralized;
   };
   return [headers, ...rows].map((row) => row.map(esc).join(delimiter)).join('\n');
 }
@@ -61,7 +70,7 @@ function sendCsv(res, filename, csv) {
 
 function parsePeriod(req, res) {
   const { dateFrom, dateTo } = req.query;
-  if ((dateFrom && !DATE_REGEX.test(dateFrom)) || (dateTo && !DATE_REGEX.test(dateTo))) {
+  if ((dateFrom && (typeof dateFrom !== 'string' || validateDate(dateFrom))) || (dateTo && (typeof dateTo !== 'string' || validateDate(dateTo)))) {
     validationError(res, 'period', 'Data inválida (use AAAA-MM-DD)');
     return { invalid: true };
   }
@@ -192,7 +201,9 @@ router.get('/api/reports/movements-csv', authMiddleware, reportRoles, async (req
     const period = parsePeriod(req, res);
     if (period.invalid) return;
     const { dateFrom, dateTo } = period;
-    const { search, type } = req.query;
+    const search = optionalQueryString(req, res, 'search');
+    const type = optionalQueryEnum(req, res, 'type', VALID_MOVEMENT_TYPES);
+    if ([search, type].includes(INVALID_QUERY)) return;
     const filters = [];
     if (search) filters.push(sql`(m.item ILIKE ${'%' + search + '%'} OR m.supplier ILIKE ${'%' + search + '%'} OR m.document ILIKE ${'%' + search + '%'} OR m.responsible ILIKE ${'%' + search + '%'})`);
     if (type && ['entry', 'exit'].includes(type)) filters.push(sql`m.type = ${type}`);

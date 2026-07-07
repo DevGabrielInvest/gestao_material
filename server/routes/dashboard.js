@@ -1,13 +1,14 @@
 import { Router } from 'express';
 import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
-import { authMiddleware } from '../middleware.js';
+import { authMiddleware, roleMiddleware } from '../middleware.js';
 import { PAGINATION } from '../config.js';
 import { getCached, setCache } from '../cache.js';
 
 const router = Router();
+const readRoles = roleMiddleware('admin', 'manager', 'viewer');
 
-router.get('/api/dashboard', authMiddleware, async (req, res) => {
+router.get('/api/dashboard', authMiddleware, readRoles, async (req, res) => {
   try {
     const cached = getCached('dashboard');
     if (cached) return res.json(cached);
@@ -55,7 +56,7 @@ router.get('/api/dashboard', authMiddleware, async (req, res) => {
   } catch (err) { handleRouteError(err, req, res); }
 });
 
-router.get('/api/activity', authMiddleware, async (req, res) => {
+router.get('/api/activity', authMiddleware, readRoles, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.activity.defaultLimit, 1), PAGINATION.activity.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);

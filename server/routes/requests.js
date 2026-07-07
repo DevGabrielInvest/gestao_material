@@ -2,9 +2,19 @@ import { Router } from 'express';
 import sql from '../db.js';
 import { handleRouteError } from '../logger.js';
 import { authMiddleware, roleMiddleware } from '../middleware.js';
-import { PAGINATION, VALID_PRIORITIES, VALIDATION_LIMITS } from '../config.js';
+import { PAGINATION, VALID_PRIORITIES, VALID_REQUEST_STATUS, VALIDATION_LIMITS } from '../config.js';
 import {
-  validateString, validateNumber, validateEnum, validationError, parsePositiveId, logActivity, todayLocal,
+  INVALID_QUERY,
+  validateString,
+  validateNumber,
+  validateEnum,
+  validationError,
+  optionalQueryDate,
+  optionalQueryEnum,
+  optionalQueryString,
+  parsePositiveId,
+  logActivity,
+  todayLocal,
 } from '../validation.js';
 import { notifyChange } from '../events.js';
 
@@ -15,14 +25,18 @@ router.get('/api/requests', authMiddleware, async (req, res) => {
   try {
     const limit = Math.min(Math.max(parseInt(req.query.limit) || PAGINATION.requests.defaultLimit, 1), PAGINATION.requests.maxLimit);
     const offset = Math.max(parseInt(req.query.offset) || 0, 0);
-    const { search, status: statusFilter, dateFrom, dateTo } = req.query;
+    const search = optionalQueryString(req, res, 'search');
+    const statusFilter = optionalQueryEnum(req, res, 'status', VALID_REQUEST_STATUS);
+    const dateFrom = optionalQueryDate(req, res, 'dateFrom');
+    const dateTo = optionalQueryDate(req, res, 'dateTo');
+    if ([search, statusFilter, dateFrom, dateTo].includes(INVALID_QUERY)) return;
     const filters = [];
     const isGlobal = ['admin', 'manager', 'viewer'].includes(req.user.role);
     if (!isGlobal) {
       filters.push(sql`(requester_email = ${req.user.email} OR requester = ${req.user.name})`);
     }
     if (search) filters.push(sql`(item ILIKE ${'%' + search + '%'} OR requester ILIKE ${'%' + search + '%'} OR department ILIKE ${'%' + search + '%'})`);
-    if (statusFilter && ['pending', 'approved', 'delivered', 'rejected'].includes(statusFilter)) {
+    if (statusFilter) {
       filters.push(sql`status = ${statusFilter}`);
     }
     if (dateFrom) filters.push(sql`date >= ${dateFrom}`);
@@ -60,16 +74,18 @@ router.post('/api/requests', authMiddleware, roleMiddleware('admin', 'manager', 
     const now = new Date();
     const inv = await sql`SELECT id FROM inventory WHERE LOWER(name) = ${item.toLowerCase()} LIMIT 1`;
     const inventoryId = inv.length ? inv[0].id : null;
-    const requests = await sql`
-      INSERT INTO requests (item, inventory_id, requester, department, quantity, reason, priority, date, requester_email)
-      VALUES (${item}, ${inventoryId}, ${requester}, ${department}, ${quantity}, ${reason}, ${priority || 'Normal'}, ${todayLocal()}, ${req.user.email})
-      RETURNING *
-    `;
-    const created = requests[0];
-    await sql`
-      INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note)
-      VALUES (${created.id}, 'created', 'Solicitação criada', ${req.user.name}, ${req.user.role}, ${now}, ${reason})
-    `;
+    const created = await sql.begin(async (trx) => {
+      const requests = await trx`
+        INSERT INTO requests (item, inventory_id, requester, department, quantity, reason, priority, date, requester_email)
+        VALUES (${item}, ${inventoryId}, ${requester}, ${department}, ${quantity}, ${reason}, ${priority || 'Normal'}, ${todayLocal()}, ${req.user.email})
+        RETURNING *
+      `;
+      await trx`
+        INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note)
+        VALUES (${requests[0].id}, 'created', 'Solicitação criada', ${req.user.name}, ${req.user.role}, ${now}, ${reason})
+      `;
+      return requests[0];
+    });
     created.history = await sql`SELECT * FROM request_history WHERE request_id = ${created.id} ORDER BY id ASC`;
     await logActivity('Nova solicitação criada', `${requester} pediu ${quantity} unidade(s) de ${item}`, req);
     notifyChange('requests', 'created', { id: created.id });
@@ -85,14 +101,17 @@ router.put('/api/requests/:id/approve', authMiddleware, roleMiddleware('admin', 
     let err;
     if ((err = validateString(note, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'note', err);
     const now = new Date();
-    const requests = await sql`
-      UPDATE requests SET status = 'approved', decided_by = ${req.user.name}, decided_at = ${now},
-        decision_note = ${note}, updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING *
-    `;
-    if (!requests.length) return res.status(404).json({ error: 'Solicitação não encontrada ou já processada' });
-    await sql`INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note) VALUES (${id}, 'approved', 'Solicitação aprovada', ${req.user.name}, ${req.user.role}, ${now}, ${note})`;
-    await logActivity('Solicitação aprovada', `${requests[0].item} · ${requests[0].requester}`, req);
-    const r = requests[0];
+    const r = await sql.begin(async (trx) => {
+      const requests = await trx`
+        UPDATE requests SET status = 'approved', decided_by = ${req.user.name}, decided_at = ${now},
+          decision_note = ${note}, updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING *
+      `;
+      if (!requests.length) return null;
+      await trx`INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note) VALUES (${id}, 'approved', 'Solicitação aprovada', ${req.user.name}, ${req.user.role}, ${now}, ${note})`;
+      return requests[0];
+    });
+    if (!r) return res.status(404).json({ error: 'Solicitação não encontrada ou já processada' });
+    await logActivity('Solicitação aprovada', `${r.item} · ${r.requester}`, req);
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     notifyChange('requests', 'approved', { id: r.id });
     res.json(r);
@@ -107,14 +126,17 @@ router.put('/api/requests/:id/reject', authMiddleware, roleMiddleware('admin', '
     let err;
     if ((err = validateString(note, VALIDATION_LIMITS.string.reasonMax))) return validationError(res, 'note', err);
     const now = new Date();
-    const requests = await sql`
-      UPDATE requests SET status = 'rejected', decided_by = ${req.user.name}, decided_at = ${now},
-        decision_note = ${note}, updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING *
-    `;
-    if (!requests.length) return res.status(404).json({ error: 'Solicitação não encontrada ou já processada' });
-    await sql`INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note) VALUES (${id}, 'rejected', 'Solicitação recusada', ${req.user.name}, ${req.user.role}, ${now}, ${note})`;
-    await logActivity('Solicitação recusada', `${requests[0].item} · ${requests[0].requester}`, req);
-    const r = requests[0];
+    const r = await sql.begin(async (trx) => {
+      const requests = await trx`
+        UPDATE requests SET status = 'rejected', decided_by = ${req.user.name}, decided_at = ${now},
+          decision_note = ${note}, updated_at = NOW() WHERE id = ${id} AND status = 'pending' RETURNING *
+      `;
+      if (!requests.length) return null;
+      await trx`INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note) VALUES (${id}, 'rejected', 'Solicitação recusada', ${req.user.name}, ${req.user.role}, ${now}, ${note})`;
+      return requests[0];
+    });
+    if (!r) return res.status(404).json({ error: 'Solicitação não encontrada ou já processada' });
+    await logActivity('Solicitação recusada', `${r.item} · ${r.requester}`, req);
     r.history = await sql`SELECT * FROM request_history WHERE request_id = ${r.id} ORDER BY id ASC`;
     notifyChange('requests', 'rejected', { id: r.id });
     res.json(r);
@@ -128,7 +150,7 @@ router.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 
     const now = new Date();
     const result = await sql.begin(async (trx) => {
       const requests = await trx`
-        UPDATE requests SET status = 'delivered', updated_at = NOW() WHERE id = ${id} AND status = 'approved' RETURNING *
+        SELECT * FROM requests WHERE id = ${id} AND status = 'approved' FOR UPDATE
       `;
       if (!requests.length) return { status: 404 };
       const r = requests[0];
@@ -146,8 +168,11 @@ router.put('/api/requests/:id/deliver', authMiddleware, roleMiddleware('admin', 
             ${`${r.department} · ${r.requester}`}, ${`SOL-${String(r.id).padStart(4, '0')}`}, ${req.user.name}, 'Saída gerada automaticamente na entrega da solicitação.')
         `;
       }
+      const delivered = await trx`
+        UPDATE requests SET status = 'delivered', updated_at = NOW() WHERE id = ${id} RETURNING *
+      `;
       await trx`INSERT INTO request_history (request_id, action, label, user_name, user_role, date, note) VALUES (${r.id}, 'delivered', 'Material entregue', ${req.user.name}, ${req.user.role}, ${now}, ${`Entrega confirmada por ${req.user.name}.`})`;
-      return { status: 200, request: r };
+      return { status: 200, request: delivered[0] };
     });
 
     if (result.status === 404) return res.status(404).json({ error: 'Solicitação não encontrada ou não aprovada' });

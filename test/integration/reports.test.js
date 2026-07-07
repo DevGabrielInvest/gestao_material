@@ -1,9 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, stopServer, api, adminToken, requesterToken, getBaseUrl } from './helper.js';
+import { startServer, stopServer, api, adminToken, requesterToken, getBaseUrl, sql } from './helper.js';
 
 test.before(startServer);
 test.after(stopServer);
+
+test.afterEach(async () => {
+  await sql`DELETE FROM inventory WHERE code = 'TEST-FORMULA'`;
+});
 
 async function downloadCsv(path, token) {
   const res = await fetch(`${getBaseUrl()}${path}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -63,6 +67,17 @@ test('GET /api/reports/inventory-csv downloads CSV with all items', async () => 
   const { data } = await api('GET', '/api/reports/summary', { token });
   const lines = body.trim().split('\n');
   assert.equal(lines.length - 1, data.totals.inventoryCount);
+});
+
+test('GET /api/reports/inventory-csv neutralizes spreadsheet formulas', async () => {
+  await sql`
+    INSERT INTO inventory (name, code, category, location, quantity, minimum, value)
+    VALUES ('=HYPERLINK("https://example.com","x")', 'TEST-FORMULA', 'Teste', 'Teste', 1, 0, 0)
+  `;
+  const token = await adminToken();
+  const { status, body } = await downloadCsv('/api/reports/inventory-csv', token);
+  assert.equal(status, 200);
+  assert.match(body, /'=HYPERLINK/);
 });
 
 test('GET /api/reports/movements-csv downloads CSV with headers', async () => {

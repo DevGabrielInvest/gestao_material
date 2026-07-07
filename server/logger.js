@@ -34,6 +34,15 @@ function writeLog(level, event, context = {}, output = console) {
   return entry;
 }
 
+export function safeRequestPath(req) {
+  const raw = req?.originalUrl || req?.url || req?.path || '';
+  try {
+    return new URL(raw, 'http://local').pathname;
+  } catch {
+    return String(raw).split('?')[0];
+  }
+}
+
 export function logInfo(event, context = {}, output = console) {
   return writeLog('info', event, context, output);
 }
@@ -64,7 +73,7 @@ export function requestLoggingMiddleware(req, res, next) {
     const context = {
       requestId: req.requestId,
       method: req.method,
-      path: req.originalUrl,
+      path: safeRequestPath(req),
       statusCode,
       durationMs: Number(durationMs.toFixed(1)),
       userId: req.user?.id || null,
@@ -84,7 +93,7 @@ export function handleRouteError(err, req, res, output = console) {
   logError('http_route_exception', {
     requestId,
     method: req.method,
-    path: req.originalUrl,
+    path: safeRequestPath(req),
     userId: req.user?.id || null,
     error: serializeError(err),
   }, output);

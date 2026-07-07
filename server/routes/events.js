@@ -1,25 +1,49 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../config.js';
+import {
+  JWT_ALGORITHMS,
+  JWT_AUDIENCE,
+  JWT_ISSUER,
+  JWT_SECRET,
+  SSE_TOKEN_EXPIRY,
+} from '../config.js';
 import { addClient } from '../events.js';
+import { authMiddleware } from '../middleware.js';
 
 const router = Router();
 
-router.get('/api/events', (req, res) => {
-  const authHeader = req.headers.authorization;
-  const tokenParam = req.query.token;
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : tokenParam;
+router.post('/api/events/token', authMiddleware, (req, res) => {
+  const token = jwt.sign({
+    id: req.user.id,
+    role: req.user.role,
+    type: 'sse',
+  }, JWT_SECRET, {
+    algorithm: JWT_ALGORITHMS[0],
+    audience: JWT_AUDIENCE.sse,
+    expiresIn: SSE_TOKEN_EXPIRY,
+    issuer: JWT_ISSUER,
+  });
+  res.json({ token });
+});
 
-  if (!token) {
+router.get('/api/events', (req, res) => {
+  const token = req.query.sid;
+
+  if (!token || typeof token !== 'string') {
     return res.status(401).json({ error: 'Token de autenticação obrigatório' });
   }
 
   let decoded;
   try {
-    decoded = jwt.verify(token, JWT_SECRET);
+    decoded = jwt.verify(token, JWT_SECRET, {
+      algorithms: JWT_ALGORITHMS,
+      audience: JWT_AUDIENCE.sse,
+      issuer: JWT_ISSUER,
+    });
   } catch {
     return res.status(401).json({ error: 'Token inválido ou expirado' });
   }
+  if (decoded.type !== 'sse') return res.status(401).json({ error: 'Tipo de token inválido' });
 
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',

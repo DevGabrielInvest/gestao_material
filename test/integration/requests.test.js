@@ -6,12 +6,18 @@ test.before(startServer);
 test.after(stopServer);
 
 let createdRequestId;
+let createdInventoryId;
 
 test.afterEach(async () => {
   if (createdRequestId) {
+    await sql`DELETE FROM movements WHERE document = ${`SOL-${String(createdRequestId).padStart(4, '0')}`}`;
     await sql`DELETE FROM request_history WHERE request_id = ${createdRequestId}`;
     await sql`DELETE FROM requests WHERE id = ${createdRequestId}`;
     createdRequestId = null;
+  }
+  if (createdInventoryId) {
+    await sql`DELETE FROM inventory WHERE id = ${createdInventoryId}`;
+    createdInventoryId = null;
   }
 });
 
@@ -119,4 +125,33 @@ test('GET /api/requests/:id/history returns request history', async () => {
   assert.equal(status, 200);
   assert.equal(Array.isArray(data), true);
   assert.equal(data.length >= 1, true);
+});
+
+test('PUT /api/requests/:id/deliver preserves approved status when stock is insufficient', async () => {
+  const itemName = 'TEST-Estoque Insuficiente';
+  const inventory = await sql`
+    INSERT INTO inventory (name, code, category, location, quantity, minimum, value)
+    VALUES (${itemName}, 'TEST-REQ-STOCK', 'Teste', 'Teste', 1, 0, 10)
+    RETURNING id
+  `;
+  createdInventoryId = inventory[0].id;
+
+  const requesterTok = await requesterToken();
+  const created = await api('POST', '/api/requests', {
+    token: requesterTok,
+    body: { item: itemName, quantity: 2, reason: 'Teste sem saldo' },
+  });
+  createdRequestId = created.data.id;
+
+  const adminTok = await adminToken();
+  await api('PUT', `/api/requests/${createdRequestId}/approve`, {
+    token: adminTok,
+    body: { note: 'Aprovado para testar saldo' },
+  });
+
+  const delivered = await api('PUT', `/api/requests/${createdRequestId}/deliver`, { token: adminTok });
+  assert.equal(delivered.status, 409);
+
+  const rows = await sql`SELECT status FROM requests WHERE id = ${createdRequestId}`;
+  assert.equal(rows[0].status, 'approved');
 });

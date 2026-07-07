@@ -29,8 +29,14 @@ npm install
 
 ```
 DATABASE_URL=postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
-JWT_SECRET=uma-chave-segura-aqui
+JWT_SECRET=<resultado de: openssl rand -base64 64>
 PORT=3000
+```
+
+`JWT_SECRET` precisa ter pelo menos 32 bytes aleatórios. Gere um valor próprio, por exemplo:
+
+```bash
+openssl rand -base64 64
 ```
 
 3. Execute as migrações para criar as tabelas:
@@ -68,6 +74,8 @@ npm start
 - `npm run dev` — Inicia com watch mode (reinicia automaticamente)
 - `npm run schema` — Cria as tabelas no banco de dados
 - `npm run seed` — Popula o banco com dados iniciais
+
+Para testes, configure sempre `TEST_DATABASE_URL` apontando para um banco isolado. O projeto falha em `NODE_ENV=test` quando essa variável não existe, para evitar escrita acidental em `DATABASE_URL`.
 
 ## Arquitetura
 

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, stopServer, api, adminToken } from './helper.js';
+import { startServer, stopServer, api, adminToken, requesterToken } from './helper.js';
 
 test.before(startServer);
 test.after(stopServer);
@@ -33,4 +33,12 @@ test('GET /api/activity returns paginated activity log', async () => {
   assert.equal(typeof data.total, 'number');
   assert.equal(typeof data.hasMore, 'boolean');
   assert.equal(data.limit > 0, true);
+});
+
+test('requester cannot read dashboard or activity', async () => {
+  const token = await requesterToken();
+  for (const path of ['/api/dashboard', '/api/activity']) {
+    const { status } = await api('GET', path, { token });
+    assert.equal(status, 403, path);
+  }
 });

@@ -49,6 +49,44 @@ export function validationError(res, field, message) {
   return res.status(400).json({ error: `${field}: ${message}` });
 }
 
+export const INVALID_QUERY = Symbol('invalid_query');
+
+export function optionalQueryString(req, res, field, maxLen = 120) {
+  const value = req.query[field];
+  if (value === undefined || value === null || value === '') return '';
+  if (Array.isArray(value) || typeof value !== 'string') {
+    validationError(res, field, 'Parâmetro inválido');
+    return INVALID_QUERY;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length > maxLen) {
+    validationError(res, field, `Máximo de ${maxLen} caracteres`);
+    return INVALID_QUERY;
+  }
+  return trimmed;
+}
+
+export function optionalQueryDate(req, res, field) {
+  const value = optionalQueryString(req, res, field, 10);
+  if (value === INVALID_QUERY || !value) return value;
+  const err = validateDate(value);
+  if (err) {
+    validationError(res, field, err);
+    return INVALID_QUERY;
+  }
+  return value;
+}
+
+export function optionalQueryEnum(req, res, field, allowed) {
+  const value = optionalQueryString(req, res, field, 50);
+  if (value === INVALID_QUERY || !value) return value;
+  if (!allowed.includes(value)) {
+    validationError(res, field, `Valor inválido. Permitidos: ${allowed.join(', ')}`);
+    return INVALID_QUERY;
+  }
+  return value;
+}
+
 // Data corrente no fuso do escritório (não UTC): a partir das 21h BRT,
 // toISOString() já devolve o dia seguinte.
 export function todayLocal() {

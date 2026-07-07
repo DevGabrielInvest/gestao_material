@@ -7,6 +7,7 @@ import {
   logInfo,
   requestIdMiddleware,
   requestLoggingMiddleware,
+  safeRequestPath,
 } from '../server/logger.js';
 
 function createOutput() {
@@ -124,4 +125,11 @@ test('requestLoggingMiddleware logs completed API requests with duration', (t) =
   assert.equal(entry.statusCode, 200);
   assert.equal(entry.userId, 3);
   assert.equal(typeof entry.durationMs, 'number');
+});
+
+test('safeRequestPath strips query strings with sensitive tokens', () => {
+  const path = safeRequestPath({ originalUrl: '/api/events?token=secret.jwt&refreshToken=abc' });
+  assert.equal(path, '/api/events');
+  assert.equal(path.includes('secret'), false);
+  assert.equal(path.includes('refreshToken'), false);
 });

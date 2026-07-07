@@ -33,6 +33,14 @@ test('GET /api/inventory without auth returns 401', async () => {
   assert.equal(status, 401);
 });
 
+test('GET /api/inventory rejects requester role', async () => {
+  const token = await requesterToken();
+  for (const path of ['/api/inventory', '/api/inventory/categories']) {
+    const { status } = await api('GET', path, { token });
+    assert.equal(status, 403, path);
+  }
+});
+
 test('GET /api/inventory returns global summary and in_custody flag', async () => {
   const token = await adminToken();
   const { status, data } = await api('GET', '/api/inventory', { token });

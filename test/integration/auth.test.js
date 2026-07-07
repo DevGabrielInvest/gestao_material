@@ -11,6 +11,7 @@ test('POST /api/auth/login with valid credentials returns token and user', async
   });
   assert.equal(status, 200);
   assert.equal(typeof data.token, 'string');
+  assert.equal(typeof data.refreshToken, 'string');
   assert.equal(data.user.email, 'admin@dfa.com');
   assert.equal(data.user.role, 'admin');
   assert.equal(data.user.name, 'Administração DFA');
@@ -68,4 +69,12 @@ test('GET /api/auth/me with invalid token returns 401', async () => {
   });
   assert.equal(status, 401);
   assert(data.error.includes('Token'));
+});
+
+test('GET /api/auth/me rejects refresh token as bearer token', async () => {
+  const login = await api('POST', '/api/auth/login', {
+    body: { email: 'admin@dfa.com', password: 'admin123' },
+  });
+  const { status } = await api('GET', '/api/auth/me', { token: login.data.refreshToken });
+  assert.equal(status, 401);
 });
