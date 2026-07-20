@@ -65,10 +65,10 @@ router.post('/api/inventory', authMiddleware, roleMiddleware('admin', 'manager')
   try {
     const validationErrorResult = validateInventoryBody(req, res);
     if (validationErrorResult) return;
-    const { name, code, category, location, quantity, minimum, value, valuable } = req.body;
+    const { name, code, category, location, quantity, minimum, value, valuable, serialNumber, brand, conservationState } = req.body;
     const items = await sql`
-      INSERT INTO inventory (name, code, category, location, quantity, minimum, value, valuable)
-      VALUES (${name}, ${code}, ${category}, ${location}, ${quantity ?? 1}, ${minimum ?? 1}, ${value ?? 0}, ${!!valuable})
+      INSERT INTO inventory (name, code, category, location, quantity, minimum, value, valuable, serial_number, brand, conservation_state)
+      VALUES (${name}, ${code}, ${category}, ${location}, ${quantity ?? 1}, ${minimum ?? 1}, ${value ?? 0}, ${!!valuable}, ${serialNumber || ''}, ${brand || ''}, ${conservationState || ''})
       RETURNING *
     `;
     await logActivity('Novo item cadastrado', `${name} · ${quantity} unidade(s)`, req);
@@ -83,11 +83,12 @@ router.put('/api/inventory/:id', authMiddleware, roleMiddleware('admin', 'manage
     if (!id) return;
     const validationErrorResult = validateInventoryBody(req, res);
     if (validationErrorResult) return;
-    const { name, code, category, location, quantity, minimum, value, valuable } = req.body;
+    const { name, code, category, location, quantity, minimum, value, valuable, serialNumber, brand, conservationState } = req.body;
     const items = await sql`
       UPDATE inventory SET name = ${name}, code = ${code}, category = ${category},
         location = ${location}, quantity = ${quantity ?? 1}, minimum = ${minimum ?? 1},
-        value = ${value ?? 0}, valuable = ${!!valuable}, updated_at = NOW()
+        value = ${value ?? 0}, valuable = ${!!valuable}, serial_number = ${serialNumber || ''},
+        brand = ${brand || ''}, conservation_state = ${conservationState || ''}, updated_at = NOW()
       WHERE id = ${id} RETURNING *
     `;
     if (!items.length) return res.status(404).json({ error: 'Item não encontrado' });

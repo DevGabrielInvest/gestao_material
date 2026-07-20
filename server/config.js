@@ -110,7 +110,7 @@ export const HELMET_CONFIG = {
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
-      frameSrc: ["'none'"],
+      frameSrc: ["'self'", 'blob:'],
     },
   },
   crossOriginEmbedderPolicy: true,
@@ -127,3 +127,35 @@ export const HELMET_CONFIG = {
 };
 
 export const STATIC_MAX_AGE_MS = 5 * 60 * 1000;
+
+export const EMAIL_CONFIG = {
+  host: process.env.EMAIL_HOST || '',
+  port: parseInt(process.env.EMAIL_PORT || '587', 10),
+  secure: process.env.EMAIL_SECURE === 'true',
+  user: process.env.EMAIL_USER || '',
+  pass: process.env.EMAIL_PASS || '',
+  from: process.env.EMAIL_FROM || 'noreply@dfa.adv.br',
+};
+
+if (NODE_ENV === 'production') {
+  const missingEmailVariables = [
+    ['EMAIL_HOST', EMAIL_CONFIG.host],
+    ['EMAIL_USER', EMAIL_CONFIG.user],
+    ['EMAIL_PASS', EMAIL_CONFIG.pass],
+  ].filter(([, value]) => !value).map(([name]) => name);
+
+  if (missingEmailVariables.length) {
+    console.error(JSON.stringify({
+      timestamp: new Date().toISOString(),
+      level: 'error',
+      event: 'startup_missing_email_environment',
+      variables: missingEmailVariables,
+      message: 'SMTP e obrigatorio em producao para o fluxo de aceite.',
+    }));
+    process.exit(1);
+  }
+}
+
+export const ACCEPTANCE_TOKEN_EXPIRY_MINUTES = parseInt(process.env.ACCEPTANCE_TOKEN_EXPIRY || '60', 10);
+
+export const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';

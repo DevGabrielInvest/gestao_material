@@ -67,7 +67,7 @@ router.get('/api/custody', authMiddleware, readRoles, async (req, res) => {
 
 router.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), async (req, res) => {
   try {
-    const { inventoryId, holder, department, checkout, expected, notes } = req.body;
+    const { inventoryId, holder, holderEmail, department, checkout, expected, notes } = req.body;
     let err;
     if ((err = validateNumber(inventoryId, 1, { integer: true }))) return validationError(res, 'inventoryId', err);
     if ((err = validateString(holder))) return validationError(res, 'holder', err);
@@ -76,6 +76,9 @@ router.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), 
     if ((err = validateDate(expected))) return validationError(res, 'expected', err);
     if (notes && notes.length > VALIDATION_LIMITS.string.notesMax) return validationError(res, 'notes', `Máximo de ${VALIDATION_LIMITS.string.notesMax} caracteres`);
     if (expected < checkout) return validationError(res, 'expected', 'Previsão de devolução deve ser igual ou posterior à data da retirada');
+    if (holderEmail !== undefined && holderEmail !== '' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(holderEmail)) {
+      return validationError(res, 'holderEmail', 'E-mail inválido');
+    }
     const result = await sql.begin(async (trx) => {
       const inv = await trx`SELECT * FROM inventory WHERE id = ${inventoryId} FOR UPDATE`;
       if (!inv.length) return { status: 404 };
@@ -83,8 +86,8 @@ router.post('/api/custody', authMiddleware, roleMiddleware('admin', 'manager'), 
       const active = await trx`SELECT id FROM custody WHERE inventory_id = ${item.id} AND status = 'active' LIMIT 1`;
       if (active.length) return { status: 409 };
       const records = await trx`
-        INSERT INTO custody (inventory_id, item, code, holder, department, checkout, expected, value, notes, status, previous_location)
-        VALUES (${item.id}, ${item.name}, ${item.code}, ${holder}, ${department}, ${checkout}, ${expected}, ${item.value}, ${notes || ''}, 'active', ${item.location})
+        INSERT INTO custody (inventory_id, item, code, holder, holder_email, department, checkout, expected, value, notes, status, previous_location)
+        VALUES (${item.id}, ${item.name}, ${item.code}, ${holder}, ${holderEmail || ''}, ${department}, ${checkout}, ${expected}, ${item.value}, ${notes || ''}, 'active', ${item.location})
         RETURNING *
       `;
       await trx`UPDATE inventory SET location = 'Em posse', updated_at = NOW() WHERE id = ${item.id}`;

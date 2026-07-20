@@ -8,6 +8,7 @@ Sistema web para controle de materiais, equipamentos, solicitações e termos de
 - Entradas e saídas com fornecedor, destino, documento e responsável
 - Solicitações com aprovação, justificativa e histórico auditável
 - Termos de responsabilidade exportáveis em PDF
+- Aceite eletrônico por token, com PDF, hash SHA-256 e trilha de auditoria
 - Alertas de reposição, devolução atrasada e pedidos pendentes
 - Relatórios de consumo, inventário e bens por responsável, com exportação em PDF
 - Exportação CSV financeira com centro de custo, fornecedor/destino, documento/NF, aprovador, data de decisão, status e valores estimados
@@ -31,6 +32,13 @@ npm install
 DATABASE_URL=postgresql://user:password@ep-xxxx.us-east-2.aws.neon.tech/neondb?sslmode=require
 JWT_SECRET=<resultado de: openssl rand -base64 64>
 PORT=3000
+BASE_URL=http://localhost:3000
+EMAIL_HOST=smtp.example.com
+EMAIL_PORT=587
+EMAIL_SECURE=false
+EMAIL_USER=usuario-smtp
+EMAIL_PASS=senha-smtp
+EMAIL_FROM=noreply@example.com
 ```
 
 `JWT_SECRET` precisa ter pelo menos 32 bytes aleatórios. Gere um valor próprio, por exemplo:
@@ -38,6 +46,10 @@ PORT=3000
 ```bash
 openssl rand -base64 64
 ```
+
+Em `NODE_ENV=production`, `EMAIL_HOST`, `EMAIL_USER` e `EMAIL_PASS` são
+obrigatórios. `BASE_URL` deve ser a URL pública do sistema para que o link de
+aceitação enviado por e-mail funcione corretamente.
 
 3. Execute as migrações para criar as tabelas:
 
@@ -76,6 +88,11 @@ npm start
 - `npm run seed` — Popula o banco com dados iniciais
 
 Para testes, configure sempre `TEST_DATABASE_URL` apontando para um banco isolado. O projeto falha em `NODE_ENV=test` quando essa variável não existe, para evitar escrita acidental em `DATABASE_URL`.
+
+As tabelas de tokens, auditoria e hashes usam RLS. Em produção, prefira uma
+role Neon exclusiva do aplicativo, sem `BYPASSRLS`, e reserve a role
+`neondb_owner` para executar migrations. Gatilhos no banco impedem alteração ou
+exclusão dos registros de auditoria e hashes mesmo pela role administrativa.
 
 ## Arquitetura
 

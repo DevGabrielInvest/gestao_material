@@ -24,6 +24,7 @@ import custodyRoutes from './routes/custody.js';
 import movementsRoutes from './routes/movements.js';
 import reportsRoutes from './routes/reports.js';
 import eventsRoutes from './routes/events.js';
+import acceptanceRoutes from './routes/acceptance.js';
 
 const noop = (req, res, next) => next();
 
@@ -59,5 +60,6 @@ app.use(custodyRoutes);
 app.use(movementsRoutes);
 app.use(reportsRoutes);
 app.use(eventsRoutes);
+app.use(acceptanceRoutes);
 
 export default app;

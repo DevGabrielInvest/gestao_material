@@ -23,6 +23,8 @@ const icons = {
   download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>',
   trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>',
   spinner: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/></svg>',
+  mail: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+  fingerprint: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5.5 4.5A10.5 10.5 0 0 0 2 12c0 2.5.9 4.8 2.3 6.6M8.2 7.8A5.5 5.5 0 0 0 6.5 12c0 1.3.5 2.6 1.2 3.6M12 2a10 10 0 0 1 10 10c0 2.5-.9 4.8-2.3 6.6M15.8 7.8A5.5 5.5 0 0 1 17.5 12c0 1.3-.5 2.6-1.2 3.6M12 10v2l1.5 1.5M12 5v2"/></svg>',
 };
 
 document.querySelectorAll('[data-icon]').forEach((el) => { el.innerHTML = icons[el.dataset.icon] || icons.box; });

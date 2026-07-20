@@ -91,11 +91,181 @@ function renderRequests() {
   document.querySelectorAll('.request-history').forEach((button) => button.addEventListener('click', () => openRequestHistory(Number(button.dataset.id))));
 }
 
+function acceptanceStatusBadge(status) {
+  const labels = { pending: ['Aguardando', 'amber'], token_sent: ['Token enviado', 'blue'], completed: ['Aceito', 'green'] };
+  const [label, color] = labels[status] || [status, 'gray'];
+  return `<span class="status ${color}">${label}</span>`;
+}
+
+async function sendAcceptanceToken(id) {
+  if (!can('manageCustody')) { showToast('Seu perfil não pode enviar tokens.'); return; }
+  const record = state.custody.find((item) => item.id === id);
+  if (!record) return;
+  if (!record.holder_email) { showToast('Este termo não possui e-mail do responsável.'); return; }
+
+  showConfirm({
+    title: 'Enviar token de aceitação',
+    message: `Um e-mail com o token será enviado para ${record.holder_email} (${record.holder}). O responsável precisará clicar no link e confirmar a aceitação do termo.`,
+    confirmLabel: 'Enviar token',
+    onConfirm: async () => {
+      try {
+        const result = await apiPost(`/acceptance/${id}/send-token`, {});
+        showToast(result.message);
+        const updated = await apiGet(`/custody?limit=1&offset=0&search=${encodeURIComponent(record.code)}`);
+        if (updated.data?.length) {
+          const idx = state.custody.findIndex((item) => item.id === id);
+          if (idx !== -1) state.custody[idx] = { ...state.custody[idx], acceptance_status: 'token_sent' };
+          renderCustody();
+        }
+      } catch (err) { showToast(err.message); }
+    }
+  });
+}
+
+async function verifyAcceptanceToken(id, token) {
+  try {
+    const result = await fetch(`/api/acceptance/${id}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    });
+    if (!result.ok) {
+      const data = await result.json().catch(() => ({}));
+      throw new Error(data.error || 'Token inválido ou expirado.');
+    }
+    const blob = await result.blob();
+    const hash = result.headers.get('X-PDF-Hash') || '';
+    const match = /filename="?([^";]+)"?/.exec(result.headers.get('Content-Disposition') || '');
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = match ? match[1] : `termo-aceito-${id}.pdf`;
+    document.body.appendChild(link); link.click(); link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1500);
+    return { hash };
+  } catch (err) {
+    throw err;
+  }
+}
+
+function renderAcceptancePage(id, token) {
+  const container = $('#acceptancePage');
+  container.classList.add('active');
+
+  $('#acceptancePage .page-heading h1').textContent = 'Aceitar Termo de Responsabilidade';
+  $('#acceptancePage .page-heading p').textContent = 'Confirme sua responsabilidade sobre o equipamento recebido.';
+
+  const body = $('#acceptanceBody');
+  body.innerHTML = `
+    <div class="acceptance-loading" id="acceptanceLoading">
+      <span data-icon="spinner"></span>
+      <p>Carregando termo...</p>
+    </div>
+    <div class="acceptance-content" id="acceptanceContent" style="display:none;">
+      <div class="acceptance-preview panel" id="acceptancePreview">
+        <div class="panel-header"><div><p class="eyebrow">TERMO DE POSSE</p><h2>Detalhes do equipamento</h2></div></div>
+        <div class="acceptance-details" id="acceptanceDetails"></div>
+      </div>
+      <div class="acceptance-form panel" id="acceptanceFormPanel">
+        <div class="panel-header"><div><p class="eyebrow">CONFIRMAÇÃO</p><h2>Aceitar termo</h2></div></div>
+        <p>Ao confirmar, seu IP, navegador e sistema operacional serão registrados para garantir a rastreabilidade da sua aceitação.</p>
+        <div class="field">
+          <label for="acceptanceTokenInput">Token de confirmação</label>
+          <input id="acceptanceTokenInput" type="text" value="${escapeHtml(token || '')}" placeholder="Cole o token recebido por e-mail" />
+        </div>
+        <button class="button primary" id="acceptanceConfirmBtn" style="width:100%;margin-top:1rem;">
+          <span data-icon="check"></span> Eu Aceito - Confirmar Responsabilidade
+        </button>
+        <div id="acceptanceResult" class="acceptance-result" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="acceptance-success" id="acceptanceSuccess" style="display:none;">
+      <div class="success-icon"><span data-icon="check"></span></div>
+      <h2>Termo aceito com sucesso!</h2>
+      <p>O PDF do termo foi gerado com sua confirmação. O download iniciou automaticamente.</p>
+      <p class="hash-info" id="hashInfo"></p>
+      <p style="margin-top:1rem;">Guarde o PDF e o hash para futuras verificações de integridade.</p>
+      <a href="/" class="button secondary" style="margin-top:1.5rem;">Voltar ao início</a>
+    </div>
+  `;
+
+  const acceptanceContent = $('#acceptanceContent');
+  const acceptanceSuccess = $('#acceptanceSuccess');
+  const loading = $('#acceptanceLoading');
+
+  if (!token) {
+    loading.innerHTML = '<p style="color:var(--coral)">O link de aceitação está incompleto. Solicite um novo token à administração.</p>';
+  }
+
+  const previewRequest = token ? fetch(`/api/acceptance/${id}/preview`, {
+    method: 'POST',
+    headers: { 'Accept': 'application/pdf', 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  }) : null;
+
+  previewRequest?.then(async (res) => {
+    if (!res.ok) { loading.innerHTML = '<p style="color:var(--coral)">Erro ao carregar o termo.</p>'; return; }
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    loading.style.display = 'none';
+    acceptanceContent.style.display = '';
+    $('#acceptancePreview').innerHTML += `
+      <iframe src="${url}" class="acceptance-pdf-iframe" title="Pré-visualização do termo"></iframe>
+      <a class="button secondary acceptance-open-pdf" href="${url}" target="_blank" rel="noopener">Abrir PDF em outra aba</a>
+    `;
+    $('#acceptanceDetails').innerHTML = '<p>Termo carregado. Revise o documento antes de confirmar.</p>';
+    window.addEventListener('pagehide', () => URL.revokeObjectURL(url), { once: true });
+  }).catch(() => {
+    loading.innerHTML = '<p style="color:var(--coral)">Erro ao carregar o termo.</p>';
+  });
+
+  const confirmBtn = $('#acceptanceConfirmBtn');
+  const tokenInput = $('#acceptanceTokenInput');
+  const resultDiv = $('#acceptanceResult');
+
+  confirmBtn.addEventListener('click', async () => {
+    const tokenValue = tokenInput.value.trim();
+    if (!tokenValue) { showToast('Digite ou cole o token recebido por e-mail.'); return; }
+    confirmBtn.disabled = true;
+    confirmBtn.innerHTML = icons.spinner + ' Validando...';
+    try {
+      const { hash } = await verifyAcceptanceToken(id, tokenValue);
+      acceptanceContent.style.display = 'none';
+      acceptanceSuccess.style.display = '';
+      if (hash) {
+        $('#hashInfo').innerHTML = `
+          <strong>Hash SHA-256 do PDF:</strong><br>
+          <code style="font-size:11px;word-break:break-all;">${hash}</code><br>
+          <small>Guarde este hash para verificar a autenticidade do documento.</small>
+        `;
+      }
+      if (typeof loadState === 'function') loadState();
+    } catch (err) {
+      resultDiv.style.display = '';
+      resultDiv.innerHTML = `<p style="color:var(--coral)">${escapeHtml(err.message)}</p>`;
+      confirmBtn.disabled = false;
+      confirmBtn.innerHTML = '<span data-icon="check"></span> Eu Aceito - Confirmar Responsabilidade';
+    }
+  });
+}
+
 function renderCustody() {
   const filtered = state.custody;
   const activeValue = state.stats.custody?.activeValue ?? state.custody.filter((item) => item.status === 'active').reduce((sum, item) => sum + Number(item.value), 0);
   $('#custodyTotalValue').textContent = money(activeValue);
-  $('#custodyCards').innerHTML = filtered.map((item) => `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div>${statusBadge(item.status === 'active' && isOverdue(item) ? 'overdue' : item.status, 'custody')}</div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>Retirada</span><strong>${dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span><div class="custody-actions"><button class="button small secondary custody-pdf" data-id="${item.id}">${icons.download} Gerar termo PDF</button>${item.status === 'active' && can('manageCustody') ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></div></article>`).join('');
+  $('#custodyCards').innerHTML = filtered.map((item) => {
+    const isActive = item.status === 'active';
+    const overdue = isActive && isOverdue(item);
+    const acceptanceBadge = item.holder_email ? acceptanceStatusBadge(item.acceptance_status || 'pending') : '';
+    const acceptanceActions = isActive && can('manageCustody') && item.holder_email
+      ? (item.acceptance_status === 'pending'
+        ? `<button class="button small secondary send-token" data-id="${item.id}">${icons.mail} Enviar token</button>`
+        : item.acceptance_status === 'token_sent'
+        ? `<button class="button small secondary send-token" data-id="${item.id}">${icons.mail} Reenviar token</button>`
+        : '')
+      : '';
+    return `<article class="custody-card"><div class="custody-card-top"><div class="asset-icon">${icons.laptop}</div><div><h3>${escapeHtml(item.item)}</h3><span class="asset-code">${escapeHtml(item.code)} · ${escapeHtml(item.department)}</span></div><div class="badge-group">${statusBadge(overdue ? 'overdue' : item.status, 'custody')}${acceptanceBadge}</div></div><div class="custody-details"><div class="detail-block"><span>Responsável</span><strong>${escapeHtml(item.holder)}</strong></div><div class="detail-block"><span>${item.holder_email ? 'E-mail' : 'Retirada'}</span><strong>${item.holder_email ? escapeHtml(item.holder_email) : dateLabel(item.checkout)}</strong></div><div class="detail-block"><span>${item.status === 'returned' ? 'Devolvido em' : 'Devolver até'}</span><strong>${dateLabel(item.returned || item.expected)}</strong></div></div>${item.notes ? `<p class="custody-note">${escapeHtml(item.notes)}</p>` : ''}<div class="custody-card-footer"><span class="asset-value">Valor registrado: <strong>${money(item.value)}</strong></span><div class="custody-actions"><button class="button small secondary custody-pdf" data-id="${item.id}">${icons.download} Gerar termo PDF</button>${acceptanceActions}${isActive && can('manageCustody') ? `<button class="button small secondary return-item" data-id="${item.id}">Registrar devolução</button>` : ''}</div></div></article>`;
+  }).join('');
   const pagInfo = state.pagination.custody;
   if (pagInfo && pagInfo.hasMore && filtered.length > 0) {
     $('#custodyCards').innerHTML += `<div style="text-align: center; padding: 2rem; grid-column: 1/-1;"><button class="button secondary" id="loadMoreCustody">Carregar mais equipamentos (${pagInfo.total - state.custody.length} restantes)</button></div>`;
@@ -104,6 +274,7 @@ function renderCustody() {
   $('#custodyEmpty').classList.toggle('show', !filtered.length);
   document.querySelectorAll('.return-item').forEach((button) => button.addEventListener('click', () => returnCustody(Number(button.dataset.id))));
   document.querySelectorAll('.custody-pdf').forEach((button) => button.addEventListener('click', () => generateCustodyPdf(Number(button.dataset.id))));
+  document.querySelectorAll('.send-token').forEach((button) => button.addEventListener('click', () => sendAcceptanceToken(Number(button.dataset.id))));
 }
 
 function renderMovements() {
@@ -210,10 +381,15 @@ async function openRequestModal() {
 function openItemModal(id = null) {
   if (!can('manageInventory')) { showToast('Seu perfil não pode alterar o inventário.'); return; }
   const item = state.inventory.find((entry) => entry.id === id) || {};
-  openModal({ eyebrow: id ? 'ATUALIZAR CADASTRO' : 'NOVO CADASTRO', title: id ? 'Editar item' : 'Cadastrar material ou equipamento', submitLabel: id ? 'Salvar alterações' : 'Cadastrar item', body: `<div class="form-grid"><div class="field full"><label for="itemName">Nome do item *</label><input id="itemName" name="name" required value="${escapeHtml(item.name || '')}" placeholder="Ex.: Monitor Dell 24 polegadas"/></div><div class="field"><label for="itemCode">Código *</label><input id="itemCode" name="code" required value="${escapeHtml(item.code || '')}" placeholder="MAT-001 ou PAT-001"/></div><div class="field"><label for="itemCategory">Categoria *</label><input id="itemCategory" name="category" required value="${escapeHtml(item.category || '')}" placeholder="Ex.: Informática"/></div><div class="field"><label for="itemLocation">Localização *</label><input id="itemLocation" name="location" required value="${escapeHtml(item.location || '')}" placeholder="Ex.: Armário A"/></div><div class="field"><label for="itemValue">Valor unitário (R$)</label><input id="itemValue" name="value" type="number" min="0" step="0.01" value="${item.value || 0}"/></div><div class="field"><label for="itemQuantity">Quantidade atual *</label><input id="itemQuantity" name="quantity" type="number" min="0" required value="${item.quantity ?? 1}"/></div><div class="field"><label for="itemMinimum">Estoque mínimo *</label><input id="itemMinimum" name="minimum" type="number" min="0" required value="${item.minimum ?? 1}"/></div><div class="field full"><label><input name="valuable" type="checkbox" ${item.valuable ? 'checked' : ''}/> Item de valor que exige termo de posse</label><small>Use para notebooks, celulares, monitores e outros bens patrimoniais.</small></div></div>`, action: async (form) => {
+  const extraFields = `
+    <div class="field"><label for="itemSerialNumber">Número de série</label><input id="itemSerialNumber" name="serialNumber" value="${escapeHtml(item.serial_number || '')}" placeholder="SN-12345"/></div>
+    <div class="field"><label for="itemBrand">Marca</label><input id="itemBrand" name="brand" value="${escapeHtml(item.brand || '')}" placeholder="Ex.: Dell, Lenovo"/></div>
+    <div class="field full"><label for="itemConservationState">Estado de conservação</label><input id="itemConservationState" name="conservationState" value="${escapeHtml(item.conservation_state || '')}" placeholder="Ex.: Bom, Regular, Novo"/></div>
+  `;
+  openModal({ eyebrow: id ? 'ATUALIZAR CADASTRO' : 'NOVO CADASTRO', title: id ? 'Editar item' : 'Cadastrar material ou equipamento', submitLabel: id ? 'Salvar alterações' : 'Cadastrar item', body: `<div class="form-grid"><div class="field full"><label for="itemName">Nome do item *</label><input id="itemName" name="name" required value="${escapeHtml(item.name || '')}" placeholder="Ex.: Monitor Dell 24 polegadas"/></div><div class="field"><label for="itemCode">Código *</label><input id="itemCode" name="code" required value="${escapeHtml(item.code || '')}" placeholder="MAT-001 ou PAT-001"/></div><div class="field"><label for="itemCategory">Categoria *</label><input id="itemCategory" name="category" required value="${escapeHtml(item.category || '')}" placeholder="Ex.: Informática"/></div><div class="field"><label for="itemLocation">Localização *</label><input id="itemLocation" name="location" required value="${escapeHtml(item.location || '')}" placeholder="Ex.: Armário A"/></div><div class="field"><label for="itemValue">Valor unitário (R$)</label><input id="itemValue" name="value" type="number" min="0" step="0.01" value="${item.value || 0}"/></div><div class="field"><label for="itemQuantity">Quantidade atual *</label><input id="itemQuantity" name="quantity" type="number" min="0" required value="${item.quantity ?? 1}"/></div><div class="field"><label for="itemMinimum">Estoque mínimo *</label><input id="itemMinimum" name="minimum" type="number" min="0" required value="${item.minimum ?? 1}"/></div><div class="field full"><label><input id="valuableCheckbox" name="valuable" type="checkbox" ${item.valuable ? 'checked' : ''}/> Item de valor que exige termo de posse</label><small>Use para notebooks, celulares, monitores e outros bens patrimoniais.</small></div><div id="extraFields" style="${item.valuable ? '' : 'display:none'}">${extraFields}</div></div>`, action: async (form) => {
     const data = Object.fromEntries(new FormData(form));
     try {
-      const payload = { ...data, id: id || undefined, quantity: Number(data.quantity), minimum: Number(data.minimum), value: Number(data.value), valuable: Boolean(data.valuable) };
+      const payload = { ...data, id: id || undefined, quantity: Number(data.quantity), minimum: Number(data.minimum), value: Number(data.value), valuable: Boolean(data.valuable), serialNumber: data.serialNumber || '', brand: data.brand || '', conservationState: data.conservationState || '' };
       let saved;
       if (id) {
         saved = await apiPut(`/inventory/${id}`, payload);
@@ -227,6 +403,13 @@ function openItemModal(id = null) {
       closeModal(); renderAll(); showToast(id ? 'Item atualizado.' : 'Item cadastrado no inventário.');
     } catch (err) { showToast(err.message); }
   } });
+  setTimeout(() => {
+    const cb = $('#valuableCheckbox');
+    if (cb) cb.addEventListener('change', () => {
+      const ef = $('#extraFields');
+      if (ef) ef.style.display = cb.checked ? '' : 'none';
+    });
+  }, 0);
 }
 
 async function deleteInventoryItem(id) {
@@ -274,12 +457,12 @@ async function openCustodyModal() {
   if (!can('manageCustody')) { showToast('Seu perfil não pode registrar retiradas.'); return; }
   const available = state.inventory.filter((item) => item.valuable && !state.custody.some((record) => record.inventory_id === item.id && record.status === 'active'));
   const options = available.map((item) => `<option value="${item.id}">${escapeHtml(item.name)} · ${escapeHtml(item.code)}</option>`).join('');
-  openModal({ eyebrow: 'RESPONSABILIDADE', title: 'Registrar retirada de equipamento', submitLabel: 'Registrar retirada', body: `<div class="form-grid"><div class="field full"><label for="custodyItem">Equipamento *</label><select id="custodyItem" name="inventoryId" required><option value="">Selecione o bem</option>${options}</select>${available.length ? '' : '<small>Não há itens de valor disponíveis. Cadastre ou devolva um equipamento.</small>'}</div><div class="field"><label for="holder">Responsável *</label><input id="holder" name="holder" required placeholder="Nome completo"/></div><div class="field"><label for="holderDepartment">Setor *</label><input id="holderDepartment" name="department" required placeholder="Ex.: Diretoria"/></div><div class="field"><label for="checkout">Data da retirada *</label><input id="checkout" name="checkout" type="date" value="${todayLocal()}" required/></div><div class="field"><label for="expected">Previsão de devolução *</label><input id="expected" name="expected" type="date" required/></div><div class="field full"><label for="custodyNotes">Estado e observações</label><textarea id="custodyNotes" name="notes" placeholder="Acessórios entregues, estado de conservação e finalidade."></textarea></div></div>`, action: async (form) => {
+  openModal({ eyebrow: 'RESPONSABILIDADE', title: 'Registrar retirada de equipamento', submitLabel: 'Registrar retirada', body: `<div class="form-grid"><div class="field full"><label for="custodyItem">Equipamento *</label><select id="custodyItem" name="inventoryId" required><option value="">Selecione o bem</option>${options}</select>${available.length ? '' : '<small>Não há itens de valor disponíveis. Cadastre ou devolva um equipamento.</small>'}</div><div class="field"><label for="holder">Responsável *</label><input id="holder" name="holder" required placeholder="Nome completo"/></div><div class="field"><label for="holderEmail">E-mail do responsável</label><input id="holderEmail" name="holderEmail" type="email" placeholder="email@dfa.com (para enviar token de aceitação)"/></div><div class="field"><label for="holderDepartment">Setor *</label><input id="holderDepartment" name="department" required placeholder="Ex.: Diretoria"/></div><div class="field"><label for="checkout">Data da retirada *</label><input id="checkout" name="checkout" type="date" value="${todayLocal()}" required/></div><div class="field"><label for="expected">Previsão de devolução *</label><input id="expected" name="expected" type="date" required/></div><div class="field full"><label for="custodyNotes">Estado e observações</label><textarea id="custodyNotes" name="notes" placeholder="Acessórios entregues, estado de conservação e finalidade."></textarea></div></div>`, action: async (form) => {
     const data = Object.fromEntries(new FormData(form));
     const item = state.inventory.find((entry) => entry.id === Number(data.inventoryId));
     if (!item) { showToast('Selecione um equipamento disponível.'); return; }
     try {
-      const record = await apiPost('/custody', { inventoryId: item.id, holder: data.holder, department: data.department, checkout: data.checkout, expected: data.expected, notes: data.notes });
+      const record = await apiPost('/custody', { inventoryId: item.id, holder: data.holder, holderEmail: data.holderEmail, department: data.department, checkout: data.checkout, expected: data.expected, notes: data.notes });
       state.custody.unshift(record);
       item.location = 'Em posse';
       addActivity('Retirada registrada', `${item.name} entregue para ${data.holder}`);
@@ -573,15 +756,28 @@ function disconnectSSE() {
   if (eventSource) { eventSource.close(); eventSource = null; }
 }
 
-const savedUser = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
-const savedToken = getToken();
-if (savedUser && savedToken) {
-  currentUser = savedUser;
+const params = new URLSearchParams(window.location.search);
+const acceptanceId = params.get('acceptance');
+const acceptanceToken = params.get('token');
+
+if (acceptanceId) {
   $('#loginScreen').classList.add('hidden');
   $('#appShell').classList.remove('auth-hidden');
-  applyPermissions();
-  connectSSE();
-  loadState().then(() => { renderAll(); window.requestAnimationFrame(renderCharts); });
+  document.querySelectorAll('.page').forEach((el) => el.classList.remove('active'));
+  renderAcceptancePage(acceptanceId, acceptanceToken || '');
+  document.body.classList.add('acceptance-mode');
+  window.history.replaceState({}, '', window.location.pathname);
 } else {
-  endSession();
+  const savedUser = JSON.parse(sessionStorage.getItem(sessionKey) || 'null');
+  const savedToken = getToken();
+  if (savedUser && savedToken) {
+    currentUser = savedUser;
+    $('#loginScreen').classList.add('hidden');
+    $('#appShell').classList.remove('auth-hidden');
+    applyPermissions();
+    connectSSE();
+    loadState().then(() => { renderAll(); window.requestAnimationFrame(renderCharts); });
+  } else {
+    endSession();
+  }
 }

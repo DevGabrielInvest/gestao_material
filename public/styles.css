@@ -388,3 +388,33 @@ body { font-size: 14px; line-height: 1.5; }
   font-weight: 500;
 }
 .offline-content svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ─── Acceptance Page ─────────────────────────────────── */
+#acceptanceBody { display: flex; flex-direction: column; gap: 24px; }
+.acceptance-loading { text-align: center; padding: 4rem; color: var(--muted); }
+.acceptance-loading svg { width: 32px; height: 32px; margin-bottom: 1rem; }
+.acceptance-pdf-iframe { width: 100%; height: 500px; border: none; border-radius: 8px; background: #fff; margin-top: 1rem; }
+.acceptance-open-pdf { display: none; margin: 1rem; }
+.acceptance-details { padding: 1rem; font-size: 13px; color: var(--muted); }
+.acceptance-form .field { margin: 1rem 0; }
+.acceptance-form input { width: 100%; padding: 12px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 14px; }
+.acceptance-result { margin-top: 1rem; padding: 1rem; border-radius: 6px; background: rgba(220, 80, 80, .1); }
+.acceptance-success { text-align: center; padding: 4rem 2rem; }
+.acceptance-success .success-icon svg { width: 48px; height: 48px; color: var(--green); }
+.acceptance-success h2 { margin: 1rem 0 .5rem; font: 700 24px/1.3 "Playfair Display", serif; color: #fff; }
+.acceptance-success p { color: var(--muted); font-size: 14px; max-width: 500px; margin: 0 auto; }
+.hash-info { margin-top: 1.5rem; padding: 1rem; background: rgba(199,150,64,.1); border-radius: 8px; font-size: 12px; color: var(--muted); }
+.hash-info code { display: block; margin-top: 6px; font-size: 11px; color: var(--gold); word-break: break-all; }
+.acceptance-form .panel-header p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.badge-group { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+body.acceptance-mode .sidebar,
+body.acceptance-mode .topbar { display: none; }
+body.acceptance-mode .main-content { margin-left: 0; }
+
+@media (max-width: 700px) {
+  body.acceptance-mode .main-content { padding: 16px; }
+  body.acceptance-mode .page-heading { padding-top: 12px; }
+  .acceptance-pdf-iframe { height: 58vh; min-height: 360px; }
+  .acceptance-open-pdf { display: inline-flex; }
+  .acceptance-success { padding: 2.5rem 1rem; }
+}
