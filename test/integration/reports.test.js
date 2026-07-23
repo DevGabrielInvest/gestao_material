@@ -109,3 +109,9 @@ test('CSV endpoints reject requester role', async () => {
     assert.equal(status, 403, path);
   }
 });
+
+test('GET /api/reports/pdf rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('GET', '/api/reports/pdf', { token });
+  assert.equal(status, 403);
+});

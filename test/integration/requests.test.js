@@ -127,6 +127,24 @@ test('GET /api/requests/:id/history returns request history', async () => {
   assert.equal(data.length >= 1, true);
 });
 
+test('PUT /api/requests/:id/approve rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('PUT', '/api/requests/1/approve', { token, body: { note: 'test' } });
+  assert.equal(status, 403);
+});
+
+test('PUT /api/requests/:id/reject rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('PUT', '/api/requests/1/reject', { token, body: { note: 'test' } });
+  assert.equal(status, 403);
+});
+
+test('PUT /api/requests/:id/deliver rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('PUT', '/api/requests/1/deliver', { token });
+  assert.equal(status, 403);
+});
+
 test('PUT /api/requests/:id/deliver preserves approved status when stock is insufficient', async () => {
   const itemName = 'TEST-Estoque Insuficiente';
   const inventory = await sql`

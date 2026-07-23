@@ -119,6 +119,12 @@ test('POST /api/movements with exit exceeding stock returns 400', async () => {
   assert(data.error.includes('Saldo'));
 });
 
+test('DELETE /api/movements/:id rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('DELETE', '/api/movements/1', { token });
+  assert.equal(status, 403);
+});
+
 test('DELETE /api/movements/:id deletes entry movement and reverts stock', async () => {
   const token = await adminToken();
   const inv = await api('GET', '/api/inventory?limit=1', { token });

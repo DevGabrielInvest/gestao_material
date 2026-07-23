@@ -5,9 +5,12 @@ import {
   INTERNAL_ERROR_MESSAGE,
   handleRouteError,
   logInfo,
+  logWarn,
+  logError,
   requestIdMiddleware,
   requestLoggingMiddleware,
   safeRequestPath,
+  serializeError,
 } from '../server/logger.js';
 
 function createOutput() {
@@ -125,6 +128,40 @@ test('requestLoggingMiddleware logs completed API requests with duration', (t) =
   assert.equal(entry.statusCode, 200);
   assert.equal(entry.userId, 3);
   assert.equal(typeof entry.durationMs, 'number');
+});
+
+test('logWarn writes a warn-level entry', () => {
+  const output = createOutput();
+  logWarn('rate_limit_hit', { ip: '127.0.0.1' }, output);
+  const entry = parseOnlyLine(output);
+  assert.equal(output.lines[0].stream, 'warn');
+  assert.equal(entry.level, 'warn');
+  assert.equal(entry.event, 'rate_limit_hit');
+  assert.equal(entry.ip, '127.0.0.1');
+});
+
+test('logError writes an error-level entry', () => {
+  const output = createOutput();
+  logError('db_connection_failed', { retry: 3 }, output);
+  const entry = parseOnlyLine(output);
+  assert.equal(output.lines[0].stream, 'error');
+  assert.equal(entry.level, 'error');
+  assert.equal(entry.event, 'db_connection_failed');
+  assert.equal(entry.retry, 3);
+});
+
+test('serializeError converts Error to plain object with stack', () => {
+  const err = new Error('something broke');
+  const obj = serializeError(err);
+  assert.equal(obj.name, 'Error');
+  assert.equal(obj.message, 'something broke');
+  assert.equal(typeof obj.stack, 'string');
+});
+
+test('serializeError handles non-Error values', () => {
+  assert.deepEqual(serializeError('string error'), { message: 'string error' });
+  assert.deepEqual(serializeError(42), { message: '42' });
+  assert.deepEqual(serializeError(null), { message: 'null' });
 });
 
 test('safeRequestPath strips query strings with sensitive tokens', () => {

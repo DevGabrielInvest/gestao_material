@@ -8,7 +8,13 @@
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
     "test": "NODE_ENV=test node --test",
+    "test:coverage": "NODE_ENV=test node --experimental-test-coverage --test 'test/*.test.js' 'test/security/*.test.js'",
+    "test:coverage:all": "NODE_ENV=test node --experimental-test-coverage --test",
     "test:cleanup": "node server/testCleanup.js",
+    "test:unit": "NODE_ENV=test node --test 'test/acceptance.test.js' 'test/cache.test.js' 'test/config.test.js' 'test/email.test.js' 'test/events.test.js' 'test/logger.test.js' 'test/middleware.test.js' 'test/pdf.test.js' 'test/validation.test.js' 'test/security/security.test.js'",
+    "test:integration": "NODE_ENV=test node --test 'test/integration/*.test.js'",
+    "test:security": "NODE_ENV=test node --test 'test/security/*.test.js' 'test/integration/security.test.js'",
+    "security:check": "npm audit --omit=dev && echo '---' && echo 'JWT_SECRET check:' && node -e \"const s=process.env.JWT_SECRET||''; console.log(s.length>=32?'OK ('+s.length+' bytes)':'WARNING: <32 bytes');\"",
     "seed": "node server/seed.js",
     "schema": "node server/migrate.js"
   },
@@ -25,6 +31,8 @@
     "postgres": "^3.4.5"
   },
   "devDependencies": {
-    "@types/nodemailer": "^8.0.1"
+    "@playwright/test": "^1.61.1",
+    "@types/nodemailer": "^8.0.1",
+    "jsdom": "^29.1.1"
   }
 }

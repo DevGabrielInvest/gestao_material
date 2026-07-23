@@ -76,6 +76,18 @@ test('POST /api/custody with invalid inventoryId returns 404', async () => {
   assert.equal(status, 404);
 });
 
+test('PUT /api/custody/:id/return rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('PUT', '/api/custody/1/return', { token });
+  assert.equal(status, 403);
+});
+
+test('GET /api/custody/:id/pdf rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('GET', '/api/custody/1/pdf', { token });
+  assert.equal(status, 403);
+});
+
 test('PUT /api/custody/:id/return returns active custody', async () => {
   const token = await adminToken();
   const inv = await api('GET', '/api/inventory?limit=1', { token });

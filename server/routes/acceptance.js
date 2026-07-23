@@ -12,7 +12,7 @@ import { streamAcceptancePdf, streamAcceptancePreviewPdf } from '../pdf.js';
 const router = Router();
 const adminManager = roleMiddleware('admin', 'manager');
 
-function detectBrowser(ua) {
+export function detectBrowser(ua) {
   if (!ua) return { browser: 'Desconhecido', os: 'Desconhecido' };
   let browser = 'Desconhecido';
   let os = 'Desconhecido';

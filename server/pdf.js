@@ -126,17 +126,17 @@ export function streamLetterheadPdf(res, { filename, title, subtitle, rows }) {
   doc.end();
 }
 
-function moneyLabel(value) {
+export function moneyLabel(value) {
   return Number(value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 }
 
-function dateOnly(value) {
+export function dateOnly(value) {
   if (!value) return '';
   if (value instanceof Date) return value.toISOString().slice(0, 10);
   return String(value).slice(0, 10);
 }
 
-function dateLabel(value) {
+export function dateLabel(value) {
   const day = dateOnly(value);
   if (!day) return '—';
   const [y, m, d] = day.split('-');

@@ -102,6 +102,18 @@ test('POST /api/inventory without name returns 400', async () => {
   assert(data.error.includes('nome') || data.error.includes('name'));
 });
 
+test('PUT /api/inventory/:id rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('PUT', '/api/inventory/1', { token, body: testItem });
+  assert.equal(status, 403);
+});
+
+test('DELETE /api/inventory/:id rejects requester role', async () => {
+  const token = await requesterToken();
+  const { status } = await api('DELETE', '/api/inventory/1', { token });
+  assert.equal(status, 403);
+});
+
 test('PUT /api/inventory/:id updates item', async () => {
   const token = await adminToken();
   const created = await api('POST', '/api/inventory', { token, body: testItem });
